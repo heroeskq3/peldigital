@@ -29,12 +29,57 @@ requerirLogin();
 <div class="app-shell">
 
     <header class="app-header">
-        <a class="brand" href="index.php" title="Inicio">
-            <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
-            <div class="brand-text">
-                <span class="brand-title">PEL Digital</span>
-            </div>
-        </a>
+        <div class="header-left">
+            <button id="btnMenu" class="icon-only menu-toggle" aria-label="Abrir menú"
+                    aria-controls="mainNav" aria-expanded="false">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="brand" href="index.php" title="Inicio">
+                <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
+                <div class="brand-text">
+                    <span class="brand-title">PEL Digital</span>
+                </div>
+            </a>
+
+            <nav id="mainNav" class="main-nav" aria-label="Navegación principal">
+                <div class="nav-drawer-head">
+                    <span class="nav-drawer-title">Menú</span>
+                    <button id="btnMenuClose" class="icon-only" aria-label="Cerrar menú">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <ul class="nav-list">
+                    <li class="nav-item has-dropdown">
+                        <button class="nav-link" type="button" aria-haspopup="true" aria-expanded="false">
+                            <i class="bi bi-graph-up"></i> <span>Análisis</span>
+                            <i class="bi bi-chevron-down nav-caret"></i>
+                        </button>
+                        <ul class="dropdown">
+                            <li><button class="dropdown-link" type="button" data-analisis="electoral"><i class="bi bi-clipboard-data"></i> Padrón electoral</button></li>
+                            <li><button class="dropdown-link" type="button" data-analisis="real"><i class="bi bi-house-door"></i> Residencia real</button></li>
+                            <li><button class="dropdown-link" type="button" data-analisis="diferencia"><i class="bi bi-arrow-left-right"></i> Saldo migratorio interno</button></li>
+                            <li><button class="dropdown-link" type="button" data-analisis="abstencion"><i class="bi bi-person-x"></i> Abstención histórica</button></li>
+                            <li><button class="dropdown-link" type="button" data-analisis="participacion"><i class="bi bi-person-check"></i> Participación electoral</button></li>
+                            <li><button class="dropdown-link" type="button" data-analisis="extranjero"><i class="bi bi-globe-americas"></i> Diáspora (extranjero)</button></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item has-dropdown">
+                        <button class="nav-link" type="button" aria-haspopup="true" aria-expanded="false">
+                            <i class="bi bi-shield-lock"></i> <span>Admin</span>
+                            <i class="bi bi-chevron-down nav-caret"></i>
+                        </button>
+                        <ul class="dropdown">
+                            <li><button class="dropdown-link" type="button" data-admin="bitacora"><i class="bi bi-journal-text"></i> Bitácora</button></li>
+                            <li><button class="dropdown-link" type="button" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</button></li>
+                            <li><button class="dropdown-link" type="button" data-admin="usuarios"><i class="bi bi-people"></i> Usuarios</button></li>
+                            <li><button class="dropdown-link" type="button" data-admin="roles"><i class="bi bi-person-badge"></i> Roles de usuario</button></li>
+                            <li><button class="dropdown-link" type="button" data-admin="cargar"><i class="bi bi-cloud-upload"></i> Cargar Datos</button></li>
+                            <li><button class="dropdown-link" type="button" data-admin="pipelines"><i class="bi bi-diagram-3"></i> Pipelines</button></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
         <div class="header-actions">
             <button id="btnTheme" class="icon-only" aria-label="Cambiar tema" title="Cambiar tema">
                 <i class="bi bi-moon"></i>
@@ -48,6 +93,8 @@ requerirLogin();
             </a>
         </div>
     </header>
+
+    <div id="navBackdrop" class="nav-backdrop d-none"></div>
 
     <div class="app-body">
         <div id="map"></div>

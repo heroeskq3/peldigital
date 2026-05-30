@@ -77,6 +77,7 @@
     actualizarIconoTema();
     setupMetrica();
     setupPadron();
+    setupNav();
     $("btnTheme").addEventListener("click", alternarTema);
 
     try {
@@ -580,11 +581,115 @@
     seg.addEventListener("click", (e) => {
       const b = e.target.closest(".seg-btn");
       if (!b || b.dataset.metrica === state.metrica) return;
-      state.metrica = b.dataset.metrica;
-      seg.querySelectorAll(".seg-btn").forEach((x) => x.classList.toggle("active", x === b));
-      $("metricaAyuda").textContent = AYUDA_METRICA[state.metrica];
-      aplicarMetrica();
+      seleccionarMetrica(b.dataset.metrica);
     });
+  }
+
+  // Cambia la metrica activa y sincroniza el control segmentado.
+  function seleccionarMetrica(m) {
+    if (!m) return;
+    state.metrica = m;
+    $("segMetrica").querySelectorAll(".seg-btn")
+      .forEach((x) => x.classList.toggle("active", x.dataset.metrica === m));
+    $("metricaAyuda").textContent = AYUDA_METRICA[m];
+    aplicarMetrica();
+  }
+
+  // ---- Menú de navegación (Análisis / Admin) + drawer móvil ----
+  const ADMIN_LABEL = {
+    bitacora: "Bitácora", configuracion: "Configuración", usuarios: "Usuarios",
+    roles: "Roles de usuario", cargar: "Cargar Datos", pipelines: "Pipelines",
+  };
+
+  function setupNav() {
+    const nav = $("mainNav");
+    const toggle = $("btnMenu");
+    const backdrop = $("navBackdrop");
+    const mq = matchMedia("(max-width: 820px)");
+    const esMovil = () => mq.matches;
+
+    const cerrarDropdowns = () => {
+      nav.querySelectorAll(".nav-item.open").forEach((it) => {
+        it.classList.remove("open");
+        it.querySelector(".nav-link").setAttribute("aria-expanded", "false");
+      });
+    };
+    const abrirDrawer = () => {
+      nav.classList.add("open");
+      backdrop.classList.remove("d-none");
+      toggle.setAttribute("aria-expanded", "true");
+      document.body.classList.add("nav-open");
+      document.body.style.overflow = "hidden";
+    };
+    const cerrarDrawer = () => {
+      nav.classList.remove("open");
+      backdrop.classList.add("d-none");
+      toggle.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("nav-open");
+      document.body.style.overflow = "";
+      cerrarDropdowns();
+    };
+    const cerrarTodo = () => { cerrarDropdowns(); if (esMovil()) cerrarDrawer(); };
+
+    toggle.addEventListener("click", () => {
+      nav.classList.contains("open") ? cerrarDrawer() : abrirDrawer();
+    });
+    $("btnMenuClose").addEventListener("click", cerrarDrawer);
+    backdrop.addEventListener("click", cerrarDrawer);
+
+    // Abrir/cerrar cada menú (acordeón en móvil, popover en desktop).
+    nav.querySelectorAll(".nav-item.has-dropdown > .nav-link").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const item = link.parentElement;
+        const abierto = item.classList.contains("open");
+        cerrarDropdowns();
+        if (!abierto) {
+          item.classList.add("open");
+          link.setAttribute("aria-expanded", "true");
+        }
+      });
+    });
+
+    // Click fuera cierra los popovers (desktop).
+    document.addEventListener("click", (e) => {
+      if (!nav.contains(e.target) && !toggle.contains(e.target)) cerrarDropdowns();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarTodo(); });
+    mq.addEventListener("change", (ev) => { if (!ev.matches) cerrarDrawer(); });
+
+    // Análisis predisenados: aplican una métrica con vista nacional.
+    nav.querySelectorAll("[data-analisis]").forEach((b) => {
+      b.addEventListener("click", () => {
+        navegarA("provincia", null, null, null);
+        map.setView([9.75, -84.1], 8);
+        seleccionarMetrica(b.dataset.analisis);
+        cerrarTodo();
+      });
+    });
+
+    // Admin: módulos aún sin backend → aviso.
+    nav.querySelectorAll("[data-admin]").forEach((b) => {
+      b.addEventListener("click", () => {
+        toast(`${ADMIN_LABEL[b.dataset.admin]}: módulo en construcción.`);
+        cerrarTodo();
+      });
+    });
+  }
+
+  let _toastTimer = 0;
+  function toast(msg) {
+    let t = $("appToast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "appToast";
+      t.className = "app-toast";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
   // Recolorea el nivel actual sin reajustar el encuadre del mapa.
