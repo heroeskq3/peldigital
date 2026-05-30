@@ -64,7 +64,7 @@
   const fmtV = (n) => (esDif() ? (n >= 0 ? "+" : "−") + fmt(Math.abs(n)) : fmt(n));
   const abreviarS = (n) => (n >= 0 ? "+" : "−") + abreviar(Math.abs(n));
   const abreviarV = (n) => (esDif() ? abreviarS(n) : abreviar(n));
-  const etiquetaValor = (v) => (esDif() ? fmtV(v) + " saldo" : fmt(v) + " hab.");
+  const etiquetaValor = (v) => (esDif() ? fmtV(v) + " migración" : fmt(v) + " hab.");
 
   const fmtPct = (x) => (x * 100).toFixed(1).replace(".0", "") + "%";
 
@@ -364,7 +364,7 @@
     const UNIDAD = {
       electoral: "habitantes",
       real: "residentes",
-      diferencia: "saldo (residencia − padrón)",
+      diferencia: "migración (residencia − padrón)",
       abstencion: "abstenciones (estim.)",
       participacion: "votos (estim.)",
       extranjero: "residen en el exterior",
@@ -618,7 +618,7 @@
   const AYUDA_METRICA = {
     electoral: "Población según el domicilio electoral (dónde está inscrita).",
     real: "Población según la residencia real simulada (dónde vive).",
-    diferencia: "Saldo = residencia − padrón. Azul: atrae residentes (dormitorio); rojo: los pierde.",
+    diferencia: "Migración = residencia − padrón. Azul: atrae residentes (dormitorio); rojo: los pierde.",
     abstencion: "Abstención estimada en elecciones pasadas (quienes no votaron).",
     participacion: "Participación estimada: inscritos que sí ejercieron el voto.",
     extranjero: "Inscritos que residen en el extranjero (diáspora, simulado).",

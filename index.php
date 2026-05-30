@@ -135,7 +135,7 @@ requerirLogin();
                 <div class="seg" id="segMetrica">
                     <button type="button" class="seg-btn active" data-metrica="electoral">Padrón</button>
                     <button type="button" class="seg-btn" data-metrica="real">Residencia</button>
-                    <button type="button" class="seg-btn" data-metrica="diferencia">Saldo</button>
+                    <button type="button" class="seg-btn" data-metrica="diferencia">Migración</button>
                     <button type="button" class="seg-btn" data-metrica="abstencion">Abstención</button>
                     <button type="button" class="seg-btn" data-metrica="participacion">Participación</button>
                     <button type="button" class="seg-btn" data-metrica="extranjero">Extranjero</button>
