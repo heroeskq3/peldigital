@@ -145,6 +145,17 @@
     return valorDe(POB[tabla][props.codigo]);
   }
 
+  const esTasa = () => state.metrica === "abstencion" || state.metrica === "participacion";
+
+  // Valor con el que se COLOREA el mapa. En abstención/participación es la
+  // tasa sobre el padrón (0..1); en el resto, el valor absoluto.
+  function valorMapa(props) {
+    if (!esTasa()) return pobDe(props);
+    const reg = regDe(props);
+    const base = reg && reg.poblacion ? reg.poblacion : 0;
+    return base ? (reg[state.metrica] || 0) / base : 0;
+  }
+
   // ---- Dibujo de un nivel ----
   async function dibujarNivel(nivel, resaltarCodigo) {
     state.nivel = nivel;
@@ -163,7 +174,7 @@
     featsActuales = feats;
 
     // Calcular escala de color sobre el conjunto visible
-    const valores = feats.map((f) => pobDe(f.properties)).sort((a, b) => a - b);
+    const valores = feats.map((f) => valorMapa(f.properties)).sort((a, b) => a - b);
     escala = calcularEscala(valores);
 
     if (capa) { capa.remove(); capa = null; }
@@ -238,7 +249,7 @@
 
   function estiloFeature(feature) {
     return {
-      fillColor: colorPara(pobDe(feature.properties)),
+      fillColor: colorPara(valorMapa(feature.properties)),
       weight: 0.5,
       opacity: 0.25,
       color: cssVar("--stroke"),
@@ -428,6 +439,9 @@
         if (lo === null) txt = `< ${abreviarS(hi)}`;
         else if (hi === null) txt = `> ${abreviarS(lo)}`;
         else txt = `${abreviarS(lo)} – ${abreviarS(hi)}`;
+      } else if (esTasa()) {
+        const desde = lo === null ? 0 : lo;
+        txt = hi === null ? `> ${fmtPct(desde)}` : `${fmtPct(desde)} – ${fmtPct(hi)}`;
       } else {
         const desde = lo === null ? 0 : lo;
         txt = hi === null ? `> ${abreviar(desde)}` : `${abreviar(desde)} – ${abreviar(hi)}`;
@@ -747,7 +761,7 @@
   // Recolorea el nivel actual sin reajustar el encuadre del mapa.
   function aplicarMetrica() {
     if (!featsActuales.length) return;
-    escala = calcularEscala(featsActuales.map((f) => pobDe(f.properties)).sort((a, b) => a - b));
+    escala = calcularEscala(featsActuales.map((f) => valorMapa(f.properties)).sort((a, b) => a - b));
     if (capa) {
       capa.setStyle(estiloFeature);
       capa.eachLayer((l) => l.setTooltipContent(tooltipHTML(l.feature.properties)));
