@@ -132,9 +132,10 @@ html, body {
     color: #ffffff; opacity: .82;
     font: inherit; font-size: .9rem; font-weight: 600;
     padding: 8px 12px; border-radius: 8px;
-    white-space: nowrap;
+    white-space: nowrap; text-decoration: none;
     transition: background .15s, opacity .15s;
 }
+.nav-tools { display: none; }   /* acciones del drawer: solo móvil */
 .nav-link:hover { opacity: 1; background: rgba(255, 255, 255, .10); }
 .nav-link .nav-caret { font-size: .72rem; transition: transform .18s; }
 .nav-item.open > .nav-link { opacity: 1; background: rgba(255, 255, 255, .14); }
@@ -696,8 +697,17 @@ select.field {
     .app-side { width: 100%; height: 46%; border-left: 0; border-top: 1px solid var(--border); }
     #map { height: 54%; }
 
-    /* Hamburguesa visible; nav se convierte en drawer izquierdo */
-    .menu-toggle { display: inline-flex; opacity: .9; }
+    /* Header móvil: hamburguesa grande a la izquierda, logo centrado */
+    .app-header { position: relative; }
+    .menu-toggle {
+        display: inline-flex; opacity: .95;
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        font-size: 1.6rem; padding: 6px; z-index: 2;
+    }
+    .header-left { width: 100%; justify-content: center; }
+    .brand { margin: 0; }
+    .header-actions { display: none; }       /* tema/reset/logout se mueven al drawer */
+
     .main-nav {
         position: fixed; top: 0; left: 0; bottom: 0;
         width: min(82vw, 320px);
@@ -735,4 +745,19 @@ select.field {
         animation: none;
     }
     .dropdown-link { font-size: .95rem; padding: 12px 12px; }
+
+    /* Acciones movidas al drawer: tema, reiniciar, cerrar sesión */
+    .nav-tools {
+        display: flex; flex-direction: column; gap: 2px;
+        margin-top: auto; padding: 10px;
+        border-top: 1px solid rgba(255, 255, 255, .12);
+    }
+    .nav-tools-lbl {
+        color: rgba(255, 255, 255, .7);
+        font-size: .8rem; padding: 6px 14px 8px;
+    }
+    .nav-tools-lbl strong { color: #fff; text-transform: capitalize; }
+    .nav-tools .nav-link { width: 100%; justify-content: flex-start; font-size: .98rem; padding: 13px 14px; }
+    .nav-link-logout { color: #ffd5d5; }
+    .nav-link-logout:hover { background: rgba(255, 120, 120, .15); }
 }

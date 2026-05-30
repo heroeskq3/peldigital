@@ -78,6 +78,19 @@ requerirLogin();
                         </ul>
                     </li>
                 </ul>
+
+                <div class="nav-tools">
+                    <span class="nav-tools-lbl">Sesión: <strong><?= htmlspecialchars(usuarioActual() ?? '') ?></strong></span>
+                    <button id="btnThemeM" class="nav-link" type="button">
+                        <i class="bi bi-moon"></i> <span id="themeLabelM">Modo oscuro</span>
+                    </button>
+                    <button id="btnResetM" class="nav-link" type="button">
+                        <i class="bi bi-arrow-counterclockwise"></i> <span>Reiniciar vista</span>
+                    </button>
+                    <a href="logout.php" class="nav-link nav-link-logout">
+                        <i class="bi bi-box-arrow-right"></i> <span>Cerrar sesión</span>
+                    </a>
+                </div>
             </nav>
         </div>
         <div class="header-actions">

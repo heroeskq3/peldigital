@@ -118,10 +118,12 @@
     }
     ocultarLoader();
 
-    $("btnReset").addEventListener("click", () => {
-      navegarA("provincia", null, null, null);
-      map.setView([9.75, -84.1], 8);
-    });
+    $("btnReset").addEventListener("click", reiniciarVista);
+  }
+
+  function reiniciarVista() {
+    navegarA("provincia", null, null, null);
+    map.setView([9.75, -84.1], 8);
   }
 
   async function fetchJSON(url) {
@@ -588,8 +590,12 @@
   }
 
   function actualizarIconoTema() {
-    const ic = $("btnTheme").querySelector("i");
-    ic.className = tema() === "dark" ? "bi bi-sun" : "bi bi-moon";
+    const oscuro = tema() === "dark";
+    $("btnTheme").querySelector("i").className = oscuro ? "bi bi-sun" : "bi bi-moon";
+    const icM = $("btnThemeM")?.querySelector("i");
+    if (icM) icM.className = oscuro ? "bi bi-sun" : "bi bi-moon";
+    const lbl = $("themeLabelM");
+    if (lbl) lbl.textContent = oscuro ? "Modo claro" : "Modo oscuro";
   }
 
   function alternarTema() {
@@ -717,6 +723,10 @@
         cerrarTodo();
       });
     });
+
+    // Acciones del drawer (tema / reiniciar) — solo móvil.
+    $("btnThemeM").addEventListener("click", alternarTema);
+    $("btnResetM").addEventListener("click", () => { reiniciarVista(); cerrarTodo(); });
   }
 
   let _toastTimer = 0;
