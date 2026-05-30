@@ -776,4 +776,8 @@ select.field {
         border-radius: 0;
         padding: 0;
     }
+    /* Evita el zoom automático de iOS en inputs pequeños */
+    .login-card .field {
+        font-size: 16px;
+    }
 }
