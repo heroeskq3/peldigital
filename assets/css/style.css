@@ -765,8 +765,11 @@ select.field {
     /* Login responsive: fondo del card llena toda la pantalla */
     .login-body {
         background: #150857;
-        align-items: flex-start;
-        padding: 48px 24px 32px;
+        height: 100dvh;
+        min-height: unset;
+        align-items: center;
+        padding: 24px;
+        overflow: hidden;
     }
     .login-card {
         width: 100%;
