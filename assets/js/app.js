@@ -105,6 +105,7 @@
     setupMetrica();
     setupPadron();
     setupNav();
+    setupFilters();
     $("btnTheme").addEventListener("click", alternarTema);
 
     try {
@@ -741,6 +742,34 @@
     // Acciones del drawer (tema / reiniciar) — solo móvil.
     $("btnThemeM").addEventListener("click", alternarTema);
     $("btnResetM").addEventListener("click", () => { reiniciarVista(); cerrarTodo(); });
+  }
+
+  // ---- Panel de filtros (bottom sheet en móvil) ----
+  function setupFilters() {
+    const btn = $("btnFilters");
+    if (!btn) return;
+    const side = document.querySelector(".app-side");
+    const backdrop = $("filtersBackdrop");
+    const handle = $("sideHandle");
+    const mq = matchMedia("(max-width: 820px)");
+
+    const abrir = () => {
+      side.classList.add("open");
+      backdrop.classList.remove("d-none");
+      document.body.style.overflow = "hidden";
+      map.invalidateSize();
+    };
+    const cerrar = () => {
+      side.classList.remove("open");
+      backdrop.classList.add("d-none");
+      document.body.style.overflow = "";
+      map.invalidateSize();
+    };
+
+    btn.addEventListener("click", () => side.classList.contains("open") ? cerrar() : abrir());
+    backdrop.addEventListener("click", cerrar);
+    if (handle) handle.addEventListener("click", cerrar);
+    mq.addEventListener("change", (ev) => { if (!ev.matches) cerrar(); });
   }
 
   let _toastTimer = 0;

@@ -93,6 +93,9 @@ requerirLogin();
                 </div>
             </nav>
         </div>
+        <button id="btnFilters" class="icon-only btn-filters-mob" aria-label="Filtros" title="Filtros">
+            <i class="bi bi-sliders"></i>
+        </button>
         <div class="header-actions">
             <button id="btnTheme" class="icon-only" aria-label="Cambiar tema" title="Cambiar tema">
                 <i class="bi bi-moon"></i>
@@ -108,11 +111,13 @@ requerirLogin();
     </header>
 
     <div id="navBackdrop" class="nav-backdrop d-none"></div>
+    <div id="filtersBackdrop" class="filters-backdrop d-none"></div>
 
     <div class="app-body">
         <div id="map"></div>
 
         <aside class="app-side">
+            <div class="side-handle" id="sideHandle"><div class="side-handle-bar"></div></div>
 
             <!-- Buscador + selects -->
             <section class="panel">
