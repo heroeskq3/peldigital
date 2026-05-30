@@ -72,6 +72,8 @@ html, body {
     align-items: center;
     justify-content: space-between;
     padding: 0 18px;
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--header-h) + env(safe-area-inset-top));
     background: #150857;
     border-bottom: 1px solid var(--border);
     z-index: 1000;
@@ -616,7 +618,7 @@ select.field {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 24px;
+    padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
     background: var(--bg);
 }
 .login-card {
