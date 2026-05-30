@@ -698,7 +698,8 @@ select.field {
     #map { height: 54%; }
 
     /* Header móvil: hamburguesa grande a la izquierda, logo centrado */
-    .app-header { position: relative; }
+    /* z-index sobre el backdrop (1100) para que el drawer no quede tapado */
+    .app-header { position: relative; z-index: 1200; }
     .menu-toggle {
         display: inline-flex; opacity: .95;
         position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
