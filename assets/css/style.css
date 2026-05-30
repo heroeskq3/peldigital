@@ -368,6 +368,8 @@ select.field {
 .metric { display: flex; align-items: baseline; gap: 6px; margin: 2px 0 4px; }
 .metric-num { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; }
 .metric-unit { font-size: .72rem; color: var(--text-muted); }
+.detalle-pct { font-size: .82rem; color: var(--text-muted); margin: 0 0 6px; }
+.detalle-pct strong { color: var(--accent); font-weight: 700; }
 
 /* ---------- Stats ---------- */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -407,7 +409,14 @@ select.field {
     flex: 0 0 auto;
 }
 .ranking li .rk-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking li .rk-meta { display: flex; align-items: baseline; gap: 8px; flex: 0 0 auto; }
 .ranking li .rk-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ranking li .rk-pct {
+    font-size: .72rem; font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 40px; text-align: right;
+}
 .ranking li:hover .rk-name { text-decoration: underline; }
 
 /* ---------- Leyenda ---------- */

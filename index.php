@@ -151,6 +151,7 @@ requerirLogin();
                     <span id="detallePob" class="metric-num"></span>
                     <span id="detalleUnidad" class="metric-unit">habitantes</span>
                 </div>
+                <div id="detallePorc" class="detalle-pct d-none"></div>
                 <div id="detalleExtra" class="muted small"></div>
                 <div id="detalleFlujo" class="flujo d-none"></div>
                 <button id="btnPadron" class="btn-wide" type="button">

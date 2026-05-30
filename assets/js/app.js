@@ -65,6 +65,33 @@
   const abreviarS = (n) => (n >= 0 ? "+" : "−") + abreviar(Math.abs(n));
   const abreviarV = (n) => (esDif() ? abreviarS(n) : abreviar(n));
   const etiquetaValor = (v) => (esDif() ? fmtV(v) + " saldo" : fmt(v) + " hab.");
+
+  const fmtPct = (x) => (x * 100).toFixed(1).replace(".0", "") + "%";
+
+  // Porcentaje contextual segun la metrica:
+  //  - padron/residencia/extranjero: cuota sobre el total del nivel mostrado.
+  //  - abstencion/participacion: tasa sobre el padron de la propia region.
+  // Devuelve { pct, label } o null si no aplica (p.ej. "saldo").
+  function pctInfo(reg, totalNivel, nivel) {
+    if (!reg || esDif()) return null;
+    if (state.metrica === "abstencion" || state.metrica === "participacion") {
+      const base = reg.poblacion || 0;
+      if (!base) return null;
+      const pct = (reg[state.metrica] || 0) / base;
+      const txt = state.metrica === "abstencion" ? "de abstención" : "de participación";
+      return { pct, label: `${txt} sobre el padrón` };
+    }
+    if (!totalNivel) return null;
+    const pct = valorDe(reg) / totalNivel;
+    const donde = nivel === "provincia" ? "del total nacional"
+      : nivel === "canton" ? "del total de la provincia"
+      : "del total del cantón";
+    return { pct, label: donde };
+  }
+
+  const regDe = (props) => POB[
+    { provincia: "provincias", canton: "cantones", distrito: "distritos" }[props.nivel]
+  ][props.codigo];
   const tooltipHTML = (p) =>
     `<div class="cr-tooltip"><strong>${p.nombre}</strong>${etiquetaValor(pobDe(p))}</div>`;
 
@@ -301,8 +328,11 @@
     const ol = $("topList");
     ol.innerHTML = "";
     ranking.forEach((it) => {
+      const pi = pctInfo(regDe(it.p), total, it.p.nivel);
+      const pct = pi ? `<span class="rk-pct">${fmtPct(pi.pct)}</span>` : "";
       const li = document.createElement("li");
-      li.innerHTML = `<span class="rk-name">${it.p.nombre}</span><span class="rk-val">${fmtV(it.pob)}</span>`;
+      li.innerHTML = `<span class="rk-name">${it.p.nombre}</span>` +
+        `<span class="rk-meta"><span class="rk-val">${fmtV(it.pob)}</span>${pct}</span>`;
       li.addEventListener("click", () => drillDown(it.p));
       ol.appendChild(li);
     });
@@ -338,6 +368,18 @@
       extranjero: "residen en el exterior",
     };
     $("detalleUnidad").textContent = UNIDAD[state.metrica];
+
+    // Porcentaje contextual (cuota del total o tasa sobre el padrón).
+    const totalNivel = featsActuales.reduce((a, f) => a + pobDe(f.properties), 0);
+    const pi = pctInfo(regDe(p), totalNivel, p.nivel);
+    const dp = $("detallePorc");
+    if (pi) {
+      dp.innerHTML = `<strong>${fmtPct(pi.pct)}</strong> ${pi.label}`;
+      dp.classList.remove("d-none");
+    } else {
+      dp.classList.add("d-none");
+    }
+
     let extra = "";
     if (p.nivel === "canton") extra = "Cantón · " + p.provincia;
     else if (p.nivel === "distrito") extra = "Distrito · " + p.canton + ", " + p.provincia;
