@@ -55,6 +55,7 @@ html, body {
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
+    touch-action: manipulation; /* evita zoom por doble tap */
 }
 
 .d-none { display: none !important; }
