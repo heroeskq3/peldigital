@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code / asistentes
+.claude/
+
+# Logs y temporales
+*.log
+*.tmp
+tmp/
+cache/
+
+# PHP / dependencias
+/vendor/
+composer.lock
+
+# Configuración local sensible (si en el futuro se externaliza)
+.env
+.env.local
+config.local.php
