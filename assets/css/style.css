@@ -761,4 +761,19 @@ select.field {
     .nav-tools .nav-link { width: 100%; justify-content: flex-start; font-size: .98rem; padding: 13px 14px; }
     .nav-link-logout { color: #ffd5d5; }
     .nav-link-logout:hover { background: rgba(255, 120, 120, .15); }
+
+    /* Login responsive: fondo del card llena toda la pantalla */
+    .login-body {
+        background: #150857;
+        align-items: flex-start;
+        padding: 48px 24px 32px;
+    }
+    .login-card {
+        width: 100%;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+    }
 }
