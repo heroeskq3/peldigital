@@ -37,8 +37,9 @@ function leerFeatures($archivo) {
 function poblacionDistrito($codigo) {
     // semilla estable a partir del codigo
     mt_srand(crc32('cr-pob-' . $codigo));
-    // rango realista para un distrito (de ~200 a ~55 000 habitantes)
-    $base = mt_rand(200, 55000);
+    // Rango por distrito calibrado para que el total nacional ronde los
+    // ~5,17 millones (473 distritos, promedio ~10 900 hab.).
+    $base = mt_rand(150, 21700);
     mt_srand(); // restaurar aleatoriedad global
     return $base;
 }
