@@ -81,7 +81,7 @@
       const txt = state.metrica === "abstencion" ? "de abstención" : "de participación";
       return { pct, label: `${txt} sobre el padrón` };
     }
-    if (!totalNivel) return null;
+    if (nivel === "pais" || !totalNivel) return null;
     const pct = valorDe(reg) / totalNivel;
     const donde = nivel === "provincia" ? "del total nacional"
       : nivel === "canton" ? "del total de la provincia"
@@ -90,7 +90,7 @@
   }
 
   const regDe = (props) => POB[
-    { provincia: "provincias", canton: "cantones", distrito: "distritos" }[props.nivel]
+    { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[props.nivel]
   ][props.codigo];
   const tooltipHTML = (p) =>
     `<div class="cr-tooltip"><strong>${p.nombre}</strong>${etiquetaValor(pobDe(p))}</div>`;
@@ -111,6 +111,7 @@
 
     try {
       POB = await fetchJSON("api/poblacion.php");
+      construirNacional();
       construirIndice();
       construirControles();
       await dibujarNivel("provincia");
@@ -132,6 +133,21 @@
     const r = await fetch(url);
     if (!r.ok) throw new Error(url + " -> " + r.status);
     return r.json();
+  }
+
+  // Registro sintético "Costa Rica" (agregado nacional) para que el panel
+  // de detalle y "Mostrar resultados" funcionen también en la vista nacional.
+  function construirNacional() {
+    const acc = { nombre: "Costa Rica", poblacion: 0, pob_real: 0,
+                  abstencion: 0, participacion: 0, extranjero: 0 };
+    for (const v of Object.values(POB.provincias)) {
+      acc.poblacion += v.poblacion || 0;
+      acc.pob_real += v.pob_real || 0;
+      acc.abstencion += v.abstencion || 0;
+      acc.participacion += v.participacion || 0;
+      acc.extranjero += v.extranjero || 0;
+    }
+    POB.paises = { CR: acc };
   }
 
   // ---- Bitácora: registro de interacciones (no bloquea la UI) ----
@@ -160,7 +176,7 @@
 
   // Valor para una feature segun el nivel y la metrica activa.
   function pobDe(props) {
-    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos" }[props.nivel];
+    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[props.nivel];
     return valorDe(POB[tabla][props.codigo]);
   }
 
@@ -375,7 +391,25 @@
       ol.appendChild(li);
     });
 
-    $("detalle").classList.add("d-none");
+    mostrarContexto();
+  }
+
+  // Muestra en "Seleccionado" la región en la que se está navegando, de modo
+  // que "Mostrar resultados" esté siempre disponible: el cantón cuando se ven
+  // sus distritos, la provincia cuando se ven sus cantones, y Costa Rica en la
+  // vista nacional. Un distrito resaltado tiene prioridad.
+  function mostrarContexto() {
+    let nivel, codigo;
+    if (state.codDistrito) { nivel = "distrito"; codigo = state.codDistrito; }
+    else if (state.nivel === "distrito" && state.codCanton) { nivel = "canton"; codigo = state.codCanton; }
+    else if (state.nivel === "canton" && state.codProvincia) { nivel = "provincia"; codigo = state.codProvincia; }
+    else { nivel = "pais"; codigo = "CR"; }
+
+    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[nivel];
+    const rec = POB[tabla] && POB[tabla][codigo];
+    if (!rec) { $("detalle").classList.add("d-none"); return; }
+    const props = Object.assign({ nivel, codigo }, rec);
+    mostrarDetalle(props, pobDe(props));
   }
 
   function addCrumb(container, texto, onClick, activo) {
@@ -419,7 +453,8 @@
     }
 
     let extra = "";
-    if (p.nivel === "canton") extra = "Cantón · " + p.provincia;
+    if (p.nivel === "pais") extra = "Nacional · Costa Rica";
+    else if (p.nivel === "canton") extra = "Cantón · " + p.provincia;
     else if (p.nivel === "distrito") extra = "Distrito · " + p.canton + ", " + p.provincia;
     else extra = "Provincia";
     $("detalleExtra").textContent = extra;
@@ -864,6 +899,7 @@
   }
 
   function ctxRegion(p) {
+    if (p.nivel === "pais") return "Nacional · Costa Rica";
     if (p.nivel === "distrito") return `${p.canton}, ${p.provincia}`;
     if (p.nivel === "canton") return p.provincia;
     return "Provincia";
@@ -873,6 +909,7 @@
 
   // Distritos que pertenecen a la region seleccionada (para el lugar de votacion).
   function distritosDeRegion(p) {
+    if (p.nivel === "pais") return Object.values(POB.distritos);
     if (p.nivel === "distrito") {
       const d = POB.distritos[p.codigo];
       return d ? [d] : [];
@@ -891,7 +928,8 @@
     const anio = new Date().getFullYear() - edad;
     const mes = 1 + Math.floor(rnd() * 12);
     const dia = 1 + Math.floor(rnd() * 28);
-    const provD = String(p.cod_provincia || p.codigo)[0];
+    const d = distritos.length ? distritos[Math.floor(rnd() * distritos.length)] : null;
+    const provD = String((d && d.cod_provincia) || p.cod_provincia || p.codigo || "1")[0];
     const c1 = 1000 + Math.floor(rnd() * 9000);
     const c2 = 1000 + Math.floor(rnd() * 9000);
     const fnac = `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${anio}`;
@@ -905,7 +943,6 @@
     const hijos = casado
       ? Math.floor(rnd() * 5)            // casados: 0..4
       : (rnd() < 0.7 ? 0 : 1 + Math.floor(rnd() * 2)); // resto: en su mayoria 0
-    const d = distritos.length ? distritos[Math.floor(rnd() * distritos.length)] : null;
     const vProv    = (d ? d.provincia : p.provincia || p.nombre || "").toUpperCase();
     const vCanton  = (d ? d.canton : p.canton || p.nombre || "").toUpperCase();
     const vDistrito = (d ? d.nombre : p.nombre || "").toUpperCase();
@@ -919,7 +956,7 @@
   }
 
   function padronTotal(p) {
-    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos" }[p.nivel];
+    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[p.nivel];
     return POB[tabla][p.codigo].poblacion;   // el padron = inscritos (electoral)
   }
 
