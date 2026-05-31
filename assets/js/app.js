@@ -104,6 +104,7 @@
     actualizarIconoTema();
     setupMetrica();
     setupPadron();
+    setupBitacora();
     setupNav();
     setupFilters();
     $("btnTheme").addEventListener("click", alternarTema);
@@ -131,6 +132,23 @@
     const r = await fetch(url);
     if (!r.ok) throw new Error(url + " -> " + r.status);
     return r.json();
+  }
+
+  // ---- Bitácora: registro de interacciones (no bloquea la UI) ----
+  function logEvento(tipo, detalle, meta) {
+    try {
+      const payload = JSON.stringify({ tipo, detalle: detalle || "", meta: meta || {} });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("api/log.php", new Blob([payload], { type: "application/json" }));
+      } else {
+        fetch("api/log.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        });
+      }
+    } catch (e) { /* el registro nunca debe romper la experiencia */ }
   }
 
   async function getGeo(nivel) {
@@ -296,6 +314,12 @@
     state.codDistrito = codDistrito || null;
     await dibujarNivel(nivel, codDistrito);
     sincronizarSelects();
+
+    const nombre = codDistrito ? POB.distritos[codDistrito]?.nombre
+      : codCanton ? POB.cantones[codCanton]?.nombre
+      : codProvincia ? POB.provincias[codProvincia]?.nombre : "Nacional";
+    logEvento("navegacion", `${nivel}: ${nombre || ""}`,
+      { nivel, codProvincia, codCanton, codDistrito, metrica: state.metrica });
   }
 
   // ---- Panel lateral ----
@@ -563,6 +587,7 @@
       li.addEventListener("click", () => {
         $("buscador").value = it.nombre;
         lista.classList.add("d-none");
+        logEvento("busqueda", `${it.nivel}: ${it.nombre}`, { codigo: it.codigo, nivel: it.nivel });
         irAResultado(it);
       });
       lista.appendChild(li);
@@ -656,6 +681,7 @@
       .forEach((x) => x.classList.toggle("active", x.dataset.metrica === m));
     $("metricaAyuda").textContent = AYUDA_METRICA[m];
     aplicarMetrica();
+    logEvento("metrica", `Métrica: ${m}`, { metrica: m });
   }
 
   // ---- Menú de navegación (Análisis / Admin) + drawer móvil ----
@@ -731,11 +757,14 @@
       });
     });
 
-    // Admin: módulos aún sin backend → aviso.
+    // Admin: la Bitácora abre su visor; el resto sigue en construcción.
     nav.querySelectorAll("[data-admin]").forEach((b) => {
       b.addEventListener("click", () => {
-        toast(`${ADMIN_LABEL[b.dataset.admin]}: módulo en construcción.`);
+        const mod = b.dataset.admin;
+        logEvento("admin_open", `Admin: ${ADMIN_LABEL[mod]}`, { modulo: mod });
         cerrarTodo();
+        if (mod === "bitacora") abrirBitacora();
+        else toast(`${ADMIN_LABEL[mod]}: módulo en construcción.`);
       });
     });
 
@@ -919,6 +948,8 @@
     $("padronBuscar").value = "";
     renderPadron();
     $("padronModal").classList.remove("d-none");
+    logEvento("padron_abrir", `Padrón · ${p.nombre}`,
+      { nivel: p.nivel, codigo: p.codigo, total });
   }
 
   function cerrarPadron() { $("padronModal").classList.add("d-none"); }
@@ -982,6 +1013,8 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
+    logEvento("padron_export", `Exportó padrón · ${padron.p?.nombre || ""}`,
+      { filas: rows.length });
   }
 
   function irPagina(n) {
@@ -1015,6 +1048,76 @@
     $("pgNext").addEventListener("click", () => irPagina(padron.page + 1));
     $("pgLast").addEventListener("click", () => irPagina(Infinity));
     $("btnExport").addEventListener("click", exportarPadron);
+  }
+
+  // ---- Bitácora: visor de auditoría ----
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const TIPO_LABEL = {
+    login: "Ingreso", login_fallido: "Ingreso fallido", logout: "Salida",
+    navegacion: "Navegación", metrica: "Métrica", analisis: "Análisis",
+    busqueda: "Búsqueda", padron_abrir: "Abrió padrón", padron_export: "Exportó",
+    admin_open: "Admin", reset: "Reinició", tema: "Tema", otro: "Otro",
+  };
+
+  function abrirBitacora() {
+    $("bitacoraModal").classList.remove("d-none");
+    cargarBitacora();
+  }
+  function cerrarBitacora() { $("bitacoraModal").classList.add("d-none"); }
+
+  async function cargarBitacora() {
+    const q = $("bitacoraBuscar").value.trim();
+    $("bitacoraInfo").textContent = "Cargando…";
+    try {
+      const r = await fetchJSON("api/bitacora.php?n=300" + (q ? "&q=" + encodeURIComponent(q) : ""));
+      renderBitacora(r.eventos || []);
+    } catch (e) {
+      $("bitacoraInfo").textContent = "No se pudo cargar la bitácora.";
+    }
+  }
+
+  function renderBitacora(eventos) {
+    const body = $("bitacoraBody");
+    body.innerHTML = "";
+    if (!eventos.length) {
+      body.innerHTML = `<tr><td colspan="5" class="bita-empty">Sin registros.</td></tr>`;
+      $("bitacoraInfo").textContent = "0 eventos";
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    eventos.forEach((e) => {
+      const fecha = e.ts ? new Date(e.ts).toLocaleString("es-CR") : "";
+      const tipo = TIPO_LABEL[e.tipo] || e.tipo;
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td class="mono">${esc(fecha)}</td>` +
+        `<td>${esc(e.usuario || "")}</td>` +
+        `<td class="mono">${esc(e.ip || "")}</td>` +
+        `<td><span class="bita-tag bita-${esc(e.tipo)}">${esc(tipo)}</span></td>` +
+        `<td>${esc(e.detalle || "")}</td>`;
+      frag.appendChild(tr);
+    });
+    body.appendChild(frag);
+    $("bitacoraInfo").textContent =
+      `${fmt(eventos.length)} evento${eventos.length === 1 ? "" : "s"} (más recientes primero)`;
+  }
+
+  function setupBitacora() {
+    $("bitacoraClose").addEventListener("click", cerrarBitacora);
+    $("bitacoraModal").addEventListener("click", (e) => {
+      if (e.target === $("bitacoraModal")) cerrarBitacora();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !$("bitacoraModal").classList.contains("d-none")) cerrarBitacora();
+    });
+    $("bitacoraRefresh").addEventListener("click", cargarBitacora);
+    let t;
+    $("bitacoraBuscar").addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(cargarBitacora, 250);
+    });
   }
 
   function mostrarLoader() { $("loader").classList.remove("hidden"); }

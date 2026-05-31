@@ -583,6 +583,24 @@ select.field {
 .dt tbody tr:hover td { background: var(--surface-2); }
 .dt .mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+/* Bitácora: etiquetas de tipo de evento */
+.bita-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+.bita-login { background: rgba(34, 160, 90, .14); color: #1f8f54; border-color: rgba(34, 160, 90, .3); }
+.bita-logout { background: rgba(120, 120, 140, .14); color: var(--text-muted); }
+.bita-login_fallido { background: rgba(200, 50, 50, .14); color: #c0392b; border-color: rgba(200, 50, 50, .3); }
+.bita-padron_export { background: rgba(60, 110, 220, .14); color: #2f63c8; border-color: rgba(60, 110, 220, .3); }
+.bita-empty { text-align: center; padding: 18px; color: var(--text-muted); font-size: .85rem; }
+
 .modal-foot {
     display: flex;
     align-items: center;

@@ -13,9 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $clave   = $_POST['clave'] ?? '';
     if (verificarLogin($usuario, $clave)) {
         iniciarSesion(trim($usuario));
+        registrarBitacora('login', 'Ingreso correcto');
         header('Location: index.php');
         exit;
     }
+    registrarBitacora('login_fallido', 'Credenciales inválidas', [], trim($usuario) ?: 'desconocido');
     $error = 'Usuario o contraseña incorrectos.';
 }
 ?>

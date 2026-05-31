@@ -13,6 +13,9 @@
 
 session_start();
 
+// Bitácora de auditoría (registro de accesos e interacciones).
+require_once __DIR__ . '/lib/bitacora.php';
+
 // usuario => hash bcrypt de la contrasena
 $USUARIOS = [
     'demo' => '$2y$12$EcFM4j2oK1pv3HSdhg9F5eeRVML.MXVzhiH9c7IJL1Y6gWYGTJYvW', // demo1234
