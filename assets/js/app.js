@@ -30,10 +30,6 @@
   // (mucha poblacion). Misma rampa en light y dark.
   const RAMP = ["#dbeefb", "#aed8f2", "#7fb8e6", "#5793d6",
                 "#4470c2", "#3650a6", "#262d7e", "#150857"];
-  // Rampa divergente para el "saldo" (real - electoral):
-  // rojo = pierde residentes (la gente migro), azul = los gana (dormitorio).
-  const RAMP_DIV = ["#b2182b", "#ef8a62", "#fddbc7", "#f7f7f7",
-                    "#d1e5f0", "#67a9cf", "#2166ac"];
   const TILES = {
     light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     dark:  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -88,47 +84,25 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => n.toLocaleString("es-CR");
   const tema = () => document.documentElement.getAttribute("data-theme") || "light";
-  const esDif = () => state.metrica === "diferencia";
-  const paleta = () => (esDif() ? RAMP_DIV : RAMP);
+  const paleta = () => RAMP;
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   // Valor de un registro segun la metrica activa.
   function valorDe(reg) {
     if (!reg) return 0;
-    const elec = reg.poblacion;
-    const real = reg.pob_real != null ? reg.pob_real : elec;
-    switch (state.metrica) {
-      case "real":          return real;
-      case "diferencia":    return real - elec;
-      case "abstencion":    return reg.abstencion || 0;
-      case "participacion": return reg.participacion || 0;
-      case "extranjero":    return reg.extranjero || 0;
-      default:              return elec;
-    }
+    return state.metrica === "extranjero" ? (reg.extranjero || 0) : (reg.poblacion || 0);
   }
 
-  // Formato con signo para metrica "diferencia".
-  const fmtV = (n) => (esDif() ? (n >= 0 ? "+" : "−") + fmt(Math.abs(n)) : fmt(n));
-  const abreviarS = (n) => (n >= 0 ? "+" : "−") + abreviar(Math.abs(n));
-  const abreviarV = (n) => (esDif() ? abreviarS(n) : abreviar(n));
-  const etiquetaValor = (v) => (esDif() ? fmtV(v) + " migración" : fmt(v) + " hab.");
+  const fmtV = (n) => fmt(n);
+  const abreviarV = (n) => abreviar(n);
+  const etiquetaValor = (v) => fmt(v) + " hab.";
 
   const fmtPct = (x) => (x * 100).toFixed(1).replace(".0", "") + "%";
 
-  // Porcentaje contextual segun la metrica:
-  //  - padron/residencia/extranjero: cuota sobre el total del nivel mostrado.
-  //  - abstencion/participacion: tasa sobre el padron de la propia region.
-  // Devuelve { pct, label } o null si no aplica (p.ej. "saldo").
+  // Porcentaje contextual: cuota sobre el total del nivel mostrado.
+  // Devuelve { pct, label } o null si no aplica.
   function pctInfo(reg, totalNivel, nivel) {
-    if (!reg || esDif()) return null;
-    if (state.metrica === "abstencion" || state.metrica === "participacion") {
-      const base = reg.poblacion || 0;
-      if (!base) return null;
-      const pct = (reg[state.metrica] || 0) / base;
-      const txt = state.metrica === "abstencion" ? "de abstención" : "de participación";
-      return { pct, label: `${txt} sobre el padrón` };
-    }
-    if (nivel === "pais" || !totalNivel) return null;
+    if (!reg || nivel === "pais" || !totalNivel) return null;
     const pct = valorDe(reg) / totalNivel;
     const donde = nivel === "provincia" ? "del total nacional"
       : nivel === "canton" ? "del total de la provincia"
@@ -185,13 +159,9 @@
   // Registro sintético "Costa Rica" (agregado nacional) para que el panel
   // de detalle y "Mostrar resultados" funcionen también en la vista nacional.
   function construirNacional() {
-    const acc = { nombre: "Costa Rica", poblacion: 0, pob_real: 0,
-                  abstencion: 0, participacion: 0, extranjero: 0 };
+    const acc = { nombre: "Costa Rica", poblacion: 0, extranjero: 0 };
     for (const v of Object.values(POB.provincias)) {
-      acc.poblacion += v.poblacion || 0;
-      acc.pob_real += v.pob_real || 0;
-      acc.abstencion += v.abstencion || 0;
-      acc.participacion += v.participacion || 0;
+      acc.poblacion  += v.poblacion  || 0;
       acc.extranjero += v.extranjero || 0;
     }
     POB.paises = { CR: acc };
@@ -227,15 +197,9 @@
     return valorDe(POB[tabla][props.codigo]);
   }
 
-  const esTasa = () => state.metrica === "abstencion" || state.metrica === "participacion";
-
-  // Valor con el que se COLOREA el mapa. En abstención/participación es la
-  // tasa sobre el padrón (0..1); en el resto, el valor absoluto.
+  // Valor con el que se colorea el mapa (absoluto segun la metrica activa).
   function valorMapa(props) {
-    if (!esTasa()) return pobDe(props);
-    const reg = regDe(props);
-    const base = reg && reg.poblacion ? reg.poblacion : 0;
-    return base ? (reg[state.metrica] || 0) / base : 0;
+    return pobDe(props);
   }
 
   // ---- Dibujo de un nivel ----
@@ -294,26 +258,15 @@
 
   function calcularEscala(valoresOrdenados) {
     if (!valoresOrdenados.length) return [];
-
-    // Metrica "diferencia": escala divergente, simetrica alrededor de 0.
-    if (esDif()) {
-      const M = Math.max(1, ...valoresOrdenados.map((v) => Math.abs(v)));
-      const n = paleta().length;          // numero de colores
-      const t = [];
-      for (let i = 1; i < n; i++) t.push(Math.round(-M + (2 * M) * (i / n)));
-      return t;                            // n-1 umbrales, incluye el 0
-    }
-
     // Umbrales por cuantiles, deduplicados: con pocas regiones (p.ej. 7
-    // provincias) los cuantiles pueden repetirse y generarian rangos
-    // vacios en la leyenda.
+    // provincias) los cuantiles pueden repetirse y generarian rangos vacios.
     const n = paleta().length;
     const q = [];
     for (let i = 1; i < n; i++) {
       const idx = Math.floor((i / n) * (valoresOrdenados.length - 1));
       q.push(valoresOrdenados[idx]);
     }
-    return [...new Set(q)].sort((a, b) => a - b); // umbrales unicos
+    return [...new Set(q)].sort((a, b) => a - b);
   }
 
   // Color para el bucket i de un total de "buckets", muestreando la paleta.
@@ -480,17 +433,9 @@
     $("detalle").classList.remove("d-none");
     $("detalleNombre").textContent = p.nombre;
     $("detallePob").textContent = fmtV(pob);
-    const UNIDAD = {
-      electoral: "habitantes",
-      real: "residentes",
-      diferencia: "migración (residencia − padrón)",
-      abstencion: "abstenciones (estim.)",
-      participacion: "votos (estim.)",
-      extranjero: "residen en el exterior",
-    };
-    $("detalleUnidad").textContent = UNIDAD[state.metrica];
+    $("detalleUnidad").textContent = state.metrica === "extranjero"
+      ? "residen en el exterior" : "habitantes";
 
-    // Porcentaje contextual (cuota del total o tasa sobre el padrón).
     const totalNivel = featsActuales.reduce((a, f) => a + pobDe(f.properties), 0);
     const pi = pctInfo(regDe(p), totalNivel, p.nivel);
     const dp = $("detallePorc");
@@ -507,33 +452,6 @@
     else if (p.nivel === "distrito") extra = "Distrito · " + p.canton + ", " + p.provincia;
     else extra = "Provincia";
     $("detalleExtra").textContent = extra;
-    renderFlujo(p);
-  }
-
-  // Flujos del cruce padron/residencia (solo a nivel canton).
-  function renderFlujo(p) {
-    const flu = $("detalleFlujo");
-    const reg = p.nivel === "canton" ? POB.cantones[p.codigo] : null;
-    const sal = reg?.flujo_salida || [];
-    const ent = reg?.flujo_entrada || [];
-    if (!reg || (!sal.length && !ent.length)) {
-      flu.classList.add("d-none");
-      flu.innerHTML = "";
-      return;
-    }
-    const chips = (arr) => arr
-      .map((x) => `<span class="flujo-it">${x.nombre} · ${fmt(x.n)}</span>`).join("");
-    let html = "";
-    if (sal.length) {
-      html += `<div class="flujo-line"><span class="flujo-lbl">Inscritos aquí, residen en</span>` +
-              `<div class="flujo-items">${chips(sal)}</div></div>`;
-    }
-    if (ent.length) {
-      html += `<div class="flujo-line"><span class="flujo-lbl">Residen aquí, inscritos en</span>` +
-              `<div class="flujo-items">${chips(ent)}</div></div>`;
-    }
-    flu.innerHTML = html;
-    flu.classList.remove("d-none");
   }
 
   function actualizarLeyenda() {
@@ -543,18 +461,8 @@
     for (let i = 0; i < buckets; i++) {
       const lo = i === 0 ? null : escala[i - 1];
       const hi = i < escala.length ? escala[i] : null;
-      let txt;
-      if (esDif()) {
-        if (lo === null) txt = `< ${abreviarS(hi)}`;
-        else if (hi === null) txt = `> ${abreviarS(lo)}`;
-        else txt = `${abreviarS(lo)} – ${abreviarS(hi)}`;
-      } else if (esTasa()) {
-        const desde = lo === null ? 0 : lo;
-        txt = hi === null ? `> ${fmtPct(desde)}` : `${fmtPct(desde)} – ${fmtPct(hi)}`;
-      } else {
-        const desde = lo === null ? 0 : lo;
-        txt = hi === null ? `> ${abreviar(desde)}` : `${abreviar(desde)} – ${abreviar(hi)}`;
-      }
+      const desde = lo === null ? 0 : lo;
+      const txt = hi === null ? `> ${abreviar(desde)}` : `${abreviar(desde)} – ${abreviar(hi)}`;
       const row = document.createElement("div");
       row.className = "row-leg";
       row.innerHTML = `<span class="swatch" style="background:${colorBucket(i, buckets)}"></span><span>${txt}</span>`;
@@ -741,11 +649,7 @@
 
   // ---- Selector de metrica (padron / residencia / saldo) ----
   const AYUDA_METRICA = {
-    electoral: "Población según el domicilio electoral (dónde está inscrita).",
-    real: "Población según la residencia real simulada (dónde vive).",
-    diferencia: "Migración = residencia − padrón. Azul: atrae residentes (dormitorio); rojo: los pierde.",
-    abstencion: "Abstención estimada en elecciones pasadas (quienes no votaron).",
-    participacion: "Participación estimada: inscritos que sí ejercieron el voto.",
+    electoral: "Inscritos según domicilio electoral (padrón real · TSE 2026).",
     extranjero: "Inscritos costarricenses residentes en el exterior (diáspora real · TSE 2026).",
   };
 
@@ -914,8 +818,6 @@
     dp.innerHTML = `<strong>${fmtPct(d.votantes / total)}</strong> de la diáspora total`;
     dp.classList.remove("d-none");
     $("detalleExtra").textContent = "Diáspora · país de residencia";
-    $("detalleFlujo").classList.add("d-none");
-    $("detalleFlujo").innerHTML = "";
     $("btnPadron").style.display = "none";
   }
 

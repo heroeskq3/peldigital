@@ -57,10 +57,6 @@ requerirLogin();
                         </button>
                         <ul class="dropdown">
                             <li><button class="dropdown-link" type="button" data-analisis="electoral"><i class="bi bi-clipboard-data"></i> Padrón electoral</button></li>
-                            <li><button class="dropdown-link" type="button" data-analisis="real"><i class="bi bi-house-door"></i> Residencia real</button></li>
-                            <li><button class="dropdown-link" type="button" data-analisis="diferencia"><i class="bi bi-arrow-left-right"></i> Saldo migratorio interno</button></li>
-                            <li><button class="dropdown-link" type="button" data-analisis="abstencion"><i class="bi bi-person-x"></i> Abstención histórica</button></li>
-                            <li><button class="dropdown-link" type="button" data-analisis="participacion"><i class="bi bi-person-check"></i> Participación electoral</button></li>
                             <li><button class="dropdown-link" type="button" data-analisis="extranjero"><i class="bi bi-globe-americas"></i> Diáspora (extranjero)</button></li>
                         </ul>
                     </li>
@@ -140,10 +136,6 @@ requerirLogin();
                 <span class="label">Métrica</span>
                 <div class="seg" id="segMetrica">
                     <button type="button" class="seg-btn active" data-metrica="electoral">Padrón</button>
-                    <button type="button" class="seg-btn" data-metrica="real">Residencia</button>
-                    <button type="button" class="seg-btn" data-metrica="diferencia">Migración</button>
-                    <button type="button" class="seg-btn" data-metrica="abstencion">Abstención</button>
-                    <button type="button" class="seg-btn" data-metrica="participacion">Participación</button>
                     <button type="button" class="seg-btn" data-metrica="extranjero">Extranjero</button>
                 </div>
                 <p id="metricaAyuda" class="muted small mb-0">
@@ -172,7 +164,6 @@ requerirLogin();
                 </div>
                 <div id="detallePorc" class="detalle-pct d-none"></div>
                 <div id="detalleExtra" class="muted small"></div>
-                <div id="detalleFlujo" class="flujo d-none"></div>
                 <button id="btnPadron" class="btn-wide" type="button">
                     <i class="bi bi-table"></i> Mostrar resultados
                 </button>
