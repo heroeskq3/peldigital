@@ -964,32 +964,36 @@
     const maxV = valores[valores.length - 1] || 1;
     const radio = (n) => 5 + 27 * Math.sqrt(n / maxV);
 
+    // Cada país se coloca en 3 copias del mundo (-360, 0, +360) para que
+    // las burbujas sean visibles al hacer drag horizontal infinito.
     const layers = [];
     datos.forEach((d) => {
       const coord = COORDS_PAIS[d.pais];
       if (!coord) return;
-      const circle = L.circleMarker(coord, {
-        radius:      radio(d.votantes),
-        fillColor:   colorPara(d.votantes),
-        color:       cssVar("--stroke"),
-        weight:      0.8,
-        opacity:     0.6,
-        fillOpacity: 0.85,
+      [-360, 0, 360].forEach((offset) => {
+        const circle = L.circleMarker([coord[0], coord[1] + offset], {
+          radius:      radio(d.votantes),
+          fillColor:   colorPara(d.votantes),
+          color:       cssVar("--stroke"),
+          weight:      0.8,
+          opacity:     0.6,
+          fillOpacity: 0.85,
+        });
+        circle.bindTooltip(
+          `<div class="cr-tooltip"><strong>${d.pais}</strong>${fmt(d.votantes)} electores</div>`,
+          { sticky: true, direction: "top", className: "cr-tooltip-wrap", opacity: 1 }
+        );
+        circle.on({
+          mouseover: (e) => {
+            e.target.setStyle({ weight: 2.5, color: cssVar("--stroke-hover"), fillOpacity: 1 });
+            mostrarDetalleDiaspora(d);
+          },
+          mouseout: (e) => {
+            e.target.setStyle({ weight: 0.8, color: cssVar("--stroke"), fillOpacity: 0.85 });
+          },
+        });
+        layers.push(circle);
       });
-      circle.bindTooltip(
-        `<div class="cr-tooltip"><strong>${d.pais}</strong>${fmt(d.votantes)} electores</div>`,
-        { sticky: true, direction: "top", className: "cr-tooltip-wrap", opacity: 1 }
-      );
-      circle.on({
-        mouseover: (e) => {
-          e.target.setStyle({ weight: 2.5, color: cssVar("--stroke-hover"), fillOpacity: 1 });
-          mostrarDetalleDiaspora(d);
-        },
-        mouseout: (e) => {
-          e.target.setStyle({ weight: 0.8, color: cssVar("--stroke"), fillOpacity: 0.85 });
-        },
-      });
-      layers.push(circle);
     });
 
     capaDiaspora = L.layerGroup(layers).addTo(map);
