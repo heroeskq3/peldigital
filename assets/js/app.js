@@ -102,7 +102,7 @@
   // Porcentaje contextual: cuota sobre el total del nivel mostrado.
   // Devuelve { pct, label } o null si no aplica.
   function pctInfo(reg, totalNivel, nivel) {
-    if (!reg || nivel === "pais" || !totalNivel) return null;
+    if (!reg || nivel === "pais" || nivel === "diaspora" || !totalNivel) return null;
     const pct = valorDe(reg) / totalNivel;
     const donde = nivel === "provincia" ? "del total nacional"
       : nivel === "canton" ? "del total de la provincia"
@@ -111,7 +111,7 @@
   }
 
   const regDe = (props) => POB[
-    { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[props.nivel]
+    { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises", diaspora: "paises" }[props.nivel]
   ][props.codigo];
   const tooltipHTML = (p) =>
     `<div class="cr-tooltip"><strong>${p.nombre}</strong>${etiquetaValor(pobDe(p))}</div>`;
@@ -133,6 +133,7 @@
     try {
       POB = await fetchJSON("api/poblacion.php");
       construirNacional();
+      construirDiaspora();
       construirIndice();
       construirControles();
       await dibujarNivel("provincia");
@@ -165,6 +166,16 @@
       acc.extranjero += v.extranjero || 0;
     }
     POB.paises = { CR: acc };
+  }
+
+  // Pobla POB.paises con registros para cada país de la diáspora (nivel "diaspora").
+  // Permite que "Mostrar resultados" funcione en la vista mundial igual que en CR.
+  function construirDiaspora() {
+    const total = (POB.diaspora || []).reduce((s, d) => s + d.votantes, 0);
+    POB.paises["ext:Exterior"] = { nombre: "Exterior", poblacion: total, extranjero: total };
+    (POB.diaspora || []).forEach((d) => {
+      POB.paises["ext:" + d.pais] = { nombre: d.pais, poblacion: d.votantes, extranjero: d.votantes };
+    });
   }
 
   // ---- Bitácora: registro de interacciones (no bloquea la UI) ----
@@ -447,7 +458,8 @@
     }
 
     let extra = "";
-    if (p.nivel === "pais") extra = "Nacional · Costa Rica";
+    if (p.nivel === "diaspora") extra = "Diáspora · exterior";
+    else if (p.nivel === "pais") extra = "Nacional · Costa Rica";
     else if (p.nivel === "canton") extra = "Cantón · " + p.provincia;
     else if (p.nivel === "distrito") extra = "Distrito · " + p.canton + ", " + p.provincia;
     else extra = "Provincia";
@@ -808,7 +820,7 @@
   // ---- Vista mundo: diáspora por país ----
 
   function mostrarDetalleDiaspora(d) {
-    seleccionActual = null;
+    seleccionActual = { nivel: "diaspora", codigo: "ext:" + d.pais, nombre: d.pais };
     $("detalle").classList.remove("d-none");
     $("detalleNombre").textContent = d.pais;
     $("detallePob").textContent = fmt(d.votantes);
@@ -818,7 +830,6 @@
     dp.innerHTML = `<strong>${fmtPct(d.votantes / total)}</strong> de la diáspora total`;
     dp.classList.remove("d-none");
     $("detalleExtra").textContent = "Diáspora · país de residencia";
-    $("btnPadron").style.display = "none";
   }
 
   function limpiarDiaspora() {
@@ -826,7 +837,6 @@
     capaDiaspora.remove();
     capaDiaspora = null;
     map.setMinZoom(6);
-    $("btnPadron").style.display = "";
   }
 
   function dibujarDiaspora() {
@@ -903,8 +913,9 @@
     map.invalidateSize(false);
     map.setView([20, 0], 2);
     actualizarLeyenda();
-    $("detalle").classList.add("d-none");
-    $("btnPadron").style.display = "none";
+    // Selección inicial: todos los votantes del exterior
+    seleccionActual = { nivel: "diaspora", codigo: "ext:Exterior", nombre: "Exterior" };
+    mostrarDetalle(seleccionActual, POB.paises["ext:Exterior"].poblacion);
     renderDiaspora();
   }
 
@@ -986,6 +997,7 @@
   }
 
   function ctxRegion(p) {
+    if (p.nivel === "diaspora") return "Diáspora · exterior";
     if (p.nivel === "pais") return "Nacional · Costa Rica";
     if (p.nivel === "distrito") return `${p.canton}, ${p.provincia}`;
     if (p.nivel === "canton") return p.provincia;
@@ -996,6 +1008,7 @@
 
   // Distritos que pertenecen a la region seleccionada (para el lugar de votacion).
   function distritosDeRegion(p) {
+    if (p.nivel === "diaspora") return [];
     if (p.nivel === "pais") return Object.values(POB.distritos);
     if (p.nivel === "distrito") {
       const d = POB.distritos[p.codigo];
@@ -1043,8 +1056,8 @@
   }
 
   function padronTotal(p) {
-    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises" }[p.nivel];
-    return POB[tabla][p.codigo].poblacion;   // el padron = inscritos (electoral)
+    const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises", diaspora: "paises" }[p.nivel];
+    return POB[tabla][p.codigo].poblacion;
   }
 
   const padron = { data: [], filtrado: [], page: 0, size: 25, total: 0, truncado: false, p: null };
