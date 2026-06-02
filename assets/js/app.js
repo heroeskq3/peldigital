@@ -24,6 +24,7 @@
   let capasPorCodigo = {};   // codigo -> layer del nivel actual
   let featsActuales = [];    // features visibles del nivel actual
   let seleccionActual = null; // ultima region mostrada en el detalle
+  let capaDiaspora = null;   // layer de burbujas mundo (metrica extranjero)
 
   // Rampa secuencial: azul claro (poca poblacion) -> morado-indigo
   // (mucha poblacion). Misma rampa en light y dark.
@@ -36,6 +37,52 @@
   const TILES = {
     light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     dark:  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  };
+
+  // Coordenadas aproximadas (centroide) de los países en el padrón exterior.
+  const COORDS_PAIS = {
+    "Alemania":               [51.2,  10.5],
+    "Argentina":              [-34.6, -58.4],
+    "Australia":              [-25.3, 133.8],
+    "Austria":                [47.5,  14.5],
+    "Belgica":                [50.5,   4.5],
+    "Bolivia":                [-16.3, -63.6],
+    "Brasil":                 [-14.2, -51.9],
+    "Canada":                 [56.1, -106.3],
+    "Chile":                  [-35.7, -71.5],
+    "China":                  [35.9,  104.2],
+    "Colombia":               [ 4.6,  -74.1],
+    "Corea":                  [37.6,  127.0],
+    "Cuba":                   [21.5,  -79.0],
+    "Ecuador":                [-1.8,  -78.2],
+    "El Salvador":            [13.8,  -88.9],
+    "Emiratos Arabes Unidos": [23.4,   53.8],
+    "España":                 [40.5,   -3.7],
+    "Francia":                [46.2,    2.2],
+    "Guatemala":              [15.8,  -90.2],
+    "Honduras":               [15.2,  -86.2],
+    "India":                  [20.6,   79.1],
+    "Indonesia":              [-0.8,  113.9],
+    "Israel":                 [31.0,   35.0],
+    "Italia":                 [41.9,   12.6],
+    "Jamaica":                [18.1,  -77.3],
+    "Japon":                  [36.2,  138.3],
+    "Kenia":                  [-0.0,   37.9],
+    "Mexico":                 [23.6, -102.6],
+    "Nicaragua":              [12.9,  -85.2],
+    "Paises Bajos":           [52.1,    5.3],
+    "Panama":                 [ 8.5,  -80.8],
+    "Paraguay":               [-23.4, -58.4],
+    "Peru":                   [-9.2,  -75.0],
+    "Qatar":                  [25.4,   51.2],
+    "Reino Unido":            [55.4,   -3.4],
+    "Republica Dominicana":   [18.7,  -70.2],
+    "Rusia":                  [61.5,  105.3],
+    "Singapur":               [ 1.4,  103.8],
+    "Suiza":                  [46.8,    8.2],
+    "Turquia":                [38.9,   35.2],
+    "Uruguay":                [-32.5, -55.8],
+    "Estados Unidos":         [39.5,  -98.4],
   };
 
   const $ = (id) => document.getElementById(id);
@@ -193,6 +240,7 @@
 
   // ---- Dibujo de un nivel ----
   async function dibujarNivel(nivel, resaltarCodigo) {
+    limpiarDiaspora();
     state.nivel = nivel;
     mostrarLoader();
 
@@ -392,6 +440,7 @@
     });
 
     mostrarContexto();
+    renderDiaspora();
   }
 
   // Muestra en "Seleccionado" la región en la que se está navegando, de modo
@@ -679,14 +728,15 @@
     localStorage.setItem("cr-theme", nuevo);
     actualizarIconoTema();
     setBasemap();
-    if (capa) {
+    if (capaDiaspora) {
+      capaDiaspora.eachLayer((l) => l.setStyle({ color: cssVar("--stroke") }));
+    } else if (capa) {
       capa.setStyle(estiloFeature);
-      // reaplica el resaltado activo si lo hay
       if (state.codDistrito && capasPorCodigo[state.codDistrito]) {
         capasPorCodigo[state.codDistrito].setStyle({ weight: 3, color: cssVar("--stroke-hover"), fillOpacity: 1 });
       }
-      actualizarLeyenda();
     }
+    actualizarLeyenda();
   }
 
   // ---- Selector de metrica (padron / residencia / saldo) ----
@@ -696,7 +746,7 @@
     diferencia: "Migración = residencia − padrón. Azul: atrae residentes (dormitorio); rojo: los pierde.",
     abstencion: "Abstención estimada en elecciones pasadas (quienes no votaron).",
     participacion: "Participación estimada: inscritos que sí ejercieron el voto.",
-    extranjero: "Inscritos que residen en el extranjero (diáspora, simulado).",
+    extranjero: "Inscritos costarricenses residentes en el exterior (diáspora real · TSE 2026).",
   };
 
   function setupMetrica() {
@@ -851,8 +901,139 @@
     _toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
+  // ---- Vista mundo: diáspora por país ----
+
+  function mostrarDetalleDiaspora(d) {
+    seleccionActual = null;
+    $("detalle").classList.remove("d-none");
+    $("detalleNombre").textContent = d.pais;
+    $("detallePob").textContent = fmt(d.votantes);
+    $("detalleUnidad").textContent = "electores residentes";
+    const total = (POB.diaspora || []).reduce((s, x) => s + x.votantes, 0);
+    const dp = $("detallePorc");
+    dp.innerHTML = `<strong>${fmtPct(d.votantes / total)}</strong> de la diáspora total`;
+    dp.classList.remove("d-none");
+    $("detalleExtra").textContent = "Diáspora · país de residencia";
+    $("detalleFlujo").classList.add("d-none");
+    $("detalleFlujo").innerHTML = "";
+    $("btnPadron").style.display = "none";
+  }
+
+  function limpiarDiaspora() {
+    if (!capaDiaspora) return;
+    capaDiaspora.remove();
+    capaDiaspora = null;
+    map.setMinZoom(6);
+    $("btnPadron").style.display = "";
+  }
+
+  function dibujarDiaspora() {
+    limpiarDiaspora();
+    if (capa) { capa.remove(); capa = null; }
+    featsActuales = [];
+
+    const datos = POB.diaspora || [];
+    if (!datos.length) return;
+
+    // Panel lateral
+    $("nivelTitulo").textContent = "Diáspora · Mundo";
+    $("nivelAyuda").textContent = "Costarricenses inscritos residentes fuera del país.";
+    const bc = $("breadcrumb");
+    bc.innerHTML = "";
+    addCrumb(bc, "Costa Rica", () => navegarA("provincia", null, null, null), false);
+    addCrumb(bc, "Exterior", null, true);
+
+    const total = datos.reduce((s, d) => s + d.votantes, 0);
+    $("statTotal").textContent  = abreviar(total);
+    $("statRegiones").textContent = datos.length;
+    $("statProm").textContent   = abreviar(Math.round(total / datos.length));
+
+    const ol = $("topList");
+    ol.innerHTML = "";
+    datos.slice(0, 10).forEach((d) => {
+      const pct = `<span class="rk-pct">${fmtPct(d.votantes / total)}</span>`;
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="rk-name">${d.pais}</span>` +
+        `<span class="rk-meta"><span class="rk-val">${fmt(d.votantes)}</span>${pct}</span>`;
+      ol.appendChild(li);
+    });
+
+    // Escala de colores y radios de burbuja
+    const valores = datos.map((d) => d.votantes).sort((a, b) => a - b);
+    escala = calcularEscala(valores);
+    const maxV = valores[valores.length - 1] || 1;
+    const radio = (n) => 5 + 27 * Math.sqrt(n / maxV);
+
+    const layers = [];
+    datos.forEach((d) => {
+      const coord = COORDS_PAIS[d.pais];
+      if (!coord) return;
+      const circle = L.circleMarker(coord, {
+        radius:      radio(d.votantes),
+        fillColor:   colorPara(d.votantes),
+        color:       cssVar("--stroke"),
+        weight:      0.8,
+        opacity:     0.6,
+        fillOpacity: 0.85,
+      });
+      circle.bindTooltip(
+        `<div class="cr-tooltip"><strong>${d.pais}</strong>${fmt(d.votantes)} electores</div>`,
+        { sticky: true, direction: "top", className: "cr-tooltip-wrap", opacity: 1 }
+      );
+      circle.on({
+        mouseover: (e) => {
+          e.target.setStyle({ weight: 2.5, color: cssVar("--stroke-hover"), fillOpacity: 1 });
+          mostrarDetalleDiaspora(d);
+        },
+        mouseout: (e) => {
+          e.target.setStyle({ weight: 0.8, color: cssVar("--stroke"), fillOpacity: 0.85 });
+        },
+      });
+      layers.push(circle);
+    });
+
+    capaDiaspora = L.layerGroup(layers).addTo(map);
+    map.setMinZoom(2);
+    map.invalidateSize(false);
+    map.setView([20, 0], 2);
+    actualizarLeyenda();
+    $("detalle").classList.add("d-none");
+    $("btnPadron").style.display = "none";
+    renderDiaspora();
+  }
+
+  // Panel de diáspora: visible solo en métrica "extranjero".
+  function renderDiaspora() {
+    const panel = $("diasporaPanel");
+    if (state.metrica !== "extranjero") { panel.classList.add("d-none"); return; }
+    const datos = POB.diaspora || [];
+    if (!datos.length) { panel.classList.add("d-none"); return; }
+
+    const total = datos.reduce((s, d) => s + d.votantes, 0);
+    const padronNac = Object.values(POB.provincias).reduce((s, p) => s + (p.poblacion || 0), 0);
+    $("diasporaTotal").textContent = abreviar(total);
+    $("diasporaPaises").textContent = datos.length;
+    $("diasporaPct").textContent = padronNac ? fmtPct(total / padronNac) : "–";
+
+    const ol = $("diasporaList");
+    ol.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    datos.forEach((d) => {
+      const pct = total ? `<span class="rk-pct">${fmtPct(d.votantes / total)}</span>` : "";
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="rk-name">${d.pais}</span>` +
+        `<span class="rk-meta"><span class="rk-val">${fmt(d.votantes)}</span>${pct}</span>`;
+      frag.appendChild(li);
+    });
+    ol.appendChild(frag);
+    panel.classList.remove("d-none");
+  }
+
   // Recolorea el nivel actual sin reajustar el encuadre del mapa.
   function aplicarMetrica() {
+    if (state.metrica === "extranjero") { dibujarDiaspora(); return; }
+    // Al salir de extranjero, limpiar burbujas y repintar el nivel CR.
+    if (capaDiaspora) { limpiarDiaspora(); dibujarNivel(state.nivel || "provincia"); return; }
     if (!featsActuales.length) return;
     escala = calcularEscala(featsActuales.map((f) => valorMapa(f.properties)).sort((a, b) => a - b));
     if (capa) {

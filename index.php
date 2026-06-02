@@ -194,6 +194,17 @@ requerirLogin();
                 <ol id="topList" class="ranking"></ol>
             </section>
 
+            <!-- Diáspora: distribución por país (visible solo en métrica "extranjero") -->
+            <section id="diasporaPanel" class="panel d-none">
+                <span class="label">Diáspora · distribución por país</span>
+                <div class="stats">
+                    <div class="stat"><div id="diasporaTotal" class="stat-num">–</div><div class="stat-lbl">Total exterior</div></div>
+                    <div class="stat"><div id="diasporaPaises" class="stat-num">–</div><div class="stat-lbl">Países</div></div>
+                    <div class="stat"><div id="diasporaPct" class="stat-num">–</div><div class="stat-lbl">Del padrón</div></div>
+                </div>
+                <ol id="diasporaList" class="ranking"></ol>
+            </section>
+
             <!-- Leyenda -->
             <section class="panel">
                 <span class="label">Escala</span>
