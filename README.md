@@ -82,6 +82,10 @@ oficiales adicionales, no solo el padron.
 ├── login.php              # Pantalla de ingreso
 ├── logout.php             # Cierre de sesion
 ├── auth.php               # Sesion y credenciales actuales
+├── includes/
+│   ├── layout/            # Head, header, footer, loader y scripts comunes
+│   ├── modals/            # Modales reutilizados por la interfaz
+│   └── reports/           # Vistas especificas de cada reporte
 ├── api/
 │   ├── poblacion.php      # Agregados territoriales del padron
 │   ├── padron.php         # Consulta paginada del padron real
@@ -134,6 +138,12 @@ integrada al login de la aplicacion.
 
 ## Notas tecnicas
 
+- `index.php` funciona como ensamblador de vistas: valida sesion y carga
+  parciales de `includes/`.
+- La estructura nueva separa layout, modales y reportes para evitar duplicar
+  encabezado, pie, contenedores y controles comunes cuando se agreguen nuevos
+  reportes.
+- El reporte actual vive en `includes/reports/padron-distribucion.php`.
 - `api/padron.php` usa paginacion para evitar cargar millones de filas en el
   navegador.
 - Las busquedas textuales del padron usan el indice FULLTEXT existente sobre

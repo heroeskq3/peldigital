@@ -24,6 +24,7 @@
   let capasPorCodigo = {};   // codigo -> layer del nivel actual
   let featsActuales = [];    // features visibles del nivel actual
   let seleccionActual = null; // ultima region mostrada en el detalle
+  let codigoSeleccionadoMapa = null;
   let capaDiaspora = null;   // layer de burbujas mundo (metrica extranjero)
   let miniMapControl = null;
   let miniMapEl = null;
@@ -242,6 +243,7 @@
 
     if (capa) { capa.remove(); capa = null; }
     capasPorCodigo = {};
+    codigoSeleccionadoMapa = resaltarCodigo || null;
 
     capa = L.geoJSON({ type: "FeatureCollection", features: feats }, {
       style: estiloFeature,
@@ -325,9 +327,8 @@
       mouseover: (e) => {
         e.target.setStyle({ weight: 2.5, color: cssVar("--stroke-hover"), fillOpacity: 1 });
         e.target.bringToFront();
-        mostrarDetalle(p, pob);
       },
-      mouseout: (e) => { capa.resetStyle(e.target); },
+      mouseout: (e) => { restaurarEstiloCapa(e.target); },
       click: () => drillDown(p),
     });
   }
@@ -337,8 +338,31 @@
       navegarA("canton", p.codigo, null, null);
     } else if (p.nivel === "canton") {
       navegarA("distrito", p.cod_provincia, p.codigo, null);
+    } else if (p.nivel === "distrito") {
+      fijarSeleccionMapa(p.codigo);
+      mostrarDetalle(p, pobDe(p));
     }
-    // distrito = nivel mas profundo: solo resalta el detalle (ya mostrado)
+  }
+
+  function fijarSeleccionMapa(codigo) {
+    codigoSeleccionadoMapa = codigo || null;
+    Object.entries(capasPorCodigo).forEach(([cod, layer]) => {
+      if (cod === codigoSeleccionadoMapa) {
+        layer.setStyle({ weight: 3, color: cssVar("--stroke-hover"), fillOpacity: 1 });
+        layer.bringToFront();
+      } else if (capa) {
+        capa.resetStyle(layer);
+      }
+    });
+  }
+
+  function restaurarEstiloCapa(layer) {
+    if (layer?.feature?.properties?.codigo === codigoSeleccionadoMapa) {
+      layer.setStyle({ weight: 3, color: cssVar("--stroke-hover"), fillOpacity: 1 });
+      layer.bringToFront();
+      return;
+    }
+    if (capa) capa.resetStyle(layer);
   }
 
   // Navegacion programatica unificada (drill-down, buscador y selects).
@@ -453,7 +477,7 @@
     const ayudas = {
       provincia: "Haz click en una provincia para ver sus cantones.",
       canton: "Haz click en un cantón para ver sus distritos.",
-      distrito: "Nivel más detallado. Pasa el cursor para ver cada distrito.",
+      distrito: "Nivel más detallado. Haz click en un distrito para fijar sus datos.",
     };
     $("nivelTitulo").textContent = titulos[nivel];
     $("nivelAyuda").textContent = ayudas[nivel];
