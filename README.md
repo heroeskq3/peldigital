@@ -1,45 +1,51 @@
 # PEL Digital
 
 Plataforma interna de analisis electoral y territorial para el Partido
-Esperanza y Libertad. El sistema actual consolida el primer reporte operativo:
-**Padron Electoral -> Distribucion Territorial**.
+Esperanza y Libertad. Uso exclusivo interno del partido.
 
-El reporte permite explorar la distribucion del padron nacional de Costa Rica y
-la poblacion electoral inscrita en el extranjero, con navegacion territorial,
-mapa interactivo y consulta paginada del padron real.
+El primer reporte operativo es **Padron Electoral → Distribucion Territorial**:
+mapa de calor con drill-down territorial, consulta paginada del padron real y
+vista de diaspora electoral mundial.
 
-## Estado actual
+## Estado actual (06 junio 2026)
 
-- Reporte principal: **Analisis -> Padron Electoral -> Distribucion Territorial**.
-- Mapa nacional con drill-down por **provincia -> canton -> distrito**.
-- Modo **Nacional** restringido a Costa Rica.
-- Modo **Extranjero** con vista mundial de diaspora electoral.
-- Minimapa de contexto al navegar en cantones o distritos; al hacer clic vuelve
-  a la vista nacional y limpia filtros.
-- Consulta real del padron desde MySQL, con paginacion y busqueda por cedula,
-  nombre, apellidos o junta.
-- Exportacion CSV de la pagina visible del padron.
-- Busqueda territorial y selects encadenados.
-- Ranking Top 10, resumen del nivel y leyenda de escala.
-- Login por sesion PHP.
-- Bitacora basica de accesos e interacciones.
-- Tema claro / oscuro.
+- Reporte principal: **Analisis → Padron Electoral → Distribucion Territorial**.
+- Mapa nacional con drill-down por **provincia → canton → distrito**.
+- Modo **Nacional** restringido a Costa Rica (bounds fijos).
+- Modo **Extranjero** con vista mundial de diaspora electoral (burbujas por pais).
+- Minimapa de contexto al navegar en cantones o distritos; clic vuelve a vista
+  nacional y limpia filtros.
+- Consulta real del padron desde MySQL via `api/padron.php`, con paginacion,
+  busqueda por cedula/nombre/apellidos/junta y exportacion CSV.
+- Busqueda territorial con autocomplete y selects encadenados.
+- Ranking Top 10, resumen estadistico del nivel y leyenda de escala cromatica.
+- Login por sesion PHP con hash bcrypt. La tabla `users` tiene 3 usuarios reales
+  (administrador, analista, consulta) pero el login aun usa arreglo hardcodeado
+  en `auth.php`; la integracion contra BD esta pendiente.
+- Bitacora basica de accesos e interacciones (archivo + tabla `audit_logs`).
+- Tema claro / oscuro persistido en localStorage.
 
 ## Datos
 
-El mapa y el modal de resultados usan datos reales cargados desde la base de
-datos local `pel_electoral`.
+El mapa y el modal de resultados usan datos reales del padron TSE 2026.
 
-Datos verificados durante la revision:
+Datos verificados el 06 junio 2026:
 
 - Padron importado: `3,731,788` registros en `voters`.
-- Padron nacional usado por el mapa: `3,664,518` inscritos.
-- Registros de exterior: `67,270`.
-- Juntas distintas en el campo `junta`: `7,154`.
+- Padron nacional usado por el mapa: `3,664,518` inscritos (province_id 1-7).
+- Registros de exterior (diaspora): `67,270`.
+- Juntas distintas en `voters.junta`: `7,154`.
 - Ultima carga completa verificada: `2026-06-01 17:49:50` a `2026-06-01 18:07:15`.
-- Cache de poblacion generado: `2026-06-02T06:01:53+00:00`.
 
-La fuente declarada por `api/poblacion.php` es `TSE 2026 - padron real`.
+Campos con datos en voters: `cedula`, `nombre`, `apellido1`, `apellido2`,
+`fecha_caduc`, `junta`, `province_id`, `canton_id`, `district_id`.
+
+Campos vacios en todos los registros: `sexo`, `fecha_nac`,
+`electoral_district_id`, `polling_place_id`. Estos limitan los reportes de
+segmentacion por edad/sexo y por distrito electoral hasta que se carguen desde
+una fuente oficial completa.
+
+La fuente declarada por `api/poblacion.php` es `TSE 2026 — padron real`.
 
 ## Alcance funcional actual
 
@@ -155,10 +161,22 @@ integrada al login de la aplicacion.
 
 ## Pendientes tecnicos conocidos
 
-- Actualizar textos visibles que aun mencionan poblacion simulada/no oficial.
-- Mostrar en la interfaz la fecha de ultima actualizacion oficial del TSE.
-- Integrar login contra la tabla `users`.
-- Completar modulos de Admin: usuarios, roles, carga de datos y pipelines.
+- Texto "Poblacion simulada (no oficial)" en `includes/layout/footer.php` aun
+  no fue corregido.
+- Mostrar `fuente` y `generado` de `api/poblacion.php` en la interfaz (footer o
+  panel lateral).
+- Integrar login contra la tabla `users` (hoy usa arreglo en `auth.php`).
+- Cargar `sexo` y `fecha_nac` desde la fuente TSE — hoy son NULL en todos los
+  registros, lo que bloquea segmentacion por edad y sexo.
+- Poblar `electoral_district_id` y `polling_place_id` en `voters`; hoy son NULL.
+  Las tablas `polling_places` (13 filas) y `electoral_districts` (10 filas) son
+  datos de prueba, no el catalogo real del TSE.
+- Crear reporte de inscritos por JRV (el campo `junta` existe en voters con
+  7,154 distintos, pero no hay pantalla de reporte dedicada).
+- Completar modulos de Admin: usuarios, roles, carga de datos y pipelines
+  (hoy son placeholders en el menu).
 - Formalizar migraciones completas del esquema base.
+- Cargar datos oficiales de resultados electorales historicos (requerido para
+  reportes de participacion, abstencion y comportamiento electoral).
 
 Fronteras: `schweini/CR_distritos_geojson`.

@@ -200,25 +200,43 @@ Pendiente:
 - Activar roles/permisos por modulo.
 - Revisar politicas de acceso antes de despliegue externo.
 
-## Valoracion de avance
+## Valoracion de avance (revisado 06 junio 2026)
 
-Segun la revision tecnica:
+Revision directa del codigo y la base de datos:
 
 - Para el alcance de mapa territorial + consulta de padron: avance aproximado
-  `55% - 65%`.
+  `60% - 70%`. El modal de padron ahora consulta datos reales (api/padron.php),
+  la estructura de vistas fue refactorizada y el mapa funciona con datos reales.
 - Para las expectativas completas de la minuta: avance aproximado `30% - 35%`.
+  Los reportes de participacion, JRV y segmentacion aun no existen.
 - Para la vision amplia de Partido Politico Digital: menos de `15%`, por ser un
-  alcance distinto.
+  alcance distinto y complementario.
+
+### Compromisos de la proxima sesion vs estado real
+
+| Compromiso (minuta) | Estado al 06-jun |
+|---|---|
+| Implementar identidad visual (paleta oficial) | Pendiente — paleta recibida por WhatsApp, no aplicada |
+| Mostrar fuente y fecha actualizacion TSE | Pendiente — API ya la expone, falta mostrarla en UI |
+| Reemplazar textos "simulado / no oficial" | Pendiente — footer aun dice "Poblacion simulada (no oficial)" |
+| Segmentacion por poblacion (territorial) | Parcial — funciona por volumen de padron, no por edad/sexo |
+| Analisis preliminar JRV | Pendiente — campo junta existe, falta reporte dedicado |
+| Reporte de participacion electoral | Bloqueado — faltan datos de votos emitidos / abstencion |
 
 ## Recomendacion de roadmap inmediato
 
-1. Cerrar el reporte actual de Padron Electoral -> Distribucion Territorial.
-2. Mostrar fuente y fecha de actualizacion TSE en la interfaz.
-3. Crear reporte de inscritos por JRV.
-4. Crear comparativos territoriales de padron.
-5. Definir y cargar fuentes oficiales de resultados electorales.
-6. Construir reportes de participacion y abstencion.
-7. Definir criterios de priorizacion territorial con el equipo politico.
+1. Corregir textos "simulado / no oficial" en footer.php (5 minutos).
+2. Mostrar fuente y fecha de actualizacion TSE en la interfaz (footer o panel).
+3. Aplicar paleta institucional oficial.
+4. Crear reporte de inscritos por JRV (datos disponibles: campo junta con 7,154
+   distintos — no requiere datos adicionales).
+5. Solicitar al TSE archivo completo con sexo, fecha_nac, district_id real.
+6. Crear comparativos territoriales de padron por provincia/canton/distrito.
+7. Definir y cargar fuentes oficiales de resultados electorales historicos
+   (requerido para participacion, abstencion, comportamiento electoral).
+8. Integrar login contra tabla users de la BD.
+9. Construir reportes de participacion y abstencion (bloqueado hasta paso 7).
+10. Definir criterios de priorizacion territorial con el equipo politico.
 
 ## Aclaracion de alcance
 
