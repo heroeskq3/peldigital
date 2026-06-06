@@ -30,6 +30,8 @@
   // (mucha poblacion). Misma rampa en light y dark.
   const RAMP = ["#dbeefb", "#aed8f2", "#7fb8e6", "#5793d6",
                 "#4470c2", "#3650a6", "#262d7e", "#150857"];
+  const CR_BOUNDS = L.latLngBounds([5.4, -87.4], [11.4, -82.0]);
+  const WORLD_BOUNDS = L.latLngBounds([-85, -360], [85, 360]);
   const TILES = {
     light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     dark:  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -121,7 +123,7 @@
     map = L.map("map", { zoomControl: true, minZoom: 6, maxZoom: 14 })
       .setView([9.75, -84.1], 8);
 
-    setBasemap();
+    restringirMapaNacional();
     actualizarIconoTema();
     setupMetrica();
     setupPadron();
@@ -629,8 +631,23 @@
     baseLayer = L.tileLayer(TILES[tema()], {
       attribution: '&copy; OpenStreetMap, &copy; CARTO',
       subdomains: "abcd",
+      noWrap: state.metrica !== "extranjero",
     }).addTo(map);
     baseLayer.bringToBack();
+  }
+
+  function restringirMapaNacional() {
+    map.setMinZoom(6);
+    map.setMaxBounds(CR_BOUNDS.pad(0.35));
+    map.options.maxBoundsViscosity = 1;
+    setBasemap();
+  }
+
+  function habilitarMapaMundial() {
+    map.setMinZoom(2);
+    map.setMaxBounds(WORLD_BOUNDS);
+    map.options.maxBoundsViscosity = 0;
+    setBasemap();
   }
 
   function actualizarIconoTema() {
@@ -858,11 +875,12 @@
     if (!capaDiaspora) return;
     capaDiaspora.remove();
     capaDiaspora = null;
-    map.setMinZoom(6);
+    restringirMapaNacional();
   }
 
   function dibujarDiaspora() {
     limpiarDiaspora();
+    habilitarMapaMundial();
     if (capa) { capa.remove(); capa = null; }
     featsActuales = [];
 
@@ -931,7 +949,6 @@
     });
 
     capaDiaspora = L.layerGroup(layers).addTo(map);
-    map.setMinZoom(2);
     map.invalidateSize(false);
     map.setView([20, 0], 2);
     actualizarLeyenda();
@@ -973,6 +990,7 @@
     if (state.metrica === "extranjero") { dibujarDiaspora(); return; }
     // Al salir de extranjero, limpiar burbujas y repintar el nivel CR.
     if (capaDiaspora) { limpiarDiaspora(); dibujarNivel(state.nivel || "provincia"); return; }
+    restringirMapaNacional();
     if (!featsActuales.length) return;
     escala = calcularEscala(featsActuales.map((f) => valorMapa(f.properties)).sort((a, b) => a - b));
     if (capa) {
