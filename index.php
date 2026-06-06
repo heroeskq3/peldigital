@@ -143,7 +143,7 @@ requerirLogin();
             <section class="panel">
                 <span class="label">Métrica</span>
                 <div class="seg" id="segMetrica">
-                    <button type="button" class="seg-btn active" data-metrica="electoral">Padrón</button>
+                    <button type="button" class="seg-btn active" data-metrica="electoral">Nacional</button>
                     <button type="button" class="seg-btn" data-metrica="extranjero">Extranjero</button>
                 </div>
                 <p id="metricaAyuda" class="muted small mb-0">

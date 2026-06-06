@@ -1,57 +1,113 @@
-# PEL Digital · Mapa de análisis poblacional de Costa Rica
+# PEL Digital
 
-Tablero interactivo de **analítica visual** sobre la población de Costa Rica, con
-mapa de calor (choropleth) y drill-down por **provincia → cantón → distrito**.
-Construido con **PHP + Leaflet**. Los datos son **simulados (no oficiales)**,
-generados de forma determinista para fines de demostración.
+Plataforma interna de analisis electoral y territorial para el Partido
+Esperanza y Libertad. El sistema actual consolida el primer reporte operativo:
+**Padron Electoral -> Distribucion Territorial**.
 
-## Características
+El reporte permite explorar la distribucion del padron nacional de Costa Rica y
+la poblacion electoral inscrita en el extranjero, con navegacion territorial,
+mapa interactivo y consulta paginada del padron real.
 
-- **Mapa de calor** con navegación jerárquica (provincia, cantón, distrito).
-- **Métricas seleccionables**:
-  - Padrón (domicilio electoral)
-  - Residencia (residencia real, vía matriz origen-destino)
-  - Saldo (diferencia padrón − residencia)
-  - Abstención
-  - Participación
-  - Extranjero (inscritos que residen en el exterior)
-- **Búsqueda** de regiones y selects encadenados.
-- **Resumen del nivel**, ranking Top 10 y leyenda de escala.
-- **Modal de resultados (padrón)** tipo DataTable con paginación, búsqueda
-  insensible a acentos y **exportación a Excel (CSV)**. Incluye cédula, nombre,
-  apellidos, edad, fecha de nacimiento, hijos, estado civil y lugar de votación
-  (provincia, cantón, distrito y centro).
-- **Login** con sesión PHP (`password_hash` / `password_verify`).
-- **Tema claro / oscuro** con preferencia persistida.
+## Estado actual
+
+- Reporte principal: **Analisis -> Padron Electoral -> Distribucion Territorial**.
+- Mapa nacional con drill-down por **provincia -> canton -> distrito**.
+- Modo **Nacional** restringido a Costa Rica.
+- Modo **Extranjero** con vista mundial de diaspora electoral.
+- Minimapa de contexto al navegar en cantones o distritos; al hacer clic vuelve
+  a la vista nacional y limpia filtros.
+- Consulta real del padron desde MySQL, con paginacion y busqueda por cedula,
+  nombre, apellidos o junta.
+- Exportacion CSV de la pagina visible del padron.
+- Busqueda territorial y selects encadenados.
+- Ranking Top 10, resumen del nivel y leyenda de escala.
+- Login por sesion PHP.
+- Bitacora basica de accesos e interacciones.
+- Tema claro / oscuro.
+
+## Datos
+
+El mapa y el modal de resultados usan datos reales cargados desde la base de
+datos local `pel_electoral`.
+
+Datos verificados durante la revision:
+
+- Padron importado: `3,731,788` registros en `voters`.
+- Padron nacional usado por el mapa: `3,664,518` inscritos.
+- Registros de exterior: `67,270`.
+- Juntas distintas en el campo `junta`: `7,154`.
+- Ultima carga completa verificada: `2026-06-01 17:49:50` a `2026-06-01 18:07:15`.
+- Cache de poblacion generado: `2026-06-02T06:01:53+00:00`.
+
+La fuente declarada por `api/poblacion.php` es `TSE 2026 - padron real`.
+
+## Alcance funcional actual
+
+### Incluido
+
+- Distribucion territorial del padron.
+- Concentracion de inscritos por provincia, canton y distrito.
+- Consulta de personas inscritas por region seleccionada.
+- Visualizacion de diaspora electoral por pais.
+- Navegacion y reset rapido a vista nacional.
+
+### No incluido aun
+
+- Personas que votaron.
+- Personas que no votaron.
+- Participacion electoral real.
+- Abstencion real.
+- Resultados electorales por partido/candidato.
+- Comparativos historicos.
+- Reportes de participacion por JRV.
+- Priorizacion automatica de zonas de campana.
+- Gestion completa de usuarios/roles desde interfaz.
+
+Esos puntos requieren cargar resultados electorales historicos y/o archivos
+oficiales adicionales, no solo el padron.
 
 ## Stack
 
-- PHP 8.x (servido vía XAMPP o `php -S`)
-- [Leaflet 1.9.4](https://leafletjs.com/) para el mapa
-- GeoJSON de fronteras (provincias, cantones, distritos)
-- HTML/CSS/JS sin frameworks de build
+- PHP 8.x
+- MySQL/MariaDB en XAMPP
+- Leaflet 1.9.4
+- HTML/CSS/JavaScript sin framework de build
+- GeoJSON de fronteras de Costa Rica
 
-## Estructura
+## Estructura principal
 
-```
+```text
 .
-├── index.php            # Tablero principal (protegido por login)
-├── login.php            # Pantalla de ingreso
-├── logout.php           # Cierre de sesión
-├── auth.php             # Sesión y verificación de credenciales
+├── index.php              # Tablero principal protegido por login
+├── login.php              # Pantalla de ingreso
+├── logout.php             # Cierre de sesion
+├── auth.php               # Sesion y credenciales actuales
 ├── api/
-│   └── poblacion.php    # API JSON de población dummy determinista
+│   ├── poblacion.php      # Agregados territoriales del padron
+│   ├── padron.php         # Consulta paginada del padron real
+│   ├── bitacora.php       # Lectura de bitacora
+│   └── log.php            # Registro de interacciones frontend
 ├── assets/
 │   ├── css/style.css
-│   ├── js/app.js        # Lógica de mapa, métricas y padrón
-│   └── img/             # Logos
-└── data/
-    ├── provincias.geojson
-    ├── cantones.geojson
-    └── distritos.geojson
+│   ├── js/app.js
+│   └── img/
+├── data/
+│   ├── provincias.geojson
+│   ├── cantones.geojson
+│   ├── distritos.geojson
+│   └── poblacion_cache.json
+├── lib/
+│   ├── db.php
+│   ├── bitacora.php
+│   └── parsers/PadronTSEParser.php
+└── scripts/
+    ├── import_distelec.php
+    ├── import_padron.php
+    ├── migrate.php
+    └── test_batch.php
 ```
 
-## Cómo ejecutar
+## Como ejecutar
 
 Con PHP integrado:
 
@@ -59,24 +115,40 @@ Con PHP integrado:
 php -S localhost:8099
 ```
 
-Luego abrir <http://localhost:8099/>. También funciona colocando la carpeta en
-`htdocs` de XAMPP.
+Luego abrir:
 
-## Acceso (demo)
-
-- Usuario: `demo`
-- Contraseña: `demo1234`
-
-Para agregar usuarios, generar un hash y añadirlo a `$USUARIOS` en `auth.php`:
-
-```bash
-php -r 'echo password_hash("tu-clave", PASSWORD_DEFAULT), PHP_EOL;'
+```text
+http://localhost:8099/
 ```
 
-## Nota sobre los datos
+Tambien funciona desde `htdocs` de XAMPP.
 
-Toda la población, abstención, residencia, padrón y datos personales del listado
-son **simulados** mediante un PRNG determinista (semilla por código de región).
-No representan cifras oficiales ni personas reales.
+## Acceso actual
+
+- Usuario: `demo`
+- Contrasena: `demo1234`
+
+La autenticacion actual usa un arreglo en `auth.php`. La base de datos ya tiene
+tablas de `users`, `roles` y `permissions`, pero esa gestion aun no esta
+integrada al login de la aplicacion.
+
+## Notas tecnicas
+
+- `api/padron.php` usa paginacion para evitar cargar millones de filas en el
+  navegador.
+- Las busquedas textuales del padron usan el indice FULLTEXT existente sobre
+  `nombre`, `apellido1` y `apellido2`.
+- Las busquedas numericas funcionan por prefijo de cedula o junta exacta.
+- En modo busqueda, el total puede mostrarse como estimado para evitar conteos
+  costosos sobre millones de registros.
+- El boton **Nacional** mantiene internamente la metrica `electoral`.
+
+## Pendientes tecnicos conocidos
+
+- Actualizar textos visibles que aun mencionan poblacion simulada/no oficial.
+- Mostrar en la interfaz la fecha de ultima actualizacion oficial del TSE.
+- Integrar login contra la tabla `users`.
+- Completar modulos de Admin: usuarios, roles, carga de datos y pipelines.
+- Formalizar migraciones completas del esquema base.
 
 Fronteras: `schweini/CR_distritos_geojson`.

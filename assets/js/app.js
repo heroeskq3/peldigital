@@ -25,6 +25,8 @@
   let featsActuales = [];    // features visibles del nivel actual
   let seleccionActual = null; // ultima region mostrada en el detalle
   let capaDiaspora = null;   // layer de burbujas mundo (metrica extranjero)
+  let miniMapControl = null;
+  let miniMapEl = null;
 
   // Rampa secuencial: azul claro (poca poblacion) -> morado-indigo
   // (mucha poblacion). Misma rampa en light y dark.
@@ -124,6 +126,7 @@
       .setView([9.75, -84.1], 8);
 
     restringirMapaNacional();
+    setupMiniMap();
     actualizarIconoTema();
     setupMetrica();
     setupPadron();
@@ -254,6 +257,7 @@
 
     actualizarPanel(nivel, feats);
     actualizarLeyenda();
+    await actualizarMiniMapa();
 
     // Resaltar una region concreta (buscador / select de distrito)
     if (resaltarCodigo && capasPorCodigo[resaltarCodigo]) {
@@ -350,6 +354,93 @@
       : codProvincia ? POB.provincias[codProvincia]?.nombre : "Nacional";
     logEvento("navegacion", `${nivel}: ${nombre || ""}`,
       { nivel, codProvincia, codCanton, codDistrito, metrica: state.metrica });
+  }
+
+  // ---- Minimapa de contexto ----
+  function setupMiniMap() {
+    miniMapControl = L.control({ position: "topright" });
+    miniMapControl.onAdd = () => {
+      miniMapEl = L.DomUtil.create("button", "mini-map-control d-none");
+      miniMapEl.type = "button";
+      miniMapEl.title = "Volver a vista nacional";
+      miniMapEl.setAttribute("aria-label", "Volver a vista nacional");
+      miniMapEl.addEventListener("click", () => navegarA("provincia", null, null, null));
+      L.DomEvent.disableClickPropagation(miniMapEl);
+      L.DomEvent.disableScrollPropagation(miniMapEl);
+      return miniMapEl;
+    };
+    miniMapControl.addTo(map);
+  }
+
+  function featurePath(feature, box, w, h, pad) {
+    if (!feature || !feature.geometry) return "";
+    const coords = feature.geometry.coordinates;
+    const polygons = feature.geometry.type === "Polygon" ? [coords]
+      : feature.geometry.type === "MultiPolygon" ? coords : [];
+    const lonSpan = box.maxLon - box.minLon || 1;
+    const latSpan = box.maxLat - box.minLat || 1;
+    const scale = Math.min((w - pad * 2) / lonSpan, (h - pad * 2) / latSpan);
+    const offsetX = pad + ((w - pad * 2) - lonSpan * scale) / 2;
+    const offsetY = pad + ((h - pad * 2) - latSpan * scale) / 2;
+    const project = ([lon, lat]) => [
+      offsetX + (lon - box.minLon) * scale,
+      h - offsetY - (lat - box.minLat) * scale,
+    ];
+
+    return polygons.map((poly) => poly.map((ring) => ring.map((pt, i) => {
+      const [x, y] = project(pt);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(" ") + " Z").join(" ")).join(" ");
+  }
+
+  function miniMapBox() {
+    return {
+      minLon: CR_BOUNDS.getWest(),
+      maxLon: CR_BOUNDS.getEast(),
+      minLat: CR_BOUNDS.getSouth(),
+      maxLat: CR_BOUNDS.getNorth(),
+    };
+  }
+
+  async function featureMiniMapa() {
+    if (state.nivel === "canton" && state.codProvincia) {
+      const fc = await getGeo("provincia");
+      return fc.features.find((f) => f.properties.codigo === state.codProvincia) || null;
+    }
+    if (state.nivel === "distrito" && state.codDistrito) {
+      const fc = await getGeo("distrito");
+      return fc.features.find((f) => f.properties.codigo === state.codDistrito) || null;
+    }
+    if (state.nivel === "distrito" && state.codCanton) {
+      const fc = await getGeo("canton");
+      return fc.features.find((f) => f.properties.codigo === state.codCanton) || null;
+    }
+    return null;
+  }
+
+  async function actualizarMiniMapa() {
+    if (!miniMapEl) return;
+    if (state.metrica === "extranjero" || state.nivel === "provincia") {
+      miniMapEl.classList.add("d-none");
+      miniMapEl.innerHTML = "";
+      return;
+    }
+
+    const provincias = await getGeo("provincia");
+    const activo = await featureMiniMapa();
+    const box = miniMapBox();
+    const w = 190, h = 136, pad = 3;
+    const base = provincias.features.map((f) =>
+      `<path class="mini-map-base" d="${featurePath(f, box, w, h, pad)}"></path>`
+    ).join("");
+    const highlight = activo
+      ? `<path class="mini-map-active" d="${featurePath(activo, box, w, h, pad)}"></path>`
+      : "";
+    const label = state.nivel === "canton" ? "Provincia activa" : "Cantón activo";
+    miniMapEl.innerHTML =
+      `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${base}${highlight}</svg>` +
+      `<span>${label}</span>`;
+    miniMapEl.classList.remove("d-none");
   }
 
   // ---- Panel lateral ----
@@ -881,6 +972,7 @@
   function dibujarDiaspora() {
     limpiarDiaspora();
     habilitarMapaMundial();
+    if (miniMapEl) miniMapEl.classList.add("d-none");
     if (capa) { capa.remove(); capa = null; }
     featsActuales = [];
 

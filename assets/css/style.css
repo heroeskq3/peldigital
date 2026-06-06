@@ -475,6 +475,50 @@ select.field {
 }
 .leaflet-control-attribution a { color: var(--text-muted) !important; }
 
+.mini-map-control {
+    width: 202px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    background: rgba(255, 255, 255, .94);
+    color: #18181b;
+    border: 1px solid rgba(20, 20, 24, .16);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+    padding: 7px;
+    cursor: pointer;
+    font-family: var(--font);
+    text-align: left;
+}
+.mini-map-control:hover { border-color: rgba(20, 20, 24, .34); }
+.mini-map-control:focus-visible { outline: 2px solid #150857; outline-offset: 2px; }
+.mini-map-control svg {
+    display: block;
+    width: 100%;
+    height: 136px;
+    background: #f4f4f5;
+    border-radius: 5px;
+}
+.mini-map-base {
+    fill: #ffffff;
+    stroke: #9ca3af;
+    stroke-width: .8;
+}
+.mini-map-active {
+    fill: rgba(21, 8, 87, .72);
+    stroke: #ff3b30;
+    stroke-width: 2.2;
+}
+.mini-map-control span {
+    display: block;
+    font-size: .68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #3f3f46;
+}
+
 /* ---------- Footer ---------- */
 .app-footer {
     height: var(--footer-h);
