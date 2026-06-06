@@ -1084,3 +1084,80 @@ select.field {
     .rp-filtros .field { flex: 1 1 100%; }
     .col-bar { display: none; }
 }
+
+/* ---- Análisis Estratégico JRV ---- */
+
+.rp-alerta {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+    background: color-mix(in srgb, #f59e0b 12%, var(--bg));
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius);
+    padding: .875rem 1rem;
+    font-size: .875rem;
+    color: var(--text);
+    line-height: 1.5;
+}
+.rp-alerta .bi { color: #d97706; font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+.rp-alerta strong { color: #92400e; }
+[data-theme="dark"] .rp-alerta strong { color: #fbbf24; }
+
+.rp-stat-nd { opacity: .55; }
+.rp-nd { color: var(--text-muted) !important; font-size: 1rem !important; }
+
+/* Leyenda de clasificación */
+.rp-leyenda {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: .8125rem;
+    color: var(--text-muted);
+    padding: .25rem 0;
+}
+.leyenda-item { display: flex; align-items: center; gap: .35rem; }
+.leyenda-nd   { font-style: italic; }
+
+.dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.dot-alta  { background: #16a34a; }
+.dot-media { background: #d97706; }
+.dot-baja  { background: #dc2626; }
+
+/* Badge de clasificación */
+.badge-clasif {
+    display: inline-block;
+    padding: .2rem .55rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.badge-alta  { background: #dcfce7; color: #15803d; }
+.badge-media { background: #fef3c7; color: #92400e; }
+.badge-baja  { background: #fee2e2; color: #b91c1c; }
+[data-theme="dark"] .badge-alta  { background: #14532d; color: #86efac; }
+[data-theme="dark"] .badge-media { background: #451a03; color: #fcd34d; }
+[data-theme="dark"] .badge-baja  { background: #450a0a; color: #fca5a5; }
+
+/* Barra de participación con color semáforo */
+.part-bar-wrap { display: flex; align-items: center; gap: .4rem; min-width: 80px; }
+.part-bar {
+    height: 8px;
+    border-radius: 4px;
+    min-width: 2px;
+    flex: 1;
+    transition: width .2s;
+}
+.part-bar-alta  { background: #16a34a; opacity: .8; }
+.part-bar-media { background: #d97706; opacity: .8; }
+.part-bar-baja  { background: #dc2626; opacity: .8; }
+.part-bar-nd    { background: var(--border); }
+
+/* Celdas N/D en tabla */
+.td-nd { color: var(--text-muted); font-size: .8rem; text-align: right; }

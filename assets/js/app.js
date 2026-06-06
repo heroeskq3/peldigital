@@ -919,6 +919,7 @@
         const id = b.dataset.reporte;
         cerrarTodo();
         if (id === "jrv-inscritos") abrirReporteJrv();
+        else if (id === "jrv-analisis") abrirReporteJrvAnalisis();
       });
     });
 
@@ -1394,6 +1395,139 @@
       clearTimeout(t);
       t = setTimeout(cargarBitacora, 250);
     });
+  }
+
+  // ---- Reporte Análisis Estratégico JRV ----
+
+  const ja = {
+    page: 1, size: 50, order: "desc",
+    province_id: "", canton_id: "", district_id: "",
+    total: 0, pages: 1,
+    loading: false, _inicializado: false,
+  };
+
+  const CLASIF_LABEL = { alta: "Alta", media: "Media", baja: "Baja" };
+
+  function jaParams() {
+    const p = new URLSearchParams({ page: ja.page, size: ja.size, order: ja.order });
+    if (ja.province_id) p.set("province_id", ja.province_id);
+    if (ja.canton_id)   p.set("canton_id",   ja.canton_id);
+    if (ja.district_id) p.set("geo5",        ja.district_id);
+    return p;
+  }
+
+  async function cargarJrvAnalisis() {
+    if (ja.loading) return;
+    ja.loading = true;
+    $("jaBody").innerHTML = `<tr><td colspan="12" class="bita-empty">Cargando…</td></tr>`;
+    try {
+      const r = await fetchJSON("api/jrv.php?" + jaParams());
+      ja.total = r.total; ja.pages = r.pages; ja.page = r.page;
+
+      $("jaStatJuntas").textContent    = fmt(r.stats.juntas);
+      $("jaStatInscritos").textContent = fmt(r.stats.total_inscritos);
+
+      renderJrvAnalisis(r.rows, r.page, r.size, r.stats.max_inscritos);
+      renderJaPager(r.page, r.pages, r.total);
+    } catch (e) {
+      $("jaBody").innerHTML = `<tr><td colspan="12" class="bita-empty">Error al cargar datos.</td></tr>`;
+      console.error(e);
+    }
+    ja.loading = false;
+  }
+
+  function renderJrvAnalisis(rows, page, size, maxInscritos) {
+    const frag = document.createDocumentFragment();
+    const base = (page - 1) * size;
+    rows.forEach((r, i) => {
+      const cl   = r.clasificacion || "baja";
+      const pct  = Math.round((r.inscritos / (maxInscritos || 1)) * 100);
+      const tr   = document.createElement("tr");
+      tr.innerHTML =
+        `<td class="mono rk-pos">${base + i + 1}</td>` +
+        `<td class="mono">${esc(r.junta)}</td>` +
+        `<td>${esc(r.provincia)}</td>` +
+        `<td>${esc(r.canton)}</td>` +
+        `<td>${esc(r.distrito)}</td>` +
+        `<td class="col-num">${fmt(r.inscritos)}</td>` +
+        `<td class="td-nd col-num">N/D</td>` +
+        `<td class="td-nd col-num">N/D</td>` +
+        `<td class="td-nd col-num">N/D</td>` +
+        `<td class="td-nd col-num">N/D</td>` +
+        `<td><span class="badge-clasif badge-${cl}">${CLASIF_LABEL[cl]}</span></td>` +
+        `<td class="col-bar"><div class="part-bar part-bar-${cl}" style="width:${pct}%"></div></td>`;
+      frag.appendChild(tr);
+    });
+    $("jaBody").innerHTML = "";
+    $("jaBody").appendChild(frag);
+  }
+
+  function renderJaPager(page, pages, total) {
+    $("jaInfo").textContent = `${fmt(total)} junta${total !== 1 ? "s" : ""}`;
+    $("jaPage").textContent = `${page} / ${pages}`;
+    $("jaFirst").disabled = $("jaPrev").disabled = page <= 1;
+    $("jaNext").disabled  = $("jaLast").disabled = page >= pages;
+  }
+
+  function setupJaFiltros() {
+    const selProv = $("jaProvincia");
+    const selCant = $("jaCanton");
+    const selDist = $("jaDistrito");
+
+    Object.entries(POB.provincias || {}).forEach(([id, p]) => {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = p.nombre;
+      selProv.appendChild(o);
+    });
+
+    selProv.addEventListener("change", () => {
+      ja.province_id = selProv.value; ja.canton_id = ""; ja.district_id = "";
+      selCant.innerHTML = '<option value="">Todos los cantones</option>';
+      selDist.innerHTML = '<option value="">Todos los distritos</option>';
+      selCant.disabled = !selProv.value; selDist.disabled = true;
+      if (selProv.value) {
+        Object.entries(POB.cantones || {})
+          .filter(([, c]) => c.cod_provincia === selProv.value)
+          .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([id, c]) => {
+            const o = document.createElement("option");
+            o.value = id; o.textContent = c.nombre; selCant.appendChild(o);
+          });
+      }
+      ja.page = 1; cargarJrvAnalisis();
+    });
+
+    selCant.addEventListener("change", () => {
+      ja.canton_id = selCant.value; ja.district_id = "";
+      selDist.innerHTML = '<option value="">Todos los distritos</option>';
+      selDist.disabled = !selCant.value;
+      if (selCant.value) {
+        Object.entries(POB.distritos || {})
+          .filter(([, d]) => d.cod_canton === selCant.value)
+          .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([geo5, d]) => {
+            const o = document.createElement("option");
+            o.value = geo5; o.textContent = d.nombre; selDist.appendChild(o);
+          });
+      }
+      ja.page = 1; cargarJrvAnalisis();
+    });
+
+    selDist.addEventListener("change", () => { ja.district_id = selDist.value; ja.page = 1; cargarJrvAnalisis(); });
+    $("jaPageSize").addEventListener("change", () => { ja.size = parseInt($("jaPageSize").value, 10); ja.page = 1; cargarJrvAnalisis(); });
+    $("jaBtnDesc").addEventListener("click", () => { ja.order = "desc"; $("jaBtnDesc").classList.add("active"); $("jaBtnAsc").classList.remove("active"); ja.page = 1; cargarJrvAnalisis(); });
+    $("jaBtnAsc").addEventListener("click",  () => { ja.order = "asc";  $("jaBtnAsc").classList.add("active");  $("jaBtnDesc").classList.remove("active"); ja.page = 1; cargarJrvAnalisis(); });
+    $("jaFirst").addEventListener("click", () => { ja.page = 1; cargarJrvAnalisis(); });
+    $("jaPrev").addEventListener("click",  () => { ja.page--; cargarJrvAnalisis(); });
+    $("jaNext").addEventListener("click",  () => { ja.page++; cargarJrvAnalisis(); });
+    $("jaLast").addEventListener("click",  () => { ja.page = ja.pages; cargarJrvAnalisis(); });
+  }
+
+  function abrirReporteJrvAnalisis() {
+    activarReporte("jrv-analisis");
+    logEvento("reporte_abrir", "JRV: Análisis Estratégico", {});
+    if (!ja._inicializado) { setupJaFiltros(); ja._inicializado = true; }
+    cargarJrvAnalisis();
   }
 
   function mostrarLoader() { $("loader").classList.remove("hidden"); }

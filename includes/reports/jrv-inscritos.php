@@ -2,8 +2,8 @@
 
     <div class="rp-head">
         <div>
-            <h1 class="rp-titulo">Inscritos por Junta Receptora de Votos</h1>
-            <p class="rp-sub muted">Distribución del padrón electoral 2026 por JRV · TSE Costa Rica</p>
+            <h1 class="rp-titulo">Distribución del Padrón por JRV</h1>
+            <p class="rp-sub muted">Electores inscritos por Junta Receptora de Votos · Padrón TSE 2026</p>
         </div>
     </div>
 

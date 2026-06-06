@@ -88,12 +88,22 @@ foreach ($rawRows as $r) {
     if ($cnt < $minInscritos) $minInscritos = $cnt;
     if ($cnt > $maxInscritos) $maxInscritos = $cnt;
 
+    // Clasificación proxy por volumen de padrón (sin datos de participación).
+    // Se actualizará a clasificación real cuando se carguen resultados TSE.
+    $clasificacion = $cnt >= 600 ? 'alta' : ($cnt >= 300 ? 'media' : 'baja');
+
     $rows[] = [
-        'junta'     => $r['junta'],
-        'provincia' => $provNames[$pId] ?? 'N/D',
-        'canton'    => $cantNames[$cId] ?? 'N/D',
-        'distrito'  => $distNames[$dId] ?? 'N/D',
-        'inscritos' => $cnt,
+        'junta'          => $r['junta'],
+        'provincia'      => $provNames[$pId] ?? 'N/D',
+        'canton'         => $cantNames[$cId] ?? 'N/D',
+        'distrito'       => $distNames[$dId] ?? 'N/D',
+        'inscritos'      => $cnt,
+        'clasificacion'  => $clasificacion,
+        // Campos de participación: null hasta cargar resultados electorales TSE.
+        'votaron'        => null,
+        'pct_part'       => null,
+        'pct_abs'        => null,
+        'oportunidad'    => null,
     ];
 }
 
