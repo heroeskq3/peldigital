@@ -703,6 +703,17 @@
         it.classList.remove("open");
         it.querySelector(".nav-link").setAttribute("aria-expanded", "false");
       });
+      nav.querySelectorAll(".dropdown-submenu.open").forEach((it) => {
+        it.classList.remove("open");
+        it.querySelector(".submenu-trigger")?.setAttribute("aria-expanded", "false");
+      });
+    };
+    const cerrarSubmenusHermanos = (submenu) => {
+      submenu.parentElement.querySelectorAll(":scope > .dropdown-submenu.open").forEach((it) => {
+        if (it === submenu) return;
+        it.classList.remove("open");
+        it.querySelector(".submenu-trigger")?.setAttribute("aria-expanded", "false");
+      });
     };
     const abrirDrawer = () => {
       nav.classList.add("open");
@@ -738,6 +749,17 @@
           item.classList.add("open");
           link.setAttribute("aria-expanded", "true");
         }
+      });
+    });
+
+    nav.querySelectorAll(".dropdown-submenu > .submenu-trigger").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const item = link.parentElement;
+        const abierto = item.classList.contains("open");
+        cerrarSubmenusHermanos(item);
+        item.classList.toggle("open", !abierto);
+        link.setAttribute("aria-expanded", String(!abierto));
       });
     });
 
@@ -967,35 +989,7 @@
     }
   }
 
-  // ---- Padron dummy + modal (DataTable) ----
-  const NOMBRES = ["José", "María", "Luis", "Ana", "Carlos", "Marta", "Juan", "Laura",
-    "Andrés", "Sofía", "Diego", "Carmen", "Manuel", "Rosa", "Pedro", "Elena", "Jorge",
-    "Patricia", "Roberto", "Gabriela", "Francisco", "Daniela", "Miguel", "Adriana",
-    "Rafael", "Natalia", "Fernando", "Paola", "Alberto", "Lucía", "Ricardo", "Verónica",
-    "Eduardo", "Andrea", "Mauricio", "Karla", "Esteban", "Tatiana", "Óscar", "Melissa"];
-  const APELLIDOS = ["Rodríguez", "González", "Jiménez", "Vargas", "Hernández", "Mora",
-    "Castro", "Rojas", "Solís", "Araya", "Ramírez", "Chinchilla", "Quesada", "Villalobos",
-    "Soto", "Brenes", "Alfaro", "Cordero", "Sánchez", "Fernández", "Camacho", "Arias",
-    "Salas", "Núñez", "Calderón", "Fonseca", "Madrigal", "Vega", "Picado", "Murillo",
-    "Ureña", "Barrantes", "Zúñiga", "Cambronero", "Montero", "Segura", "Bonilla",
-    "Aguilar", "Campos", "Méndez"];
-
-  const CAP_PADRON = 25000; // tope de filas generadas por region
-
-  function hashStr(s) {
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return h >>> 0;
-  }
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
+  // ---- Padrón real + modal (DataTable) ----
   function ctxRegion(p) {
     if (p.nivel === "diaspora") return "Diáspora · exterior";
     if (p.nivel === "pais") return "Nacional · Costa Rica";
@@ -1004,148 +998,149 @@
     return "Provincia";
   }
 
-  const SECTORES = ["CENTRO", "NORTE", "SUR", "ESTE", "OESTE"];
-
-  // Distritos que pertenecen a la region seleccionada (para el lugar de votacion).
-  function distritosDeRegion(p) {
-    if (p.nivel === "diaspora") return [];
-    if (p.nivel === "pais") return Object.values(POB.distritos);
-    if (p.nivel === "distrito") {
-      const d = POB.distritos[p.codigo];
-      return d ? [d] : [];
-    }
-    const campo = p.nivel === "canton" ? "cod_canton" : "cod_provincia";
-    return Object.values(POB.distritos).filter((d) => d[campo] === p.codigo);
-  }
-
-  function generarPersona(p, i, distritos) {
-    const rnd = mulberry32(hashStr(p.codigo + "-" + i));
-    const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
-    let nombre = pick(NOMBRES);
-    if (rnd() < 0.28) nombre += " " + pick(NOMBRES);
-    const ap1 = pick(APELLIDOS), ap2 = pick(APELLIDOS);
-    const edad = 18 + Math.floor(rnd() * 72);          // 18..89
-    const anio = new Date().getFullYear() - edad;
-    const mes = 1 + Math.floor(rnd() * 12);
-    const dia = 1 + Math.floor(rnd() * 28);
-    const d = distritos.length ? distritos[Math.floor(rnd() * distritos.length)] : null;
-    const provD = String((d && d.cod_provincia) || p.cod_provincia || p.codigo || "1")[0];
-    const c1 = 1000 + Math.floor(rnd() * 9000);
-    const c2 = 1000 + Math.floor(rnd() * 9000);
-    const fnac = `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${anio}`;
-    let estado;
-    const e = rnd();
-    if (edad < 22)        estado = e < 0.92 ? "Soltero/a" : "Casado/a";
-    else if (edad < 35)   estado = e < 0.50 ? "Soltero/a" : (e < 0.88 ? "Casado/a" : (e < 0.96 ? "Divorciado/a" : "Viudo/a"));
-    else if (edad < 60)   estado = e < 0.25 ? "Soltero/a" : (e < 0.70 ? "Casado/a" : (e < 0.90 ? "Divorciado/a" : "Viudo/a"));
-    else                  estado = e < 0.15 ? "Soltero/a" : (e < 0.55 ? "Casado/a" : (e < 0.72 ? "Divorciado/a" : "Viudo/a"));
-    const casado = estado === "Casado/a";
-    const hijos = casado
-      ? Math.floor(rnd() * 5)            // casados: 0..4
-      : (rnd() < 0.7 ? 0 : 1 + Math.floor(rnd() * 2)); // resto: en su mayoria 0
-    const vProv    = (d ? d.provincia : p.provincia || p.nombre || "").toUpperCase();
-    const vCanton  = (d ? d.canton : p.canton || p.nombre || "").toUpperCase();
-    const vDistrito = (d ? d.nombre : p.nombre || "").toUpperCase();
-    const vCentro  = d ? `${d.nombre} ${pick(SECTORES)}`.toUpperCase() : vDistrito;
-    return {
-      cedula: `${provD}-${c1}-${c2}`,
-      nombre, ap1, ap2, edad, fnac, hijos, estado,
-      vProv, vCanton, vDistrito, vCentro,
-      _n: norm(`${provD}${c1}${c2} ${nombre} ${ap1} ${ap2}`),
-    };
-  }
-
   function padronTotal(p) {
     const tabla = { provincia: "provincias", canton: "cantones", distrito: "distritos", pais: "paises", diaspora: "paises" }[p.nivel];
     return POB[tabla][p.codigo].poblacion;
   }
 
-  const padron = { data: [], filtrado: [], page: 0, size: 25, total: 0, truncado: false, p: null };
+  const padron = { rows: [], page: 1, size: 25, total: 0, pages: 1, estimated: false, q: "", p: null, loading: false };
 
   function abrirPadron() {
     const p = seleccionActual;
     if (!p) return;
-    const total = padronTotal(p);
-    const n = Math.min(total, CAP_PADRON);
-    const distritos = distritosDeRegion(p);
-    const data = new Array(n);
-    for (let i = 0; i < n; i++) data[i] = generarPersona(p, i, distritos);
-
-    padron.data = data;
-    padron.filtrado = data;
-    padron.page = 0;
+    padron.rows = [];
+    padron.page = 1;
     padron.size = parseInt($("padronPageSize").value, 10) || 25;
-    padron.total = total;
-    padron.truncado = total > CAP_PADRON;
+    padron.total = padronTotal(p);
+    padron.pages = 1;
+    padron.estimated = false;
+    padron.q = "";
     padron.p = p;
 
     $("padronTitulo").textContent = "Padrón · " + p.nombre;
-    $("padronSub").textContent = ctxRegion(p) + " · " + fmt(total) + " inscritos" +
-      (padron.truncado ? ` (mostrando primeros ${fmt(n)})` : "");
+    $("padronSub").textContent = ctxRegion(p) + " · cargando padrón real";
     $("padronBuscar").value = "";
-    renderPadron();
     $("padronModal").classList.remove("d-none");
+    renderPadronLoading();
+    cargarPadron();
     logEvento("padron_abrir", `Padrón · ${p.nombre}`,
-      { nivel: p.nivel, codigo: p.codigo, total });
+      { nivel: p.nivel, codigo: p.codigo, total: padron.total });
   }
 
   function cerrarPadron() { $("padronModal").classList.add("d-none"); }
 
   function filtrarPadron(q) {
-    const n = norm(q.trim());
-    padron.filtrado = n ? padron.data.filter((x) => x._n.includes(n)) : padron.data;
-    padron.page = 0;
-    renderPadron();
+    padron.q = q.trim();
+    padron.page = 1;
+    cargarPadron();
+  }
+
+  function padronParams() {
+    const p = padron.p;
+    const qs = new URLSearchParams({
+      nivel: p.nivel,
+      codigo: p.codigo,
+      page: String(padron.page),
+      size: String(padron.size),
+    });
+    if (padron.q) qs.set("q", padron.q);
+    return qs;
+  }
+
+  async function cargarPadron() {
+    if (!padron.p) return;
+    padron.loading = true;
+    renderPadronLoading();
+    try {
+      const r = await fetchJSON("api/padron.php?" + padronParams().toString());
+      padron.rows = r.rows || [];
+      padron.total = r.total || 0;
+      padron.page = r.page || 1;
+      padron.size = r.size || padron.size;
+      padron.pages = r.pages || 1;
+      padron.estimated = !!r.estimated;
+      padron.loading = false;
+      renderPadron();
+    } catch (e) {
+      padron.loading = false;
+      renderPadronError("No se pudo cargar el padrón real.");
+      console.error(e);
+    }
+  }
+
+  function renderPadronLoading() {
+    $("padronBody").innerHTML = `<tr><td colspan="8" class="bita-empty">Cargando padrón real…</td></tr>`;
+    $("padronInfo").textContent = "Consultando base de datos…";
+    $("pgNow").textContent = "";
+    $("pgFirst").disabled = $("pgPrev").disabled = $("pgLast").disabled = $("pgNext").disabled = true;
+  }
+
+  function renderPadronError(msg) {
+    $("padronBody").innerHTML = `<tr><td colspan="8" class="bita-empty">${esc(msg)}</td></tr>`;
+    $("padronInfo").textContent = msg;
+    $("pgNow").textContent = "";
+    $("pgFirst").disabled = $("pgPrev").disabled = $("pgLast").disabled = $("pgNext").disabled = true;
   }
 
   function renderPadron() {
-    const { filtrado, size } = padron;
-    const pages = Math.max(1, Math.ceil(filtrado.length / size));
-    const pg = Math.min(padron.page, pages - 1);
-    padron.page = pg;
-    const start = pg * size;
-    const slice = filtrado.slice(start, start + size);
-
     const body = $("padronBody");
     body.innerHTML = "";
+    if (!padron.rows.length) {
+      body.innerHTML = `<tr><td colspan="8" class="bita-empty">Sin coincidencias.</td></tr>`;
+    }
     const frag = document.createDocumentFragment();
-    slice.forEach((x) => {
+    padron.rows.forEach((x) => {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td class="mono">${x.cedula}</td><td>${x.nombre}</td>` +
-        `<td>${x.ap1} ${x.ap2}</td><td>${x.edad}</td>` +
-        `<td class="mono">${x.fnac}</td>` +
-        `<td>${x.hijos}</td><td>${x.estado}</td>` +
-        `<td>${x.vProv}</td><td>${x.vCanton}</td>` +
-        `<td>${x.vDistrito}</td><td>${x.vCentro}</td>`;
+        `<td class="mono">${esc(x.cedula || "")}</td>` +
+        `<td>${esc(x.nombre || "")}</td>` +
+        `<td>${esc([x.apellido1, x.apellido2].filter(Boolean).join(" "))}</td>` +
+        `<td class="mono">${esc(x.fecha_caduc || "N/D")}</td>` +
+        `<td class="mono">${esc(x.junta || "N/D")}</td>` +
+        `<td>${esc(x.provincia || "N/D")}</td>` +
+        `<td>${esc(x.canton || "N/D")}</td>` +
+        `<td>${esc(x.distrito || "N/D")}</td>`;
       frag.appendChild(tr);
     });
     body.appendChild(frag);
 
-    $("padronInfo").textContent = filtrado.length
-      ? `${fmt(start + 1)}–${fmt(start + slice.length)} de ${fmt(filtrado.length)}`
+    const start = padron.total ? ((padron.page - 1) * padron.size) + 1 : 0;
+    const end = Math.min(start + padron.rows.length - 1, padron.total);
+    const totalTxt = padron.estimated ? "más de " + fmt(Math.max(0, padron.total - 1)) : fmt(padron.total);
+    $("padronSub").textContent = ctxRegion(padron.p) + " · " + totalTxt + " inscritos reales";
+    $("padronInfo").textContent = padron.total
+      ? `${fmt(start)}–${fmt(end)} de ${padron.estimated ? "más de " + fmt(Math.max(0, padron.total - 1)) : fmt(padron.total)}`
       : "Sin coincidencias";
-    $("pgNow").textContent = `Pág. ${pg + 1} / ${pages}`;
-    $("pgFirst").disabled = $("pgPrev").disabled = pg === 0;
-    $("pgLast").disabled = $("pgNext").disabled = pg >= pages - 1;
+    $("pgNow").textContent = `Pág. ${padron.page} / ${padron.pages}`;
+    $("pgFirst").disabled = $("pgPrev").disabled = padron.page <= 1;
+    $("pgLast").disabled = $("pgNext").disabled = padron.page >= padron.pages;
   }
 
-  // Exporta el conjunto filtrado a CSV (lo abre Excel directamente).
+  // Exporta la página visible a CSV (lo abre Excel directamente).
   function exportarPadron() {
-    const rows = padron.filtrado;
+    const rows = padron.rows;
     if (!rows.length) return;
-    const head = ["Cédula", "Nombre", "Apellidos", "Edad", "Fecha de nacimiento", "Hijos", "Estado civil", "Provincia", "Cantón", "Distrito", "Centro de votación"];
+    const head = ["Cédula", "Nombre", "Apellidos", "Vence cédula", "Junta", "Provincia", "Cantón", "Distrito"];
     const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
     const lineas = ["sep=,", head.map(q).join(",")];
     rows.forEach((x) => {
-      lineas.push([x.cedula, x.nombre, `${x.ap1} ${x.ap2}`, x.edad, x.fnac, x.hijos, x.estado, x.vProv, x.vCanton, x.vDistrito, x.vCentro].map(q).join(","));
+      lineas.push([
+        x.cedula,
+        x.nombre,
+        [x.apellido1, x.apellido2].filter(Boolean).join(" "),
+        x.fecha_caduc || "N/D",
+        x.junta || "N/D",
+        x.provincia || "N/D",
+        x.canton || "N/D",
+        x.distrito || "N/D",
+      ].map(q).join(","));
     });
     // BOM para que Excel respete los acentos.
     const blob = new Blob(["﻿" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const slug = norm(padron.p?.nombre || "region").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `padron-${slug}.csv`;
+    a.download = `padron-${slug}-pagina-${padron.page}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1155,9 +1150,9 @@
   }
 
   function irPagina(n) {
-    const pages = Math.max(1, Math.ceil(padron.filtrado.length / padron.size));
-    padron.page = Math.max(0, Math.min(n, pages - 1));
-    renderPadron();
+    if (padron.loading) return;
+    padron.page = Math.max(1, Math.min(n, padron.pages));
+    cargarPadron();
   }
 
   function setupPadron() {
@@ -1177,13 +1172,13 @@
     });
     $("padronPageSize").addEventListener("change", (e) => {
       padron.size = parseInt(e.target.value, 10) || 25;
-      padron.page = 0;
-      renderPadron();
+      padron.page = 1;
+      cargarPadron();
     });
-    $("pgFirst").addEventListener("click", () => irPagina(0));
+    $("pgFirst").addEventListener("click", () => irPagina(1));
     $("pgPrev").addEventListener("click", () => irPagina(padron.page - 1));
     $("pgNext").addEventListener("click", () => irPagina(padron.page + 1));
-    $("pgLast").addEventListener("click", () => irPagina(Infinity));
+    $("pgLast").addEventListener("click", () => irPagina(padron.pages));
     $("btnExport").addEventListener("click", exportarPadron);
   }
 

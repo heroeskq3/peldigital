@@ -11,7 +11,7 @@ requerirLogin();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#150857">
-    <title>Población · Costa Rica</title>
+    <title>Distribución Territorial del Padrón Electoral · PEL Digital</title>
 
     <!-- Evita el parpadeo de tema: aplica el tema guardado antes de pintar -->
     <script>
@@ -56,8 +56,16 @@ requerirLogin();
                             <i class="bi bi-chevron-down nav-caret"></i>
                         </button>
                         <ul class="dropdown">
-                            <li><button class="dropdown-link" type="button" data-analisis="electoral"><i class="bi bi-clipboard-data"></i> Padrón electoral</button></li>
-                            <li><button class="dropdown-link" type="button" data-analisis="extranjero"><i class="bi bi-globe-americas"></i> Diáspora (extranjero)</button></li>
+                            <li class="dropdown-submenu">
+                                <button class="dropdown-link submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                                    <i class="bi bi-person-vcard"></i>
+                                    <span>Padrón Electoral</span>
+                                    <i class="bi bi-chevron-right submenu-caret"></i>
+                                </button>
+                                <ul class="dropdown submenu-list">
+                                    <li><button class="dropdown-link" type="button" data-analisis="electoral" title="Distribución Territorial del Padrón Electoral"><i class="bi bi-map"></i> Distribución Territorial</button></li>
+                                </ul>
+                            </li>
                         </ul>
                     </li>
                     <li class="nav-item has-dropdown">
@@ -226,7 +234,7 @@ requerirLogin();
             <div class="search-wrap modal-search">
                 <i class="bi bi-search search-ico"></i>
                 <input id="padronBuscar" type="text" class="field search-input"
-                       placeholder="Filtrar por cédula, nombre o apellidos…" autocomplete="off">
+                       placeholder="Filtrar por cédula, nombre, apellidos o junta…" autocomplete="off">
             </div>
             <select id="padronPageSize" class="field page-size">
                 <option value="25">25 / pág.</option>
@@ -244,14 +252,11 @@ requerirLogin();
                         <th>Cédula</th>
                         <th>Nombre</th>
                         <th>Apellidos</th>
-                        <th>Edad</th>
-                        <th>Nacimiento</th>
-                        <th>Hijos</th>
-                        <th>Estado civil</th>
+                        <th>Vence cédula</th>
+                        <th>Junta</th>
                         <th>Provincia</th>
                         <th>Cantón</th>
                         <th>Distrito</th>
-                        <th>Centro de votación</th>
                     </tr>
                 </thead>
                 <tbody id="padronBody"></tbody>

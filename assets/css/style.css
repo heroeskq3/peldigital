@@ -148,7 +148,8 @@ html, body {
 .dropdown {
     list-style: none; margin: 0; padding: 6px;
     position: absolute; top: calc(100% + 6px); left: 0;
-    min-width: 232px;
+    min-width: 300px;
+    max-width: 360px;
     background: #1b0b6b;
     border: 1px solid rgba(255, 255, 255, .14);
     border-radius: 12px;
@@ -158,13 +159,26 @@ html, body {
 .nav-item.open > .dropdown { display: block; animation: navPop .14s ease; }
 @keyframes navPop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
+.dropdown-submenu { position: relative; }
+.submenu-trigger { justify-content: flex-start; }
+.submenu-caret { margin-left: auto; font-size: .72rem; transition: transform .18s; }
+.dropdown-submenu.open > .submenu-trigger { background: rgba(255, 255, 255, .14); color: #fff; }
+.dropdown-submenu.open > .submenu-trigger .submenu-caret { transform: rotate(90deg); }
+.submenu-list {
+    top: -6px;
+    left: calc(100% + 8px);
+    min-width: 340px;
+}
+.dropdown-submenu.open > .submenu-list { display: block; animation: navPop .14s ease; }
+
 .dropdown-link {
     display: flex; align-items: center; gap: 10px;
     width: 100%; text-align: left;
     background: none; border: 0; cursor: pointer;
     color: #eef0ff; font: inherit; font-size: .86rem;
     padding: 9px 11px; border-radius: 8px;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.25;
     transition: background .12s, color .12s;
 }
 .dropdown-link i { font-size: 1rem; opacity: .85; width: 1.15em; text-align: center; }
@@ -767,12 +781,21 @@ select.field {
 
     .dropdown {
         position: static; min-width: 0;
+        max-width: none;
         background: rgba(255, 255, 255, .05);
         border: 0; box-shadow: none; border-radius: 8px;
         margin: 2px 6px 6px; padding: 4px;
         animation: none;
     }
     .dropdown-link { font-size: .95rem; padding: 12px 12px; }
+    .dropdown-submenu { position: static; }
+    .submenu-list {
+        position: static;
+        min-width: 0;
+        margin: 0 0 4px 26px;
+        background: rgba(255, 255, 255, .05);
+    }
+    .dropdown-submenu.open > .submenu-list { animation: none; }
 
     /* Acciones movidas al drawer: tema, reiniciar, cerrar sesión */
     .nav-tools {
