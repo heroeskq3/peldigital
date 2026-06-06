@@ -927,3 +927,160 @@ select.field {
         z-index: 1040;
     }
 }
+
+/* ================================================================
+   Reporte JRV — Inscritos por Junta Receptora de Votos
+   ================================================================ */
+
+.reporte-page {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    background: var(--bg);
+}
+
+.rp-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.rp-titulo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 .25rem;
+}
+
+.rp-sub {
+    font-size: .8125rem;
+    margin: 0;
+}
+
+/* Tarjetas de estadísticas */
+.rp-stats {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.rp-stat-card {
+    flex: 1 1 120px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .875rem 1rem;
+    text-align: center;
+}
+
+.rp-stat-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+    margin-bottom: .2rem;
+}
+
+.rp-stat-lbl {
+    font-size: .75rem;
+    color: var(--text-muted);
+}
+
+/* Filtros */
+.rp-filtros {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .75rem 1rem;
+}
+
+.rp-filtros .field {
+    flex: 1 1 160px;
+}
+
+.rp-order-wrap {
+    display: flex;
+    gap: .25rem;
+}
+
+.rp-order-wrap .seg-btn {
+    padding: .35rem .75rem;
+    font-size: .8rem;
+}
+
+/* Tabla */
+.rp-tabla-wrap {
+    flex: 1;
+    overflow: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.rp-tabla-wrap .dt {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+}
+
+.rp-tabla-wrap .dt th,
+.rp-tabla-wrap .dt td {
+    padding: .5rem .75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.rp-tabla-wrap .dt thead th {
+    background: var(--panel-alt, var(--border));
+    font-weight: 600;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.rp-tabla-wrap .dt tbody tr:hover {
+    background: var(--hover);
+}
+
+.col-num  { text-align: right !important; }
+.col-bar  { width: 120px; }
+.rk-pos   { color: var(--text-muted); width: 2.5rem; }
+
+.jrv-bar {
+    height: 8px;
+    background: var(--accent);
+    border-radius: 4px;
+    min-width: 2px;
+    opacity: .7;
+    transition: width .2s;
+}
+
+/* Pie de paginación */
+.rp-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: .5rem 0;
+}
+
+@media (max-width: 640px) {
+    .reporte-page { padding: 1rem .75rem; }
+    .rp-stat-card { flex: 1 1 calc(50% - .75rem); }
+    .rp-filtros .field { flex: 1 1 100%; }
+    .col-bar { display: none; }
+}

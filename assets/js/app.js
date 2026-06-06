@@ -905,10 +905,20 @@
     // Análisis predisenados: aplican una métrica con vista nacional.
     nav.querySelectorAll("[data-analisis]").forEach((b) => {
       b.addEventListener("click", () => {
+        activarReporte("padron-distribucion");
         navegarA("provincia", null, null, null);
         map.setView([9.75, -84.1], 8);
         seleccionarMetrica(b.dataset.analisis);
         cerrarTodo();
+      });
+    });
+
+    // Reportes completos (reemplazan la vista del mapa).
+    nav.querySelectorAll("[data-reporte]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const id = b.dataset.reporte;
+        cerrarTodo();
+        if (id === "jrv-inscritos") abrirReporteJrv();
       });
     });
 
@@ -1388,6 +1398,187 @@
 
   function mostrarLoader() { $("loader").classList.remove("hidden"); }
   function ocultarLoader() { $("loader").classList.add("hidden"); }
+
+  // ---- Switching entre reportes ----
+
+  let reporteActivo = "padron-distribucion"; // id del reporte visible
+
+  function activarReporte(id) {
+    // Oculta la vista del mapa o el reporte anterior
+    const appBody = document.querySelector(".app-body");
+    if (appBody) appBody.classList.toggle("d-none", id !== "padron-distribucion");
+
+    // Oculta todos los reportes y muestra el solicitado
+    document.querySelectorAll(".reporte-page").forEach((el) => el.classList.add("d-none"));
+    if (id !== "padron-distribucion") {
+      const panel = document.querySelector(`.reporte-page[data-report="${id}"]`);
+      if (panel) panel.classList.remove("d-none");
+    }
+
+    reporteActivo = id;
+  }
+
+  // ---- Reporte JRV: Inscritos por Junta Receptora de Votos ----
+
+  const jrv = {
+    page: 1, size: 50, order: "desc",
+    province_id: "", canton_id: "", district_id: "",
+    total: 0, pages: 1, maxInscritos: 1,
+    loading: false,
+  };
+
+  function jrvParams() {
+    const p = new URLSearchParams({ page: jrv.page, size: jrv.size, order: jrv.order });
+    if (jrv.province_id) p.set("province_id", jrv.province_id);
+    if (jrv.canton_id)   p.set("canton_id",   jrv.canton_id);
+    if (jrv.district_id) p.set("geo5",        jrv.district_id);
+    return p;
+  }
+
+  async function cargarJrv() {
+    if (jrv.loading) return;
+    jrv.loading = true;
+    $("jrvBody").innerHTML = `<tr><td colspan="7" class="bita-empty">Cargando…</td></tr>`;
+    try {
+      const r = await fetchJSON("api/jrv.php?" + jrvParams());
+      jrv.total  = r.total;
+      jrv.pages  = r.pages;
+      jrv.page   = r.page;
+      jrv.maxInscritos = r.stats.max_inscritos || 1;
+
+      // Stats
+      $("jrvStatJuntas").textContent = fmt(r.stats.juntas);
+      $("jrvStatTotal").textContent  = fmt(r.stats.total_inscritos);
+      $("jrvStatProm").textContent   = fmt(r.stats.promedio);
+      $("jrvStatMax").textContent    = fmt(r.stats.max_inscritos);
+      $("jrvStatMin").textContent    = fmt(r.stats.min_inscritos);
+
+      renderJrv(r.rows, r.page, r.size);
+      renderJrvPager(r.page, r.pages, r.total);
+    } catch (e) {
+      $("jrvBody").innerHTML = `<tr><td colspan="7" class="bita-empty">Error al cargar datos.</td></tr>`;
+      console.error(e);
+    }
+    jrv.loading = false;
+  }
+
+  function renderJrv(rows, page, size) {
+    const frag = document.createDocumentFragment();
+    const base  = (page - 1) * size;
+    rows.forEach((r, i) => {
+      const pct  = Math.round((r.inscritos / jrv.maxInscritos) * 100);
+      const tr   = document.createElement("tr");
+      tr.innerHTML =
+        `<td class="mono rk-pos">${base + i + 1}</td>` +
+        `<td class="mono">${esc(r.junta)}</td>` +
+        `<td>${esc(r.provincia)}</td>` +
+        `<td>${esc(r.canton)}</td>` +
+        `<td>${esc(r.distrito)}</td>` +
+        `<td class="col-num"><strong>${fmt(r.inscritos)}</strong></td>` +
+        `<td class="col-bar"><div class="jrv-bar" style="width:${pct}%"></div></td>`;
+      frag.appendChild(tr);
+    });
+    $("jrvBody").innerHTML = "";
+    $("jrvBody").appendChild(frag);
+  }
+
+  function renderJrvPager(page, pages, total) {
+    $("jrvInfo").textContent = `${fmt(total)} junta${total !== 1 ? "s" : ""}`;
+    $("jrvPage").textContent = `${page} / ${pages}`;
+    $("jrvFirst").disabled = $("jrvPrev").disabled = page <= 1;
+    $("jrvNext").disabled  = $("jrvLast").disabled = page >= pages;
+  }
+
+  function jrvSetOrder(order) {
+    jrv.order = order;
+    $("jrvBtnDesc").classList.toggle("active", order === "desc");
+    $("jrvBtnAsc").classList.toggle("active",  order === "asc");
+    jrv.page = 1;
+    cargarJrv();
+  }
+
+  function setupJrvFiltros() {
+    // Poblar provincias desde los datos ya cargados en POB
+    const selProv = $("jrvProvincia");
+    const selCant = $("jrvCanton");
+    const selDist = $("jrvDistrito");
+
+    Object.entries(POB.provincias || {}).forEach(([id, p]) => {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = p.nombre;
+      selProv.appendChild(o);
+    });
+
+    selProv.addEventListener("change", () => {
+      jrv.province_id = selProv.value;
+      jrv.canton_id = ""; jrv.district_id = "";
+      selCant.innerHTML = '<option value="">Todos los cantones</option>';
+      selDist.innerHTML = '<option value="">Todos los distritos</option>';
+      selCant.disabled = !selProv.value;
+      selDist.disabled = true;
+
+      if (selProv.value) {
+        Object.entries(POB.cantones || {})
+          .filter(([, c]) => c.cod_provincia === selProv.value)
+          .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([id, c]) => {
+            const o = document.createElement("option");
+            o.value = id; o.textContent = c.nombre;
+            selCant.appendChild(o);
+          });
+      }
+      jrv.page = 1; cargarJrv();
+    });
+
+    selCant.addEventListener("change", () => {
+      jrv.canton_id = selCant.value;
+      jrv.district_id = "";
+      selDist.innerHTML = '<option value="">Todos los distritos</option>';
+      selDist.disabled = !selCant.value;
+
+      if (selCant.value) {
+        Object.entries(POB.distritos || {})
+          .filter(([, d]) => d.cod_canton === selCant.value)
+          .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([geo5, d]) => {
+            const o = document.createElement("option");
+            // district_id real via subquery no disponible en POB; usamos geo5 solo para
+            // filtrar en la API que acepta district_id numerico. Omitir filtro por ahora.
+            o.value = geo5; o.textContent = d.nombre;
+            selDist.appendChild(o);
+          });
+      }
+      jrv.page = 1; cargarJrv();
+    });
+
+    selDist.addEventListener("change", () => {
+      jrv.district_id = selDist.value;
+      jrv.page = 1; cargarJrv();
+    });
+
+    $("jrvPageSize").addEventListener("change", () => {
+      jrv.size = parseInt($("jrvPageSize").value, 10);
+      jrv.page = 1; cargarJrv();
+    });
+
+    $("jrvBtnDesc").addEventListener("click", () => jrvSetOrder("desc"));
+    $("jrvBtnAsc").addEventListener("click",  () => jrvSetOrder("asc"));
+
+    $("jrvFirst").addEventListener("click", () => { jrv.page = 1; cargarJrv(); });
+    $("jrvPrev").addEventListener("click",  () => { jrv.page--; cargarJrv(); });
+    $("jrvNext").addEventListener("click",  () => { jrv.page++; cargarJrv(); });
+    $("jrvLast").addEventListener("click",  () => { jrv.page = jrv.pages; cargarJrv(); });
+  }
+
+  function abrirReporteJrv() {
+    activarReporte("jrv-inscritos");
+    logEvento("reporte_abrir", "JRV: Inscritos por Junta", {});
+    if (!jrv._inicializado) {
+      setupJrvFiltros();
+      jrv._inicializado = true;
+    }
+    cargarJrv();
+  }
 
   document.addEventListener("DOMContentLoaded", init);
 })();

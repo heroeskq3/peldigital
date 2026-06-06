@@ -33,6 +33,7 @@
                             </button>
                             <ul class="dropdown submenu-list">
                                 <li><button class="dropdown-link" type="button" data-analisis="electoral" title="Distribución Territorial del Padrón Electoral"><i class="bi bi-map"></i> Distribución Territorial</button></li>
+                                <li><button class="dropdown-link" type="button" data-reporte="jrv-inscritos" title="Inscritos por Junta Receptora de Votos"><i class="bi bi-list-ol"></i> Inscritos por JRV</button></li>
                             </ul>
                         </li>
                     </ul>
