@@ -1,6 +1,6 @@
-/* Mapa de calor de poblacion de Costa Rica — drill-down con Leaflet.
-   Niveles: provincia -> canton -> distrito.
-   Poblacion dummy desde api/poblacion.php; fronteras desde data/*.geojson. */
+/* PEL Digital — Distribución territorial del Padrón Electoral TSE 2026.
+   Niveles: provincia → cantón → distrito.
+   Datos: api/poblacion.php (padrón real TSE); fronteras: data/*.geojson. */
 
 (function () {
   "use strict";
@@ -138,6 +138,7 @@
 
     try {
       POB = await fetchJSON("api/poblacion.php");
+      actualizarFooterFuente(POB);
       construirNacional();
       construirDiaspora();
       construirIndice();
@@ -147,6 +148,18 @@
       alert("Error cargando datos: " + e.message);
       console.error(e);
     }
+    // Activar el reporte indicado por el servidor (window.ACTIVE_REPORT_ID)
+    const reportStatus = window.ACTIVE_REPORT_STATUS || "active";
+    const targetReport = window.ACTIVE_REPORT_ID || "padron-distribucion";
+    if ((reportStatus === "active" || reportStatus === "partial") && targetReport !== "padron-distribucion") {
+      if (targetReport === "jrv-inscritos")       abrirReporteJrv();
+      else if (targetReport === "jrv-analisis")   abrirReporteJrvAnalisis();
+      else if (targetReport === "segmentacion")   abrirReporteSegmentacion();
+      else if (targetReport === "participacion")        abrirReporteParticipacion();
+      else if (targetReport === "analisis-territorial") abrirAnalisisTerritorial();
+      else activarReporte(targetReport);
+    }
+
     ocultarLoader();
 
     $("btnReset").addEventListener("click", reiniciarVista);
@@ -182,6 +195,16 @@
     (POB.diaspora || []).forEach((d) => {
       POB.paises["ext:" + d.pais] = { nombre: d.pais, poblacion: d.votantes, extranjero: d.votantes };
     });
+  }
+
+  function actualizarFooterFuente(pob) {
+    const fuenteEl = document.getElementById("footerFuente");
+    const fechaEl  = document.getElementById("footerFecha");
+    if (fuenteEl && pob.fuente) fuenteEl.textContent = pob.fuente;
+    if (fechaEl && pob.padron_actualizado) {
+      const d = new Date(pob.padron_actualizado.replace(" ", "T"));
+      fechaEl.textContent = "· Actualizado: " + d.toLocaleDateString("es-CR", { year: "numeric", month: "long", day: "numeric" });
+    }
   }
 
   // ---- Bitácora: registro de interacciones (no bloquea la UI) ----
@@ -918,8 +941,11 @@
       b.addEventListener("click", () => {
         const id = b.dataset.reporte;
         cerrarTodo();
-        if (id === "jrv-inscritos") abrirReporteJrv();
-        else if (id === "jrv-analisis") abrirReporteJrvAnalisis();
+        if (id === "jrv-inscritos")       abrirReporteJrv();
+        else if (id === "jrv-analisis")   abrirReporteJrvAnalisis();
+        else if (id === "segmentacion")   abrirReporteSegmentacion();
+        else if (id === "participacion")        abrirReporteParticipacion();
+        else if (id === "analisis-territorial") abrirAnalisisTerritorial();
       });
     });
 
@@ -1569,10 +1595,22 @@
     return p;
   }
 
+  const JRV_STAT_IDS = ["jrvStatJuntas","jrvStatTotal","jrvStatProm","jrvStatMax","jrvStatMin"];
+
+  function jrvStatLoading(on) {
+    JRV_STAT_IDS.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.classList.toggle("stat-loading", on);
+      if (on) el.textContent = "—";
+    });
+  }
+
   async function cargarJrv() {
     if (jrv.loading) return;
     jrv.loading = true;
-    $("jrvBody").innerHTML = `<tr><td colspan="7" class="bita-empty">Cargando…</td></tr>`;
+    jrvStatLoading(true);
+    $("jrvBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="7"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
     try {
       const r = await fetchJSON("api/jrv.php?" + jrvParams());
       jrv.total  = r.total;
@@ -1580,7 +1618,7 @@
       jrv.page   = r.page;
       jrv.maxInscritos = r.stats.max_inscritos || 1;
 
-      // Stats
+      jrvStatLoading(false);
       $("jrvStatJuntas").textContent = fmt(r.stats.juntas);
       $("jrvStatTotal").textContent  = fmt(r.stats.total_inscritos);
       $("jrvStatProm").textContent   = fmt(r.stats.promedio);
@@ -1590,6 +1628,7 @@
       renderJrv(r.rows, r.page, r.size);
       renderJrvPager(r.page, r.pages, r.total);
     } catch (e) {
+      jrvStatLoading(false);
       $("jrvBody").innerHTML = `<tr><td colspan="7" class="bita-empty">Error al cargar datos.</td></tr>`;
       console.error(e);
     }
@@ -1702,6 +1741,260 @@
     $("jrvPrev").addEventListener("click",  () => { jrv.page--; cargarJrv(); });
     $("jrvNext").addEventListener("click",  () => { jrv.page++; cargarJrv(); });
     $("jrvLast").addEventListener("click",  () => { jrv.page = jrv.pages; cargarJrv(); });
+
+    const jrvExp = $("jrvExportar");
+    if (jrvExp) {
+      jrvExp.addEventListener("click", () => {
+        window.open("api/jrv.php?" + jrvParams() + "&format=csv");
+        logEvento("reporte_exportar", "JRV CSV", { filtros: jrvParams() });
+      });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SEGMENTACIÓN TERRITORIAL — paginación server-side (api/segmentacion.php)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const seg = {
+    nivel: "province", provinceId: null, cantonId: null,
+    page: 1, pages: 1, total: 0, size: 25, order: "desc", q: "",
+    _inicializado: false, _qTimer: null,
+  };
+
+  function abrirReporteSegmentacion() {
+    activarReporte("segmentacion");
+    logEvento("reporte_abrir", "Segmentación Electoral", {});
+    if (!seg._inicializado) { setupSegmentacion(); seg._inicializado = true; }
+    cargarSegmentacion();
+  }
+
+  function setupSegmentacion() {
+    // Tabs de nivel
+    document.querySelectorAll("[data-seg-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-seg-tab]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        seg.nivel = btn.dataset.segTab;
+        seg.provinceId = null; seg.cantonId = null; seg.page = 1; seg.q = "";
+        $("segBuscador").value = "";
+        $("segFiltProv").value = "";
+        $("segFiltCant").value = "";
+        $("segFiltCant").disabled = true;
+        cargarSegmentacion();
+      });
+    });
+
+    // Filtro provincia → pobla cantones en cascada
+    const selProv = $("segFiltProv");
+    if (POB && POB.provincias) {
+      Object.entries(POB.provincias)
+        .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+        .forEach(([id, p]) => {
+          const o = document.createElement("option");
+          o.value = id; o.textContent = p.nombre;
+          selProv.appendChild(o);
+        });
+    }
+    selProv.addEventListener("change", () => {
+      seg.provinceId = selProv.value ? parseInt(selProv.value) : null;
+      seg.cantonId = null; seg.page = 1;
+      $("segFiltCant").value = "";
+      poblarCantonesSeg(seg.provinceId);
+      cargarSegmentacion();
+    });
+
+    $("segFiltCant").addEventListener("change", () => {
+      const v = $("segFiltCant").value;
+      seg.cantonId = v ? parseInt(v) : null;
+      seg.page = 1;
+      cargarSegmentacion();
+    });
+
+    // Búsqueda con debounce
+    $("segBuscador").addEventListener("input", () => {
+      clearTimeout(seg._qTimer);
+      seg._qTimer = setTimeout(() => {
+        seg.q = $("segBuscador").value.trim(); seg.page = 1; cargarSegmentacion();
+      }, 300);
+    });
+
+    // Ordenamiento
+    $("segOrdDesc").addEventListener("click", () => {
+      $("segOrdDesc").classList.add("active"); $("segOrdAsc").classList.remove("active");
+      seg.order = "desc"; seg.page = 1; cargarSegmentacion();
+    });
+    $("segOrdAsc").addEventListener("click", () => {
+      $("segOrdAsc").classList.add("active"); $("segOrdDesc").classList.remove("active");
+      seg.order = "asc"; seg.page = 1; cargarSegmentacion();
+    });
+
+    $("segPageSize").addEventListener("change", () => {
+      seg.size = parseInt($("segPageSize").value) || 25; seg.page = 1; cargarSegmentacion();
+    });
+
+    // Exportar CSV
+    $("segExportar").addEventListener("click", () => {
+      const p = segParams(); p.set("format", "csv");
+      window.open("api/segmentacion.php?" + p.toString());
+      logEvento("reporte_exportar", "Segmentación CSV", { nivel: seg.nivel });
+    });
+
+    // Paginación
+    $("segFirst").addEventListener("click", () => { seg.page = 1; cargarSegmentacion(); });
+    $("segPrev").addEventListener("click",  () => { seg.page--; cargarSegmentacion(); });
+    $("segNext").addEventListener("click",  () => { seg.page++; cargarSegmentacion(); });
+    $("segLast").addEventListener("click",  () => { seg.page = seg.pages; cargarSegmentacion(); });
+  }
+
+  function poblarCantonesSeg(provinceId) {
+    const sel = $("segFiltCant");
+    sel.innerHTML = '<option value="">Todos los cantones</option>';
+    sel.disabled = !provinceId;
+    if (!provinceId || !POB || !POB.cantones) return;
+    const pId = String(provinceId);
+    Object.entries(POB.cantones)
+      .filter(([, c]) => String(c.cod_provincia) === pId)
+      .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+      .forEach(([id, c]) => {
+        const o = document.createElement("option");
+        o.value = id; o.textContent = c.nombre;
+        sel.appendChild(o);
+      });
+  }
+
+  function segParams() {
+    const p = new URLSearchParams({ nivel: seg.nivel, page: String(seg.page), size: String(seg.size), order: seg.order });
+    if (seg.provinceId) p.set("province_id", String(seg.provinceId));
+    if (seg.cantonId)   p.set("canton_id",   String(seg.cantonId));
+    if (seg.q)          p.set("q", seg.q);
+    return p;
+  }
+
+  function actualizarCabeceraSeg() {
+    const th1 = $("segThSub1"), th2 = $("segThSub2");
+    if (seg.nivel === "province") {
+      $("segThNombre").textContent = "Provincia";
+      th1.classList.add("d-none"); th2.classList.add("d-none");
+    } else if (seg.nivel === "canton") {
+      $("segThNombre").textContent = "Cantón";
+      th1.textContent = "Provincia"; th1.classList.remove("d-none"); th2.classList.add("d-none");
+    } else {
+      $("segThNombre").textContent = "Distrito";
+      th1.textContent = "Cantón";    th1.classList.remove("d-none");
+      th2.textContent = "Provincia"; th2.classList.remove("d-none");
+    }
+  }
+
+  const SEG_STAT_IDS = ["segStatTotal","segStatTerr","segStatMax","segStatProm","segStatM","segStatF","segStatN"];
+
+  function segStatLoading(on) {
+    SEG_STAT_IDS.forEach(id => $(id).classList.toggle("stat-loading", on));
+    if (on) SEG_STAT_IDS.forEach(id => { $(id).textContent = "—"; });
+    if (on) { $("segStatMPct").textContent = "—"; $("segStatFPct").textContent = "—"; $("segStatNPct").textContent = "—"; }
+  }
+
+  async function cargarSegmentacion() {
+    segStatLoading(true);
+    $("segBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="9"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
+    try {
+      const data = await fetchJSON("api/segmentacion.php?" + segParams().toString());
+      seg.pages = data.pages || 1;
+      seg.page  = data.page  || 1;
+      seg.total = data.total || 0;
+      segStatLoading(false);
+      renderSegmentacion(data);
+    } catch(e) {
+      segStatLoading(false);
+      $("segBody").innerHTML = `<tr><td colspan="9" class="bita-empty">Error al cargar datos.</td></tr>`;
+      console.error(e);
+    }
+  }
+
+  function renderSegmentacion(data) {
+    actualizarCabeceraSeg();
+
+    // KPI cards — inscritos
+    const s = data.stats || {};
+    $("segStatTotal").textContent = fmt(s.total_inscritos   || 0);
+    $("segStatTerr").textContent  = fmt(s.total_territorios || 0);
+    $("segStatMax").textContent   = fmt(s.max_inscritos     || 0);
+    $("segStatProm").textContent  = fmt(s.promedio          || 0);
+    const lblMap = { province: "Provincias", canton: "Cantones", district: "Distritos" };
+    $("segStatTerrLbl").textContent = lblMap[seg.nivel] || "Territorios";
+    $("segStatMaxLbl").textContent  = "Mayor " + (lblMap[seg.nivel] || "").slice(0, -2);
+
+    // KPI cards — sexo (totales nacionales, no cambian al filtrar)
+    $("segStatM").textContent    = fmt(s.total_m || 0);
+    $("segStatF").textContent    = fmt(s.total_f || 0);
+    $("segStatN").textContent    = fmt(s.total_n || 0);
+    $("segStatMPct").textContent = (s.pct_m || 0) + "%";
+    $("segStatFPct").textContent = (s.pct_f || 0) + "%";
+    $("segStatNPct").textContent = (s.pct_n || 0) + "%";
+
+    const body   = $("segBody");
+    const rows   = data.rows || [];
+    const offset = (seg.page - 1) * seg.size;
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="9" class="bita-empty">Sin resultados.</td></tr>`;
+    } else {
+      body.innerHTML = rows.map((r, i) => {
+        const idx = offset + i + 1;
+        const drillNivel  = seg.nivel === "province" ? "provincia" : seg.nivel === "canton" ? "canton" : "distrito";
+        const drillCodigo = seg.nivel === "district" ? r.geo5 : String(r.id);
+        const drillCtx    = seg.nivel === "canton" ? esc(r.provincia)
+                          : seg.nivel === "district" ? esc(r.canton) + ", " + esc(r.provincia)
+                          : "Provincia";
+        const sub1 = seg.nivel === "canton"   ? `<td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        const sub2 = seg.nivel === "district" ? `<td class="muted" style="font-size:.8rem">${esc(r.canton)}</td><td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        return `<tr>
+          <td class="col-num muted">${idx}</td>
+          <td><strong>${esc(r.nombre)}</strong></td>
+          ${sub1}${sub2}
+          <td class="col-num seg-col-drill">
+            <a href="#" data-drill-nivel="${drillNivel}" data-drill-codigo="${drillCodigo}"
+               data-drill-nombre="${esc(r.nombre)}" data-drill-total="${r.inscritos}"
+               data-drill-ctx="${drillCtx}" title="Ver inscritos en padrón">
+              <strong>${fmt(r.inscritos)}</strong>
+            </a>
+          </td>
+          <td class="col-num" style="color:#3b82f6;font-size:.85rem">${r.pct_m ?? "—"}%</td>
+          <td class="col-num" style="color:#ec4899;font-size:.85rem">${r.pct_f ?? "—"}%</td>
+          <td class="col-num muted">${r.pct.toFixed(2)}%</td>
+          <td class="col-bar"><div class="jrv-bar" style="width:${r.barra_pct}%"></div></td>
+        </tr>`;
+      }).join("");
+      body.querySelectorAll("a[data-drill-nivel]").forEach(a => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          abrirPadronConFiltro(a.dataset.drillNivel, a.dataset.drillCodigo,
+            a.dataset.drillNombre, parseInt(a.dataset.drillTotal, 10), a.dataset.drillCtx);
+        });
+      });
+    }
+
+    // Paginación
+    $("segFirst").disabled = seg.page <= 1;
+    $("segPrev").disabled  = seg.page <= 1;
+    $("segNext").disabled  = seg.page >= seg.pages;
+    $("segLast").disabled  = seg.page >= seg.pages;
+    $("segPages").textContent = "Pág. " + seg.page + " / " + seg.pages;
+    $("segTotal").textContent = fmt(seg.total) + " registros";
+  }
+
+  function abrirPadronConFiltro(nivel, codigo, nombre, totalConocido, ctx) {
+    const p = { nivel, codigo, nombre };
+    seleccionActual = p;
+    padron.rows = []; padron.page = 1;
+    padron.size = parseInt($("padronPageSize").value, 10) || 25;
+    padron.total = totalConocido || 0;
+    padron.pages = 1; padron.estimated = false; padron.q = ""; padron.p = p;
+    $("padronTitulo").textContent = "Padrón · " + nombre;
+    $("padronSub").textContent = (ctx || ctxRegion(p)) + " · cargando padrón real";
+    $("padronBuscar").value = "";
+    $("padronModal").classList.remove("d-none");
+    renderPadronLoading();
+    cargarPadron();
+    logEvento("padron_abrir", "Padrón · " + nombre, { nivel, codigo, total: totalConocido });
   }
 
   function abrirReporteJrv() {
@@ -1712,6 +2005,524 @@
       jrv._inicializado = true;
     }
     cargarJrv();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PARTICIPACIÓN ELECTORAL — server-side (api/participacion.php)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const part = {
+    nivel: "province", provinceId: null, cantonId: null,
+    runId: null, // null = usar el más reciente
+    page: 1, pages: 1, total: 0, size: 25, order: "desc", q: "",
+    _inicializado: false, _qTimer: null,
+  };
+
+  const PART_STAT_IDS = ["partStatPart","partStatAbs","partStatVotos","partStatInscritos","partStatMax","partStatMin"];
+
+  function partStatLoading(on) {
+    PART_STAT_IDS.forEach(id => {
+      const el = $(id); if (!el) return;
+      el.classList.toggle("stat-loading", on);
+      if (on) el.textContent = "—";
+    });
+  }
+
+  function abrirReporteParticipacion() {
+    activarReporte("participacion");
+    logEvento("reporte_abrir", "Participación Electoral", {});
+    if (!part._inicializado) { setupParticipacion(); part._inicializado = true; }
+    cargarParticipacion();
+  }
+
+  function setupParticipacion() {
+    document.querySelectorAll("[data-part-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-part-tab]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        part.nivel = btn.dataset.partTab;
+        part.provinceId = null; part.cantonId = null; part.page = 1; part.q = "";
+        $("partBuscador").value = "";
+        $("partFiltProv").value = "";
+        $("partFiltCant").value = "";
+        $("partFiltCant").disabled = true;
+        cargarParticipacion();
+      });
+    });
+
+    // Filtro provincia → cantones en cascada
+    const selProv = $("partFiltProv");
+    if (POB && POB.provincias) {
+      Object.entries(POB.provincias)
+        .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+        .forEach(([id, p]) => {
+          const o = document.createElement("option");
+          o.value = id; o.textContent = p.nombre;
+          selProv.appendChild(o);
+        });
+    }
+    selProv.addEventListener("change", () => {
+      part.provinceId = selProv.value ? parseInt(selProv.value) : null;
+      part.cantonId = null; part.page = 1;
+      $("partFiltCant").value = "";
+      poblarCantonesReporte("partFiltCant", part.provinceId);
+      cargarParticipacion();
+    });
+    $("partFiltCant").addEventListener("change", () => {
+      part.cantonId = $("partFiltCant").value ? parseInt($("partFiltCant").value) : null;
+      part.page = 1; cargarParticipacion();
+    });
+    $("partBuscador").addEventListener("input", () => {
+      clearTimeout(part._qTimer);
+      part._qTimer = setTimeout(() => { part.q = $("partBuscador").value.trim(); part.page = 1; cargarParticipacion(); }, 300);
+    });
+    $("partOrdDesc").addEventListener("click", () => {
+      $("partOrdDesc").classList.add("active"); $("partOrdAsc").classList.remove("active");
+      part.order = "desc"; part.page = 1; cargarParticipacion();
+    });
+    $("partOrdAsc").addEventListener("click", () => {
+      $("partOrdAsc").classList.add("active"); $("partOrdDesc").classList.remove("active");
+      part.order = "asc"; part.page = 1; cargarParticipacion();
+    });
+    $("partPageSize").addEventListener("change", () => {
+      part.size = parseInt($("partPageSize").value) || 25; part.page = 1; cargarParticipacion();
+    });
+    $("partExportar").addEventListener("click", () => {
+      const p = partParams(); p.set("format","csv");
+      window.open("api/participacion.php?" + p.toString());
+      logEvento("reporte_exportar", "Participación CSV", { nivel: part.nivel });
+    });
+    $("partFiltEleccion").addEventListener("change", () => {
+      const v = $("partFiltEleccion").value;
+      part.runId = v ? parseInt(v) : null;
+      part.page = 1; part.provinceId = null; part.cantonId = null;
+      $("partFiltProv").value = ""; $("partFiltCant").value = "";
+      $("partFiltCant").disabled = true;
+      cargarParticipacion();
+    });
+    $("partFirst").addEventListener("click", () => { part.page = 1; cargarParticipacion(); });
+    $("partPrev").addEventListener("click",  () => { part.page--; cargarParticipacion(); });
+    $("partNext").addEventListener("click",  () => { part.page++; cargarParticipacion(); });
+    $("partLast").addEventListener("click",  () => { part.page = part.pages; cargarParticipacion(); });
+    $("partTogglePartidos")?.addEventListener("click", () => {
+      const panel = $("partPartidosPanel");
+      panel?.classList.toggle("d-none");
+      const btn = $("partTogglePartidos");
+      if (btn) btn.innerHTML = panel?.classList.contains("d-none")
+        ? `<i class="bi bi-bar-chart-fill"></i> Ver desglose`
+        : `<i class="bi bi-chevron-up"></i> Ocultar`;
+    });
+  }
+
+  function poblarCantonesReporte(selectId, provinceId) {
+    const sel = $(selectId);
+    sel.innerHTML = '<option value="">Todos los cantones</option>';
+    sel.disabled = !provinceId;
+    if (!provinceId || !POB || !POB.cantones) return;
+    const pId = String(provinceId);
+    Object.entries(POB.cantones)
+      .filter(([, c]) => String(c.cod_provincia) === pId)
+      .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+      .forEach(([id, c]) => {
+        const o = document.createElement("option");
+        o.value = id; o.textContent = c.nombre;
+        sel.appendChild(o);
+      });
+  }
+
+  function partParams() {
+    const p = new URLSearchParams({ nivel: part.nivel, page: String(part.page), size: String(part.size), order: part.order });
+    if (part.runId)      p.set("run_id",      String(part.runId));
+    if (part.provinceId) p.set("province_id", String(part.provinceId));
+    if (part.cantonId)   p.set("canton_id",   String(part.cantonId));
+    if (part.q)          p.set("q", part.q);
+    return p;
+  }
+
+  function actualizarCabecerasPart() {
+    const th1 = $("partThSub1"), th2 = $("partThSub2");
+    if (part.nivel === "province") {
+      $("partThNombre").textContent = "Provincia";
+      th1.classList.add("d-none"); th2.classList.add("d-none");
+    } else if (part.nivel === "canton") {
+      $("partThNombre").textContent = "Cantón";
+      th1.textContent = "Provincia"; th1.classList.remove("d-none"); th2.classList.add("d-none");
+    } else {
+      $("partThNombre").textContent = "Distrito";
+      th1.textContent = "Cantón"; th1.classList.remove("d-none");
+      th2.textContent = "Provincia"; th2.classList.remove("d-none");
+    }
+    const lblMap = { province: "Mayor provincia", canton: "Mayor cantón", district: "Mayor distrito" };
+    $("partStatMaxLbl").textContent = lblMap[part.nivel] || "Mayor";
+    $("partStatMinLbl").textContent = lblMap[part.nivel]?.replace("Mayor","Menor") || "Menor";
+  }
+
+  async function cargarParticipacion() {
+    partStatLoading(true);
+    $("partBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="9"><span class="tbl-spinner"></span>Consultando resultados electorales…</td></tr>`;
+    try {
+      const data = await fetchJSON("api/participacion.php?" + partParams().toString());
+      if (data.error) {
+        partStatLoading(false);
+        $("partBody").innerHTML = `<tr><td colspan="9" class="bita-empty">${esc(data.error)}</td></tr>`;
+        return;
+      }
+      part.pages = data.pages || 1; part.page = data.page || 1; part.total = data.total || 0;
+      if (data.meta) $("partMetaLabel").textContent = data.meta.election_label || "";
+      // Poblar selector de elecciones (solo la primera vez)
+      if (data.elections?.length && !part._eleccionesOk) {
+        const sel = $("partFiltEleccion");
+        sel.innerHTML = "";
+        data.elections.forEach(e => {
+          const o = document.createElement("option");
+          o.value = e.id; o.textContent = e.election_label + " (" + (e.election_date || "—") + ")";
+          if (parseInt(e.id) === data.run_id) o.selected = true;
+          sel.appendChild(o);
+        });
+        part._eleccionesOk = true;
+      }
+      partStatLoading(false);
+      renderParticipacion(data);
+    } catch(e) {
+      partStatLoading(false);
+      $("partBody").innerHTML = `<tr><td colspan="9" class="bita-empty">Error al cargar datos.</td></tr>`;
+      console.error(e);
+    }
+  }
+
+  function renderParticipacion(data) {
+    actualizarCabecerasPart();
+    const s = data.stats || {};
+    $("partStatPart").textContent     = s.pct_part_global ? s.pct_part_global + "%" : "—";
+    $("partStatAbs").textContent      = s.pct_part_global ? (100 - parseFloat(s.pct_part_global)).toFixed(2) + "%" : "—";
+    $("partStatVotos").textContent    = fmt(parseInt(s.total_votos)     || 0);
+    $("partStatInscritos").textContent= fmt(parseInt(s.total_inscritos) || 0);
+    $("partStatMax").textContent      = s.max_part ? s.max_part + "%" : "—";
+    $("partStatMin").textContent      = s.min_part ? s.min_part + "%" : "—";
+
+    const rows   = data.rows || [];
+    const offset = (part.page - 1) * part.size;
+    const body   = $("partBody");
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="9" class="bita-empty">Sin resultados.</td></tr>`;
+    } else {
+      const maxPart = rows.reduce((m, r) => Math.max(m, r.pct_participacion), 0) || 1;
+      body.innerHTML = rows.map((r, i) => {
+        const idx    = offset + i + 1;
+        const barW   = Math.round(r.pct_participacion / 100 * 100);
+        const barCls = r.pct_participacion >= 70 ? "jrv-bar part-high"
+                     : r.pct_participacion >= 50 ? "jrv-bar part-mid"
+                     : "jrv-bar part-low";
+        const drillNivel  = part.nivel === "province" ? "provincia" : part.nivel === "canton" ? "canton" : "distrito";
+        const drillCodigo = part.nivel === "district" ? (r.geo5 || String(r.geo_id)) : String(r.geo_id);
+        const drillCtx    = part.nivel === "canton" ? esc(r.provincia)
+                          : part.nivel === "district" ? esc(r.canton) + ", " + esc(r.provincia)
+                          : "Provincia";
+        const sub1 = part.nivel === "canton"   ? `<td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        const sub2 = part.nivel === "district" ? `<td class="muted" style="font-size:.8rem">${esc(r.canton)}</td><td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        return `<tr>
+          <td class="col-num muted">${idx}</td>
+          <td><strong>${esc(r.geo_name)}</strong></td>
+          ${sub1}${sub2}
+          <td class="col-num"><strong style="color:${r.pct_participacion>=60?'var(--accent)':'var(--text)'}">${r.pct_participacion}%</strong></td>
+          <td class="col-num muted">${r.pct_abstencion}%</td>
+          <td class="col-num seg-col-drill">
+            <a href="#" data-drill-nivel="${drillNivel}" data-drill-codigo="${drillCodigo}"
+               data-drill-nombre="${esc(r.geo_name)}" data-drill-total="${r.inscritos}"
+               data-drill-ctx="${drillCtx}" title="Ver inscritos en padrón">
+              <strong>${fmt(r.inscritos)}</strong>
+            </a>
+          </td>
+          <td class="col-num muted">${fmt(r.votos_emitidos)}</td>
+          <td class="col-bar"><div class="${barCls}" style="width:${barW}%"></div></td>
+        </tr>`;
+      }).join("");
+      body.querySelectorAll("a[data-drill-nivel]").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          abrirPadronConFiltro(a.dataset.drillNivel, a.dataset.drillCodigo,
+            a.dataset.drillNombre, parseInt(a.dataset.drillTotal,10), a.dataset.drillCtx);
+        });
+      });
+    }
+    $("partFirst").disabled = part.page <= 1;
+    $("partPrev").disabled  = part.page <= 1;
+    $("partNext").disabled  = part.page >= part.pages;
+    $("partLast").disabled  = part.page >= part.pages;
+    $("partPages").textContent = "Pág. " + part.page + " / " + part.pages;
+    $("partTotal").textContent = fmt(part.total) + " registros";
+
+    // Desglose por partido
+    renderPartPartidos(data);
+  }
+
+  function renderPartPartidos(data) {
+    const breakdown = data.party_breakdown;
+    const wrap = $("partPartidosWrap");
+    if (!breakdown?.length) { if (wrap) wrap.classList.add("d-none"); return; }
+    if (wrap) wrap.classList.remove("d-none");
+    const totalVotos = breakdown.reduce((s, p) => s + p.votes, 0) || 1;
+    const lbl = $("partPartidosLabel");
+    if (lbl) lbl.textContent = `· ${fmt(breakdown.length)} partidos · ${fmt(totalVotos)} votos válidos`;
+    const panel = $("partPartidosPanel");
+    const body  = $("partPartidosBody");
+    if (!panel || !body) return;
+    body.innerHTML = breakdown.map(p => {
+      const pct = (p.votes / totalVotos * 100).toFixed(1);
+      const isPEL = p.code === 249;
+      const barColor = isPEL ? "var(--brand-yellow)" : "var(--accent)";
+      return `<div style="display:grid;grid-template-columns:80px 1fr 70px 90px;gap:.4rem;align-items:center;font-size:.82rem">
+        <span title="${esc(p.name)}" style="font-weight:600;${isPEL?'color:var(--brand-navy);background:var(--brand-yellow);padding:0 4px;border-radius:3px;':''}">${esc(p.abbrev)}</span>
+        <div style="background:var(--border-color);border-radius:3px;height:14px;overflow:hidden">
+          <div style="background:${barColor};height:100%;width:${pct}%;min-width:2px"></div>
+        </div>
+        <span class="muted" style="text-align:right">${pct}%</span>
+        <span class="muted" style="text-align:right">${fmt(p.votes)}</span>
+      </div>`;
+    }).join("");
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ANÁLISIS TERRITORIAL — comparativa entre elecciones (api/analisis_territorial.php)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const at = {
+    nivel: "canton", provinceId: null, cantonId: null,
+    runA: null, runB: null,
+    sort: "delta", order: "desc",
+    page: 1, pages: 1, total: 0, size: 25, q: "",
+    _inicializado: false, _qTimer: null,
+  };
+
+  const AT_STAT_IDS = ["atStatPartA","atStatPartB","atStatDelta","atStatTerritorios","atStatMaxDelta","atStatMinDelta"];
+
+  function atStatLoading(on) {
+    AT_STAT_IDS.forEach(id => {
+      const el = $(id); if (!el) return;
+      el.classList.toggle("stat-loading", on);
+      if (on) el.textContent = "—";
+    });
+  }
+
+  function abrirAnalisisTerritorial() {
+    activarReporte("analisis-territorial");
+    logEvento("reporte_abrir", "Análisis Territorial", {});
+    if (!at._inicializado) { setupAnalisisTerritorial(); at._inicializado = true; }
+    cargarAnalisisTerritorial();
+  }
+
+  function setupAnalisisTerritorial() {
+    document.querySelectorAll("[data-at-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-at-tab]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        at.nivel = btn.dataset.atTab;
+        at.provinceId = null; at.cantonId = null; at.page = 1; at.q = "";
+        $("atBuscador").value = "";
+        $("atFiltProv").value = "";
+        $("atFiltCant").value = "";
+        $("atFiltCant").disabled = true;
+        cargarAnalisisTerritorial();
+      });
+    });
+
+    const selProv = $("atFiltProv");
+    if (POB && POB.provincias) {
+      Object.entries(POB.provincias)
+        .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+        .forEach(([id, p]) => {
+          const o = document.createElement("option");
+          o.value = id; o.textContent = p.nombre;
+          selProv.appendChild(o);
+        });
+    }
+    selProv.addEventListener("change", () => {
+      at.provinceId = selProv.value ? parseInt(selProv.value) : null;
+      at.cantonId = null; at.page = 1;
+      $("atFiltCant").value = "";
+      poblarCantonesReporte("atFiltCant", at.provinceId);
+      cargarAnalisisTerritorial();
+    });
+    $("atFiltCant").addEventListener("change", () => {
+      at.cantonId = $("atFiltCant").value ? parseInt($("atFiltCant").value) : null;
+      at.page = 1; cargarAnalisisTerritorial();
+    });
+    $("atFiltEleccionA").addEventListener("change", () => {
+      at.runA = $("atFiltEleccionA").value ? parseInt($("atFiltEleccionA").value) : null;
+      at.page = 1; cargarAnalisisTerritorial();
+    });
+    $("atFiltEleccionB").addEventListener("change", () => {
+      at.runB = $("atFiltEleccionB").value ? parseInt($("atFiltEleccionB").value) : null;
+      at.page = 1; cargarAnalisisTerritorial();
+    });
+    $("atBuscador").addEventListener("input", () => {
+      clearTimeout(at._qTimer);
+      at._qTimer = setTimeout(() => { at.q = $("atBuscador").value.trim(); at.page = 1; cargarAnalisisTerritorial(); }, 300);
+    });
+    $("atOrdDesc").addEventListener("click", () => {
+      $("atOrdDesc").classList.add("active"); $("atOrdAsc").classList.remove("active");
+      at.order = "desc"; at.page = 1; cargarAnalisisTerritorial();
+    });
+    $("atOrdAsc").addEventListener("click", () => {
+      $("atOrdAsc").classList.add("active"); $("atOrdDesc").classList.remove("active");
+      at.order = "asc"; at.page = 1; cargarAnalisisTerritorial();
+    });
+    ["atSortPartA","atSortPartB","atSortDelta"].forEach(id => {
+      $(id)?.addEventListener("click", e => {
+        e.preventDefault();
+        const sortMap = {atSortPartA:"part_a", atSortPartB:"part_b", atSortDelta:"delta"};
+        at.sort = sortMap[id]; at.page = 1;
+        document.querySelectorAll("#atSortPartA,#atSortPartB,#atSortDelta").forEach(el => el.classList.remove("active"));
+        $(id).classList.add("active");
+        cargarAnalisisTerritorial();
+      });
+    });
+    $("atPageSize").addEventListener("change", () => {
+      at.size = parseInt($("atPageSize").value) || 25; at.page = 1; cargarAnalisisTerritorial();
+    });
+    $("atExportar").addEventListener("click", () => {
+      const p = atParams(); p.set("format","csv");
+      window.open("api/analisis_territorial.php?" + p.toString());
+      logEvento("reporte_exportar", "Análisis Territorial CSV", { nivel: at.nivel });
+    });
+    $("atFirst").addEventListener("click", () => { at.page = 1; cargarAnalisisTerritorial(); });
+    $("atPrev").addEventListener("click",  () => { at.page--; cargarAnalisisTerritorial(); });
+    $("atNext").addEventListener("click",  () => { at.page++; cargarAnalisisTerritorial(); });
+    $("atLast").addEventListener("click",  () => { at.page = at.pages; cargarAnalisisTerritorial(); });
+  }
+
+  function atParams() {
+    const p = new URLSearchParams({ nivel: at.nivel, page: String(at.page), size: String(at.size), order: at.order, sort: at.sort });
+    if (at.runA) p.set("run_a", String(at.runA));
+    if (at.runB) p.set("run_b", String(at.runB));
+    if (at.provinceId) p.set("province_id", String(at.provinceId));
+    if (at.cantonId && at.nivel === "district") p.set("canton_id", String(at.cantonId));
+    if (at.q) p.set("q", at.q);
+    return p;
+  }
+
+  async function cargarAnalisisTerritorial() {
+    atStatLoading(true);
+    $("atBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="9"><span class="tbl-spinner"></span>Comparando resultados electorales…</td></tr>`;
+    try {
+      const data = await fetchJSON("api/analisis_territorial.php?" + atParams().toString());
+      if (data.error) {
+        atStatLoading(false);
+        $("atBody").innerHTML = `<tr><td colspan="9" class="bita-empty">${esc(data.error)}</td></tr>`;
+        return;
+      }
+      at.pages = data.pages || 1; at.page = data.page || 1; at.total = data.total || 0;
+
+      // Actualizar etiquetas de las elecciones
+      const lblA = data.meta_a?.election_label || "Elección A";
+      const lblB = data.meta_b?.election_label || "Elección B";
+      $("atMetaLabel").textContent = lblA + " vs " + lblB;
+      $("atStatPartALbl").textContent = "Part. " + (data.meta_a?.election_date?.substring(0,4) || "A");
+      $("atStatPartBLbl").textContent = "Part. " + (data.meta_b?.election_date?.substring(0,4) || "B");
+      $("atSortPartA").textContent = "% " + (data.meta_a?.election_date?.substring(0,4) || "A");
+      $("atSortPartB").textContent = "% " + (data.meta_b?.election_date?.substring(0,4) || "B");
+
+      // Poblar selectores de elección (solo primera vez)
+      if (data.elections?.length && !at._eleccionesOk) {
+        const selA = $("atFiltEleccionA"), selB = $("atFiltEleccionB");
+        selA.innerHTML = ""; selB.innerHTML = "";
+        data.elections.forEach(e => {
+          const lbl = e.election_label + " (" + (e.election_date?.substring(0,4) || "—") + ")";
+          const oA = document.createElement("option"); oA.value = e.id; oA.textContent = lbl;
+          const oB = document.createElement("option"); oB.value = e.id; oB.textContent = lbl;
+          if (parseInt(e.id) === data.run_a) oA.selected = true;
+          if (parseInt(e.id) === data.run_b) oB.selected = true;
+          selA.appendChild(oA); selB.appendChild(oB);
+        });
+        at._eleccionesOk = true;
+      }
+
+      atStatLoading(false);
+      renderAnalisisTerritorial(data);
+    } catch(e) {
+      atStatLoading(false);
+      $("atBody").innerHTML = `<tr><td colspan="9" class="bita-empty">Error al cargar datos.</td></tr>`;
+      console.error(e);
+    }
+  }
+
+  function renderAnalisisTerritorial(data) {
+    const s = data.stats || {};
+    $("atStatPartA").textContent     = s.pct_global_a ? s.pct_global_a + "%" : "—";
+    $("atStatPartB").textContent     = s.pct_global_b ? s.pct_global_b + "%" : "—";
+    const delta = parseFloat(s.delta_global);
+    $("atStatDelta").textContent     = s.delta_global ? (delta > 0 ? "+" : "") + delta.toFixed(2) + " pp" : "—";
+    $("atStatDelta").style.color     = delta > 0 ? "#22c55e" : delta < 0 ? "#ef4444" : "";
+    $("atStatTerritorios").textContent = fmt(parseInt(s.territorios) || 0);
+    $("atStatMaxDelta").textContent  = s.max_delta ? "+" + s.max_delta + " pp" : "—";
+    $("atStatMinDelta").textContent  = s.min_delta ? s.min_delta + " pp" : "—";
+    const terrLblMap = { canton: "Cantones", district: "Distritos" };
+    $("atStatTerrLbl").textContent   = terrLblMap[at.nivel] || "Territorios";
+    $("atStatMaxLbl").textContent    = "Mayor diferencia";
+    $("atStatMinLbl").textContent    = "Menor diferencia";
+
+    // Cabeceras de tabla
+    if (at.nivel === "canton") {
+      $("atThNombre").textContent = "Cantón";
+      $("atThSub1").classList.add("d-none"); $("atThSub2").classList.add("d-none");
+    } else {
+      $("atThNombre").textContent = "Distrito";
+      $("atThSub1").textContent = "Cantón"; $("atThSub1").classList.remove("d-none");
+      $("atThSub2").textContent = "Provincia"; $("atThSub2").classList.remove("d-none");
+    }
+
+    const rows   = data.rows || [];
+    const offset = (at.page - 1) * at.size;
+    const body   = $("atBody");
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="9" class="bita-empty">Sin resultados para esta comparación.</td></tr>`;
+    } else {
+      const maxAbsDelta = rows.reduce((m, r) => Math.max(m, Math.abs(r.delta)), 0) || 1;
+      body.innerHTML = rows.map((r, i) => {
+        const idx     = offset + i + 1;
+        const deltaV  = r.delta;
+        const deltaSign = deltaV > 0 ? "+" : "";
+        const deltaColor = deltaV >= 10 ? "#22c55e" : deltaV >= 0 ? "var(--text-muted)" : "#ef4444";
+        const barW    = Math.round(Math.abs(deltaV) / maxAbsDelta * 100);
+        const barCls  = deltaV >= 10 ? "jrv-bar part-high"
+                      : deltaV >= 0  ? "jrv-bar part-mid"
+                      :                "jrv-bar part-low";
+        const drillNivel  = at.nivel === "canton" ? "canton" : "distrito";
+        const drillCodigo = at.nivel === "district" ? (r.geo5 || String(r.geo_id)) : String(r.geo_id);
+        const drillCtx    = at.nivel === "canton" ? esc(r.provincia) : esc(r.canton) + ", " + esc(r.provincia);
+        const sub1 = at.nivel === "canton"   ? `<td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        const sub2 = at.nivel === "district" ? `<td class="muted" style="font-size:.8rem">${esc(r.canton)}</td><td class="muted" style="font-size:.8rem">${esc(r.provincia)}</td>` : "";
+        return `<tr>
+          <td class="col-num muted">${idx}</td>
+          <td><strong>${esc(r.nombre)}</strong></td>
+          ${sub1}${sub2}
+          <td class="col-num">${r.pct_a}%</td>
+          <td class="col-num muted">${r.pct_b}%</td>
+          <td class="col-num"><strong style="color:${deltaColor}">${deltaSign}${deltaV} pp</strong></td>
+          <td class="col-num seg-col-drill">
+            <a href="#" data-drill-nivel="${drillNivel}" data-drill-codigo="${drillCodigo}"
+               data-drill-nombre="${esc(r.nombre)}" data-drill-total="${r.inscritos}"
+               data-drill-ctx="${drillCtx}" title="Ver inscritos en padrón">
+              <strong>${fmt(r.inscritos)}</strong>
+            </a>
+          </td>
+          <td class="col-bar"><div class="${barCls}" style="width:${barW}%"></div></td>
+        </tr>`;
+      }).join("");
+      body.querySelectorAll("a[data-drill-nivel]").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          abrirPadronConFiltro(a.dataset.drillNivel, a.dataset.drillCodigo,
+            a.dataset.drillNombre, parseInt(a.dataset.drillTotal,10), a.dataset.drillCtx);
+        });
+      });
+    }
+    $("atFirst").disabled = at.page <= 1;
+    $("atPrev").disabled  = at.page <= 1;
+    $("atNext").disabled  = at.page >= at.pages;
+    $("atLast").disabled  = at.page >= at.pages;
+    $("atPages").textContent = "Pág. " + at.page + " / " + at.pages;
+    $("atTotal").textContent = fmt(at.total) + " registros";
   }
 
   document.addEventListener("DOMContentLoaded", init);

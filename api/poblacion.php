@@ -177,13 +177,22 @@ foreach ($distritos as $geo5 => &$d) {
 }
 unset($d);
 
+// Obtener fecha de la última carga exitosa del padrón
+$syncRow = $pdo->query("
+    SELECT finished_at FROM padron_sync_runs
+    WHERE status = 'completed'
+    ORDER BY finished_at DESC LIMIT 1
+")->fetch(PDO::FETCH_ASSOC);
+$padronActualizado = $syncRow ? $syncRow['finished_at'] : null;
+
 $json = json_encode([
-    'provincias' => $provincias,
-    'cantones'   => $cantones,
-    'distritos'  => $distritos,
-    'diaspora'   => $diaspora,
-    'fuente'     => 'TSE 2026 — padrón real',
-    'generado'   => date('c'),
+    'provincias'        => $provincias,
+    'cantones'          => $cantones,
+    'distritos'         => $distritos,
+    'diaspora'          => $diaspora,
+    'fuente'            => 'Padrón Nacional Electoral · TSE 2026',
+    'padron_actualizado' => $padronActualizado,
+    'generado'          => date('c'),
 ], JSON_UNESCAPED_UNICODE);
 
 file_put_contents($cacheFile, $json);

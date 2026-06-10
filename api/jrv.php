@@ -2,26 +2,27 @@
 /**
  * api/jrv.php — Inscritos por Junta Receptora de Votos.
  *
- * Estrategia de dos pasos (igual que api/poblacion.php):
- *   1. GROUP BY sobre voters usando idx_voters_jrv(junta, district_id, province_id, canton_id).
- *   2. Enriquecer con nombres de geografía desde tablas pequeñas cargadas en memoria.
- *   3. Ordenar, paginar y calcular stats en PHP — un solo scan de BD.
+ * Usa summary_jrv (pre-agregada) para paginación SQL real con LIMIT/OFFSET.
+ * Sin scan sobre los 3.7M filas de voters en cada request.
  *
  * Params GET:
  *   province_id  int   filtra por provincia (1-7)
  *   canton_id    int   filtra por cantón
- *   geo5         str   filtra por distrito (código GeoJSON 5 dígitos, ej. "10101")
+ *   geo5         str   filtra por distrito (código geo5)
  *   page         int   página (default 1)
  *   size         int   filas por página (10-200, default 50)
  *   order        asc|desc  orden por inscritos (default desc)
+ *   format       json|csv
  */
-
 require __DIR__ . '/../auth.php';
 requerirLoginApi();
 require_once __DIR__ . '/../lib/db.php';
 
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
+$format = ($_GET['format'] ?? 'json') === 'csv' ? 'csv' : 'json';
+if ($format === 'json') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+}
 
 $pdo = dbConnect();
 
@@ -31,7 +32,7 @@ $page  = max(1, (int)($_GET['page']  ?? 1));
 $size  = max(10, min(200, (int)($_GET['size'] ?? 50)));
 $order = ($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-// Resolver geo5 → district_id numérico (si se pasa filtro de distrito)
+// Resolver geo5 → district_id
 $district_id = null;
 $geo5 = trim((string)($_GET['geo5'] ?? ''));
 if ($geo5 !== '') {
@@ -41,95 +42,76 @@ if ($geo5 !== '') {
     $district_id = $dStmt->fetchColumn() ?: null;
 }
 
-// ---- Paso 1: conteos por junta (cubiertos por idx_voters_jrv) ----
-$where  = ['junta IS NOT NULL', 'province_id BETWEEN 1 AND 7'];
+// ─── WHERE ────────────────────────────────────────────────────────────────────
+$where  = [];
 $params = [];
 if ($province_id) { $where[] = 'province_id = ?'; $params[] = $province_id; }
-if ($canton_id)   { $where[] = 'canton_id = ?';   $params[] = $canton_id;   }
+if ($canton_id)   { $where[] = 'canton_id   = ?'; $params[] = $canton_id;   }
 if ($district_id) { $where[] = 'district_id = ?'; $params[] = $district_id; }
-$whereSql = implode(' AND ', $where);
+$whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+$orderSql = "ORDER BY inscritos {$order}";
 
-$stmt = $pdo->prepare("
-    SELECT junta, district_id, province_id, canton_id, COUNT(*) AS cnt
-    FROM voters
-    WHERE {$whereSql}
-    GROUP BY junta, district_id, province_id, canton_id
+// ─── Stats y total ────────────────────────────────────────────────────────────
+$stRow = $pdo->prepare("
+    SELECT COUNT(*) AS juntas, SUM(inscritos) AS total_ins,
+           MAX(inscritos) AS max_ins, MIN(inscritos) AS min_ins
+    FROM summary_jrv {$whereSql}
 ");
-$stmt->execute($params);
-$rawRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stRow->execute($params);
+$st = $stRow->fetch(PDO::FETCH_ASSOC);
 
-// ---- Paso 2: tablas de geografía en memoria (pequeñas, sin JOIN sobre 3.7M filas) ----
-$provNames = [];
-foreach ($pdo->query("SELECT id, name FROM provinces")->fetchAll(PDO::FETCH_ASSOC) as $p) {
-    $provNames[(int)$p['id']] = $p['name'];
-}
-$cantNames = [];
-foreach ($pdo->query("SELECT id, name FROM cantons")->fetchAll(PDO::FETCH_ASSOC) as $c) {
-    $cantNames[(int)$c['id']] = $c['name'];
-}
-$distNames = [];
-foreach ($pdo->query("SELECT id, name FROM districts")->fetchAll(PDO::FETCH_ASSOC) as $d) {
-    $distNames[(int)$d['id']] = $d['name'];
-}
+$totalJuntas = (int)$st['juntas'];
+$sumInscritos = (int)$st['total_ins'];
+$maxInscritos = (int)$st['max_ins'];
+$minInscritos = (int)$st['min_ins'];
+$promedio     = $totalJuntas > 0 ? (int)round($sumInscritos / $totalJuntas) : 0;
 
-// ---- Enriquecer, calcular stats y ordenar en PHP ----
-$rows = [];
-$sumInscritos = 0;
-$minInscritos = PHP_INT_MAX;
-$maxInscritos = 0;
-
-foreach ($rawRows as $r) {
-    $cnt  = (int)$r['cnt'];
-    $pId  = (int)$r['province_id'];
-    $cId  = (int)$r['canton_id'];
-    $dId  = (int)$r['district_id'];
-
-    $sumInscritos += $cnt;
-    if ($cnt < $minInscritos) $minInscritos = $cnt;
-    if ($cnt > $maxInscritos) $maxInscritos = $cnt;
-
-    // Clasificación proxy por volumen de padrón (sin datos de participación).
-    // Se actualizará a clasificación real cuando se carguen resultados TSE.
-    $clasificacion = $cnt >= 600 ? 'alta' : ($cnt >= 300 ? 'media' : 'baja');
-
-    $rows[] = [
-        'junta'          => $r['junta'],
-        'provincia'      => $provNames[$pId] ?? 'N/D',
-        'canton'         => $cantNames[$cId] ?? 'N/D',
-        'distrito'       => $distNames[$dId] ?? 'N/D',
-        'inscritos'      => $cnt,
-        'clasificacion'  => $clasificacion,
-        // Campos de participación: null hasta cargar resultados electorales TSE.
-        'votaron'        => null,
-        'pct_part'       => null,
-        'pct_abs'        => null,
-        'oportunidad'    => null,
-    ];
-}
-
-$totalJuntas = count($rows);
-if ($totalJuntas === 0) {
-    $minInscritos = 0;
-}
-
-// Ordenar
-usort($rows, $order === 'asc'
-    ? static fn($a, $b) => $a['inscritos'] <=> $b['inscritos']
-    : static fn($a, $b) => $b['inscritos'] <=> $a['inscritos']
-);
-
-// Paginar
-$pages  = max(1, (int)ceil($totalJuntas / $size));
-$page   = min($page, $pages);
+$pages = max(1, (int)ceil($totalJuntas / $size));
+$page  = min($page, $pages);
 $offset = ($page - 1) * $size;
-$pageRows = array_slice($rows, $offset, $size);
+
+// ─── CSV ──────────────────────────────────────────────────────────────────────
+if ($format === 'csv') {
+    $csvStmt = $pdo->prepare(
+        "SELECT junta, provincia, canton, distrito, inscritos, clasificacion
+         FROM summary_jrv {$whereSql} {$orderSql} LIMIT 10000"
+    );
+    $csvStmt->execute($params);
+
+    $filename = 'jrv_inscritos_' . date('Ymd') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    echo "\xEF\xBB\xBF";
+    echo "Junta,Provincia,Cantón,Distrito,Inscritos,Clasificación\n";
+    while ($r = $csvStmt->fetch(PDO::FETCH_ASSOC)) {
+        echo implode(',', [
+            $r['junta'],
+            '"' . str_replace('"', '""', $r['provincia'])  . '"',
+            '"' . str_replace('"', '""', $r['canton'])     . '"',
+            '"' . str_replace('"', '""', $r['distrito'])   . '"',
+            $r['inscritos'],
+            $r['clasificacion'],
+        ]) . "\n";
+    }
+    exit;
+}
+
+// ─── Paginación SQL ───────────────────────────────────────────────────────────
+$pageStmt = $pdo->prepare("
+    SELECT junta, provincia, canton, distrito, inscritos, clasificacion,
+           NULL AS votaron, NULL AS pct_part, NULL AS pct_abs, NULL AS oportunidad
+    FROM summary_jrv {$whereSql} {$orderSql}
+    LIMIT {$size} OFFSET {$offset}
+");
+$pageStmt->execute($params);
+$pageRows = $pageStmt->fetchAll(PDO::FETCH_ASSOC);
 
 echo json_encode([
     'stats' => [
         'juntas'          => $totalJuntas,
-        'min_inscritos'   => $totalJuntas > 0 ? $minInscritos : 0,
+        'min_inscritos'   => $minInscritos,
         'max_inscritos'   => $maxInscritos,
-        'promedio'        => $totalJuntas > 0 ? (int)round($sumInscritos / $totalJuntas) : 0,
+        'promedio'        => $promedio,
         'total_inscritos' => $sumInscritos,
     ],
     'rows'  => $pageRows,

@@ -1,10 +1,45 @@
+<?php
+// Carga el catálogo de reportes desde la BD para construir el menú dinámicamente.
+// $pdo ya está disponible (inyectado por reports.php o index.php).
+$activeRid = $reportId ?? 0;
+
+try {
+    $navPdo = isset($pdo) ? $pdo : dbConnect();
+    $navStmt = $navPdo->query("
+        SELECT r.id, r.short_name, r.icon, r.status, r.php_file,
+               c.id AS cat_id, c.name AS cat_name, c.icon AS cat_icon, c.slug AS cat_slug
+        FROM reports r
+        JOIN report_categories c ON c.id = r.category_id
+        ORDER BY c.sort_order, r.sort_order
+    ");
+    $navReports = $navStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Agrupar por categoría
+    $navByCategory = [];
+    foreach ($navReports as $nr) {
+        $navByCategory[$nr['cat_id']] ??= [
+            'name' => $nr['cat_name'], 'icon' => $nr['cat_icon'],
+            'slug' => $nr['cat_slug'], 'reports' => []
+        ];
+        $navByCategory[$nr['cat_id']]['reports'][] = $nr;
+    }
+} catch (Exception $e) {
+    $navByCategory = [];
+}
+
+// Determina si hay algún reporte activo en una categoría (para marcar el trigger)
+function catHasActive(array $cat, int $activeRid): bool {
+    foreach ($cat['reports'] as $r) { if ($r['id'] === $activeRid) return true; }
+    return false;
+}
+?>
 <header class="app-header">
     <div class="header-left">
         <button id="btnMenu" class="icon-only menu-toggle" aria-label="Abrir menú"
                 aria-controls="mainNav" aria-expanded="false">
             <i class="bi bi-list"></i>
         </button>
-        <a class="brand" href="index.php" title="Inicio">
+        <a class="brand" href="reports.php?id=1" title="Inicio">
             <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
             <div class="brand-text">
                 <span class="brand-title">PEL Digital</span>
@@ -20,23 +55,47 @@
             </div>
             <ul class="nav-list">
                 <li class="nav-item has-dropdown">
-                    <button class="nav-link" type="button" aria-haspopup="true" aria-expanded="false">
+                    <button class="nav-link<?= $activeRid > 0 ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-graph-up"></i> <span>Análisis</span>
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
+                        <?php foreach ($navByCategory as $cat): ?>
                         <li class="dropdown-submenu">
-                            <button class="dropdown-link submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
-                                <i class="bi bi-person-vcard"></i>
-                                <span>Padrón Electoral</span>
+                            <button class="dropdown-link submenu-trigger<?= catHasActive($cat, $activeRid) ? ' submenu-trigger-active' : '' ?>"
+                                    type="button" aria-haspopup="true" aria-expanded="false">
+                                <i class="bi <?= htmlspecialchars($cat['icon']) ?>"></i>
+                                <span><?= htmlspecialchars($cat['name']) ?></span>
                                 <i class="bi bi-chevron-right submenu-caret"></i>
                             </button>
                             <ul class="dropdown submenu-list">
-                                <li><button class="dropdown-link" type="button" data-analisis="electoral" title="Distribución Territorial del Padrón Electoral"><i class="bi bi-map"></i> Distribución Territorial</button></li>
-                                <li><button class="dropdown-link" type="button" data-reporte="jrv-inscritos" title="Distribución del Padrón por JRV"><i class="bi bi-list-ol"></i> Distribución Padrón / JRV</button></li>
-                                <li><button class="dropdown-link" type="button" data-reporte="jrv-analisis" title="Análisis Estratégico de Juntas Receptoras de Votos"><i class="bi bi-bar-chart-steps"></i> Análisis Estratégico · JRV</button></li>
+                                <?php foreach ($cat['reports'] as $nr):
+                                    $isActive  = ($nr['id'] === $activeRid);
+                                    $isPending = ($nr['status'] !== 'active');
+                                    $linkClass = 'dropdown-link'
+                                        . ($isActive  ? ' report-active'  : '')
+                                        . ($isPending ? ' report-pending' : '');
+                                    $statusIcon = match($nr['status']) {
+                                        'pending' => '<i class="bi bi-lock-fill" title="Próximamente" style="font-size:.7rem;opacity:.45;margin-left:auto"></i>',
+                                        'partial' => '<i class="bi bi-hourglass-split" title="Parcialmente disponible" style="font-size:.7rem;opacity:.55;margin-left:auto;color:#d97706"></i>',
+                                        default   => ''
+                                    };
+                                ?>
+                                <li>
+                                    <a class="<?= $linkClass ?>"
+                                       href="reports.php?id=<?= $nr['id'] ?>"
+                                       data-report-id="<?= $nr['id'] ?>"
+                                       title="<?= htmlspecialchars($nr['short_name']) ?>">
+                                        <i class="bi <?= htmlspecialchars($nr['icon']) ?>"></i>
+                                        <span><?= htmlspecialchars($nr['short_name']) ?></span>
+                                        <span class="report-id-badge">#<?= $nr['id'] ?></span>
+                                        <?= $statusIcon ?>
+                                    </a>
+                                </li>
+                                <?php endforeach; ?>
                             </ul>
                         </li>
+                        <?php endforeach; ?>
                     </ul>
                 </li>
                 <li class="nav-item has-dropdown">

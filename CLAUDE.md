@@ -77,15 +77,82 @@ data/
   distritos.geojson              # Fronteras de los distritos
   poblacion_cache.json           # Cache de api/poblacion.php. Se regenera si tiene >1h.
 
+raw/                             # ARCHIVOS CRUDOS (fuentes originales — NO en git)
+  padron/                        # Descarga manual desde TSE (https://www.tse.go.cr/padron.html)
+    PADRON_COMPLETO.txt          #   427 MB — padron plano 2026 (8 campos, ~3.7M filas)
+    distelec.txt                 #   172 KB — catalogo geografico DISTELEC del TSE
+    Leame.txt                    #   Descripcion de formato del TSE
+  avr/                           # Descarga manual desde servicioselectorales.tse.go.cr
+    avr2026.json                 #   2.5 MB — resultados presidenciales 2026 (final)
+    avr2024.json                 #   1.3 MB — resultados municipales 2024 — Alcaldes
+    avr2022.json                 #   2.9 MB — resultados presidenciales 2022 1ra ronda
+    avr2022_ii.json              #   514 KB — resultados presidenciales 2022 2da ronda
+  geo/                           # Fuentes geograficas (GeoJSON ya en data/, esta carpeta
+                                 #   reservada para nuevas fuentes geo crudas)
+
 scripts/
   import_padron.php              # Importa el padron TSE a la tabla voters.
+                                 #   Uso: php scripts/import_padron.php --zip=raw/padron/padron.zip
+                                 #        php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt
   import_distelec.php            # Importa el catalogo DISTELEC (provincias/cantones/
                                  # distritos) a las tablas de geografia.
+                                 #   Uso: php scripts/import_distelec.php --file=raw/padron/distelec.txt
+  import_resultados.php          # Importa resultados electorales del AVR del TSE.
+                                 #   Uso: php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P
+                                 #        php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A
   migrate.php                    # Runner de migraciones SQL desde migrations/.
   test_batch.php                 # Pruebas de importacion por lotes.
 
 migrations/
   20260601_000003_diaspora_index.sql  # Indice de diaspora
+```
+
+## Pipeline de ingesta (ETL)
+
+Todas las fuentes de datos externas son **archivos descargables**. No se usan APIs
+en tiempo real. Los archivos se descargan manualmente (o via script de descarga),
+se depositan en `raw/`, y los scripts ETL los procesan sobre esa carpeta.
+
+| Fuente | Tipo | URL de descarga | Script ETL | Tablas destino |
+|---|---|---|---|---|
+| Padron TSE 2026 | TXT plano (427 MB) | tse.go.cr/padron.html | `scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt` | `voters` |
+| DISTELEC 2026 | TXT plano (172 KB) | incluido en ZIP del padron | `scripts/import_distelec.php --file=raw/padron/distelec.txt` | `provinces`, `cantons`, `districts` |
+| AVR2026 — Presidencia | JSON (2.5 MB) | tse.go.cr/APISVR2026/cortes/ultimo?corte=0 | `scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P` | `election_results` |
+| AVR2024 — Municipales | JSON (1.3 MB) | servicioselectorales.tse.go.cr/AVR2024/api/resultados/ | `scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A` | `election_results` |
+| AVR2022 1ra ronda | JSON (2.9 MB) | servicioselectorales.tse.go.cr/AVR2022/api/resultados/ | `scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P` | `election_results` |
+| AVR2022 2da ronda | JSON (514 KB) | servicioselectorales.tse.go.cr/AVR2022_II/api/resultados/ | `scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P` | `election_results` |
+| GeoJSON fronteras | JSON estatico | Incluido en repo (data/*.geojson) | No requiere ETL | Solo lectura JS |
+| Catalogo partidos | SQL manual | Construido desde Wikipedia + AVR | `scripts/migrate.php` | `parties` |
+| Lookup nombre→sexo | SQL en migracion | 321 nombres top del padron, clasificados manualmente | `scripts/enrich_sexo.php` | `voters.sexo` (via `name_gender_lookup`) |
+
+### Nota sobre los endpoints AVR del TSE
+
+Las URLs del TSE que terminan en `/api/resultados/` NO son APIs dinamicas. Son
+archivos JSON estaticos de resultado final. El TSE los llama "api" pero en produccion
+son equivalentes a un archivo descargable que no cambia una vez cerrado el escrutinio.
+La descarga en ambiente local se hizo via browser (mismo origen) por restricciones
+del WAF del TSE. En produccion usar curl con Referer apropiado.
+
+### Orden de ejecucion en un servidor nuevo
+
+```bash
+# 1. Migraciones de BD
+php scripts/migrate.php
+
+# 2. Catalogo geografico (prerequisito para padron y AVR)
+php scripts/import_distelec.php --file=raw/padron/distelec.txt
+
+# 3. Padron electoral
+php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt
+
+# 4. Resultados electorales (en cualquier orden)
+php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="Presidencia 2026"
+php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A --label="Municipal 2024"
+php scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P --label="Presidencial 2022 1ra"
+php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P --label="Presidencial 2022 2da"
+
+# 5. Enriquecer sexo via lookup de nombres (no requiere red)
+php scripts/enrich_sexo.php --batch=0
 ```
 
 ## Base de datos: tablas clave
@@ -107,7 +174,12 @@ migrations/
 Completos: `cedula`, `nombre`, `apellido1`, `apellido2`, `fecha_caduc`, `junta`,
 `province_id`, `canton_id`, `district_id`.
 
-Vacios (NULL en todos los registros): `sexo`, `fecha_nac`,
+Enriquecidos via ETL (no en el padron TSE original):
+- `sexo`: poblado con M/F/N via `scripts/enrich_sexo.php` usando lookup de nombres.
+  Distribucion: M=1,428,900 (38.3%), F=1,246,161 (33.4%), N=1,056,727 (28.3% sin match).
+  Lookup en tabla `name_gender_lookup` (321 nombres, top frecuentes del padron).
+
+Vacios (NULL en todos los registros): `fecha_nac`,
 `electoral_district_id`, `polling_place_id`.
 
 ### Convencion de codigos geograficos

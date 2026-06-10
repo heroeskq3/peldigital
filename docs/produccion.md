@@ -1,0 +1,218 @@
+# Guía de despliegue en producción — PEL Digital
+
+## Requisitos del servidor
+
+| Componente | Versión mínima | Notas |
+|---|---|---|
+| PHP | 8.1+ | Extensions: pdo_mysql, mbstring, json |
+| MySQL / MariaDB | 10.6+ / 8.0+ | InnoDB, FULLTEXT habilitado |
+| Apache / Nginx | Cualquiera reciente | mod_rewrite si se usa Apache |
+| Disco disponible | ≥ 10 GB | Padrón 427 MB + BD ~2-3 GB |
+| RAM | ≥ 2 GB | Importación del padrón usa ~512 MB en pico |
+
+## Checklist de preparación en producción
+
+### 1. Código fuente
+
+```bash
+# Clonar o copiar el repositorio
+git clone <repo-url> /var/www/pel_02
+cd /var/www/pel_02
+
+# Verificar que .gitignore excluye correctamente los archivos grandes
+# (los archivos raw/ NO están en el repo — descargarlos manualmente, ver sección 3)
+```
+
+### 2. Configurar la BD
+
+```bash
+mysql -u root -p
+
+CREATE DATABASE pel_electoral CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'pel_user'@'localhost' IDENTIFIED BY 'CAMBIAR_PASSWORD_SEGURO';
+GRANT ALL PRIVILEGES ON pel_electoral.* TO 'pel_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+**IMPORTANTE**: En producción cambiar credenciales en `lib/db.php`:
+```php
+// lib/db.php — cambiar estos valores
+$host = '127.0.0.1';
+$db   = 'pel_electoral';
+$user = 'pel_user';        // ← cambiar de root
+$pass = 'NUEVO_PASSWORD';  // ← agregar password real
+```
+
+### 3. Ejecutar todas las migraciones
+
+```bash
+php scripts/migrate.php
+```
+
+Verificar que aplica todas las migraciones en orden:
+```
+20260601_000001_base_schema.sql
+20260601_000002_padron_bronze.sql
+20260601_000003_diaspora_index.sql
+20260606_000004_reports_catalog.sql
+20260609_000005_segmentacion_report.sql
+20260609_000006_election_results.sql
+20260610_000007_summary_tables.sql
+20260610_000008_parties_catalog.sql
+20260610_000009_voters_fecha_nac.sql
+20260610_000010_name_gender_lookup.sql
+20260610_000011_voter_enrichments.sql
+20260610_000012_summary_sexo.sql
+```
+
+### 4. Descargar los archivos de datos crudos
+
+Crear la estructura de carpetas:
+```bash
+mkdir -p raw/padron raw/avr raw/geo
+```
+
+**Padrón TSE 2026 (archivo más grande — 427 MB)**
+- URL: https://www.tse.go.cr/padron.html
+- Descargar el ZIP, extraer:
+  - `PADRON_COMPLETO.txt` → copiar a `raw/padron/`
+  - `distelec.txt` → copiar a `raw/padron/`
+  - `Leame.txt` → copiar a `raw/padron/`
+
+**Resultados electorales AVR (archivos JSON estáticos del TSE)**
+- `avr2026.json` (2.5 MB) → `raw/avr/`
+  - Presidencia 2026: `https://www.tse.go.cr/APISVR2026/cortes/ultimo?corte=0`
+- `avr2024.json` (1.3 MB) → `raw/avr/`
+  - Municipal 2024 (requiere acceso a la herramienta del TSE)
+- `avr2022.json` (2.9 MB) → `raw/avr/`
+  - Presidencial 2022 1ra ronda
+- `avr2022_ii.json` (514 KB) → `raw/avr/`
+  - Presidencial 2022 2da ronda
+
+> **Nota sobre el WAF del TSE**: Las descargas de AVR pueden requerir hacerlas desde un browser con el Referer correcto del dominio TSE, ya que el WAF Radware bloquea curl directo desde servidores externos. En desarrollo local se hicieron desde el browser.
+
+### 5. Ejecutar el pipeline ETL
+
+```bash
+# Paso 1: Catálogo geográfico (prerequisito — ~30 segundos)
+php scripts/import_distelec.php --file=raw/padron/distelec.txt
+
+# Paso 2: Padrón completo (~20 minutos en servidor moderno)
+php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt
+
+# Verificar: debe mostrar ~3,731,788 registros
+php -r "require_once 'lib/db.php'; echo dbConnect()->query('SELECT COUNT(*) FROM voters')->fetchColumn();"
+
+# Paso 3: Enriquecer sexo (~51 segundos — no requiere red)
+php scripts/enrich_sexo.php --batch=0
+
+# Paso 4: Resultados electorales
+php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="Presidencia 2026"
+php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A --label="Municipal 2024"
+php scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P --label="Presidencial 2022 1ra"
+php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P --label="Presidencial 2022 2da"
+```
+
+### 6. Verificar que las tablas de resumen tienen datos
+
+```sql
+SELECT 'provincias' AS tabla, COUNT(*), SUM(inscritos) FROM summary_inscritos_provincia
+UNION ALL
+SELECT 'cantones',  COUNT(*), SUM(inscritos) FROM summary_inscritos_canton
+UNION ALL
+SELECT 'distritos', COUNT(*), SUM(inscritos) FROM summary_inscritos_distrito;
+```
+
+Si alguna está vacía, regenerar:
+```bash
+# Forzar regeneración del caché de la API
+curl http://localhost/pel_02/api/poblacion.php?refresh=1
+```
+
+### 7. Configurar el servidor web (Apache)
+
+```apache
+<VirtualHost *:80>
+    ServerName pel.tudominio.com
+    DocumentRoot /var/www/pel_02
+
+    <Directory /var/www/pel_02>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Proteger carpetas sensibles
+    <DirectoryMatch "^/var/www/pel_02/(raw|migrations|scripts|lib)">
+        Require all denied
+    </DirectoryMatch>
+</VirtualHost>
+```
+
+**CRÍTICO**: Las carpetas `raw/`, `migrations/`, `scripts/`, `lib/` NO deben ser accesibles desde el browser.
+
+### 8. Seguridad en producción
+
+- [ ] Cambiar credenciales de BD en `lib/db.php`
+- [ ] Cambiar contraseñas en `auth.php` (array `$USUARIOS`) con nuevos hashes bcrypt
+- [ ] Deshabilitar display_errors en php.ini: `display_errors = Off`
+- [ ] Configurar `error_log` a un archivo fuera del webroot
+- [ ] Bloquear acceso a carpetas sensibles en el servidor web (ver sección 7)
+- [ ] Habilitar HTTPS (Let's Encrypt o certificado corporativo)
+- [ ] Revisar permisos de archivos: el webserver debe ser propietario de `data/` (caché)
+
+### 9. Usuarios del sistema
+
+Los usuarios actuales están hardcodeados en `auth.php`. Para producción crear hashes bcrypt nuevos:
+
+```php
+// Generar hash de nueva contraseña:
+echo password_hash('nueva_clave_segura', PASSWORD_BCRYPT);
+```
+
+Reemplazar en el array `$USUARIOS` de `auth.php`.
+
+> **Pendiente a futuro**: integrar login contra la tabla `users` en BD (ya existe la tabla con roles).
+
+### 10. Monitoreo post-despliegue
+
+Verificar en el browser:
+1. Login en `/login.php` con usuario `demo` (o el nuevo usuario de producción)
+2. Reporte 1 — Distribución Territorial carga el mapa con datos
+3. Reporte 3 — Segmentación muestra 7 provincias con M%/F%
+4. Reporte 2 — Participación muestra 69.98% participación 2026
+5. Reporte 5 — JRV Inscritos muestra ranking de juntas
+
+## Qué preparar antes de ir a producción
+
+### Obligatorio
+- [ ] Servidor con PHP 8.1+ y MySQL/MariaDB
+- [ ] Descargar `PADRON_COMPLETO.txt` desde tse.go.cr (427 MB)
+- [ ] Descargar `distelec.txt` (viene en el mismo ZIP del padrón)
+- [ ] Descargar los 4 archivos AVR JSON (2026, 2024, 2022 1ra, 2022 2da)
+- [ ] Cambiar credenciales de BD y usuarios
+- [ ] Configurar bloqueo de carpetas sensibles en el servidor
+
+### Recomendado para primera reunión de producción
+- [ ] Definir KPIs del Reporte 7 (Indicadores Estratégicos) con el cliente
+- [ ] Coordinar con TSE acceso oficial a `fecha_nac` para segmentación por edad
+- [ ] Obtener catálogo real de `polling_places` (~7,000 locales con direcciones)
+- [ ] Definir si se integra login contra BD (`users`) o se mantiene hardcodeado
+
+### Tiempo estimado de setup en servidor nuevo
+- Migraciones: ~2 minutos
+- ETL geográfico (distelec): ~30 segundos
+- ETL padrón completo: ~20 minutos
+- Enriquecimiento de sexo: ~51 segundos
+- ETL resultados electorales (4 archivos): ~5 minutos
+- **Total**: ~30 minutos desde cero
+
+## Archivos que NO van al servidor (excluidos por .gitignore)
+
+```
+raw/padron/*.txt          # Descargar manualmente del TSE
+raw/padron/*.zip
+raw/avr/*.json            # Descargar manualmente del TSE
+raw/geo/*.geojson
+data/poblacion_cache.json # Se genera automáticamente
+data/bitacora.log         # Se genera automáticamente
+```

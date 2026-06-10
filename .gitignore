@@ -28,3 +28,16 @@ composer.lock
 .env
 .env.local
 config.local.php
+
+# Archivos crudos grandes (raw data) — se ignoran del repo pero deben existir en el servidor
+# La estructura de carpetas se conserva via .gitkeep en cada subcarpeta
+raw/padron/*.txt
+raw/padron/*.zip
+raw/avr/*.json
+raw/geo/*.geojson
+raw/geo/*.zip
+!raw/**/.gitkeep
+
+# Cache y logs generados automáticamente
+data/poblacion_cache.json
+data/bitacora.log

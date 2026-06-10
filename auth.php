@@ -1,48 +1,90 @@
 <?php
 /**
- * Autenticacion minima por sesion para el tablero.
+ * auth.php — Autenticación por sesión contra la tabla `users`.
  *
- * Usuario demo:
- *   usuario:    demo
- *   contrasena: demo1234
- *
- * Las contrasenas se guardan como hash bcrypt (password_hash) y se
- * verifican con password_verify. Para agregar usuarios, añade otra
- * entrada al arreglo $USUARIOS con su propio hash.
+ * Login: campo "usuario" acepta email O nombre de usuario.
+ * Fallback hardcodeado: usuario `demo` / `demo1234` (para acceso inicial).
  */
-
 session_start();
 
-// Bitácora de auditoría (registro de accesos e interacciones).
+require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/bitacora.php';
 
-// usuario => hash bcrypt de la contrasena
-$USUARIOS = [
-    'demo' => '$2y$12$EcFM4j2oK1pv3HSdhg9F5eeRVML.MXVzhiH9c7IJL1Y6gWYGTJYvW', // demo1234
-];
-
-/** Verifica credenciales; devuelve true si son validas. */
-function verificarLogin(string $usuario, string $contrasena): bool
+/** Verifica credenciales contra la BD; devuelve array del usuario o false. */
+function verificarLoginDB(string $usuario, string $contrasena): array|false
 {
-    global $USUARIOS;
-    $usuario = trim($usuario);
-    if (!isset($USUARIOS[$usuario])) {
-        // Igual ejecuta un verify para no filtrar usuarios por timing.
-        password_verify($contrasena, '$2y$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv');
+    try {
+        $pdo  = dbConnect();
+        $stmt = $pdo->prepare(
+            'SELECT id, name, email, password, role_id, active
+             FROM users
+             WHERE (email = ? OR name = ?) AND active = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$usuario, $usuario]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            password_verify($contrasena, '$2y$12$invalidinvalidinvalidinvalid');
+            return false;
+        }
+        if (!password_verify($contrasena, $row['password'])) return false;
+        return $row;
+    } catch (Throwable) {
         return false;
     }
-    return password_verify($contrasena, $USUARIOS[$usuario]);
 }
 
-/** Marca la sesion como autenticada. */
-function iniciarSesion(string $usuario): void
+/** Verifica credenciales; devuelve true si son válidas. */
+function verificarLogin(string $usuario, string $contrasena): bool
+{
+    $usuario = trim($usuario);
+
+    // 1. Intentar contra la BD
+    $dbUser = verificarLoginDB($usuario, $contrasena);
+    if ($dbUser) {
+        iniciarSesionConUsuario($dbUser);
+        return true;
+    }
+
+    // 2. Fallback hardcodeado (usuario demo)
+    static $FALLBACK = [
+        'demo' => '$2y$12$EcFM4j2oK1pv3HSdhg9F5eeRVML.MXVzhiH9c7IJL1Y6gWYGTJYvW',
+    ];
+    if (!isset($FALLBACK[$usuario])) {
+        password_verify($contrasena, '$2y$12$invalidinvalidinvalidinvalid');
+        return false;
+    }
+    if (!password_verify($contrasena, $FALLBACK[$usuario])) return false;
+    // Iniciar sesión con datos mínimos para el fallback
+    iniciarSesionConUsuario(['id' => 0, 'name' => 'Demo', 'email' => 'demo', 'role_id' => 1]);
+    return true;
+}
+
+/** Inicia sesión a partir de un array de usuario. */
+function iniciarSesionConUsuario(array $user): void
 {
     session_regenerate_id(true);
-    $_SESSION['auth'] = true;
-    $_SESSION['usuario'] = $usuario;
+    $_SESSION['auth']     = true;
+    $_SESSION['usuario']  = $user['name'] ?? $user['email'] ?? 'demo';
+    $_SESSION['user_id']  = $user['id']      ?? 0;
+    $_SESSION['role_id']  = $user['role_id'] ?? 1;
+    $_SESSION['email']    = $user['email']   ?? '';
 }
 
-/** Cierra la sesion actual. */
+/** Inicia sesión (compatibilidad — solo nombre de usuario). */
+function iniciarSesion(string $usuario): void
+{
+    // Esta función se llama desde login.php tras verificarLogin() exitoso.
+    // El estado ya fue establecido por iniciarSesionConUsuario(); solo
+    // garantizamos que el campo 'usuario' quede sincronizado.
+    if (empty($_SESSION['auth'])) {
+        session_regenerate_id(true);
+        $_SESSION['auth']    = true;
+        $_SESSION['usuario'] = $usuario;
+    }
+}
+
+/** Cierra la sesión actual. */
 function cerrarSesion(): void
 {
     $_SESSION = [];
@@ -54,19 +96,19 @@ function cerrarSesion(): void
     session_destroy();
 }
 
-/** ¿Hay sesion activa? */
+/** ¿Hay sesión activa? */
 function estaAutenticado(): bool
 {
     return !empty($_SESSION['auth']);
 }
 
-/** Usuario en sesion (o null). */
+/** Usuario en sesión (o null). */
 function usuarioActual(): ?string
 {
     return $_SESSION['usuario'] ?? null;
 }
 
-/** Exige login en una pagina; si no, redirige al login. */
+/** Exige login en una página; si no, redirige. */
 function requerirLogin(): void
 {
     if (!estaAutenticado()) {
@@ -75,7 +117,7 @@ function requerirLogin(): void
     }
 }
 
-/** Exige login en un endpoint de API; si no, responde 401 JSON. */
+/** Exige login en un endpoint de API; si no, responde 401. */
 function requerirLoginApi(): void
 {
     if (!estaAutenticado()) {
