@@ -34,9 +34,10 @@ sort($archivos);
 $pdo = dbConnect();
 
 // Cargar migraciones ya aplicadas
-$aplicadas = $pdo
-    ->query('SELECT migration FROM schema_migrations')
-    ->fetchAll(PDO::FETCH_COLUMN);
+$stmtAplicadas = $pdo->query('SELECT migration FROM schema_migrations');
+$aplicadas = $stmtAplicadas->fetchAll(PDO::FETCH_COLUMN);
+$stmtAplicadas->closeCursor();
+
 $aplicadas = array_flip($aplicadas);
 
 $pendientes = [];
@@ -95,7 +96,10 @@ foreach ($pendientes as $path) {
         );
 
         foreach ($sentencias as $sentencia) {
-            $pdo->exec($sentencia);
+            $stmt = $pdo->query($sentencia);
+            if ($stmt instanceof PDOStatement) {
+                $stmt->closeCursor();
+            }
         }
 
         $pdo->prepare('INSERT INTO schema_migrations (migration, executed_at) VALUES (?, NOW())')
