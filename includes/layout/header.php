@@ -126,18 +126,19 @@ foreach ($catAnalisis as $cat) { if (catHasActive($cat, $activeRid)) { $analisis
                 </li>
 
                 <!-- ── Menú padre: Admin ── -->
+                <?php $isAdmin = strpos($_SERVER['REQUEST_URI'] ?? '', 'admin.php') !== false; ?>
                 <li class="nav-item has-dropdown">
-                    <button class="nav-link" type="button" aria-haspopup="true" aria-expanded="false">
+                    <button class="nav-link<?= $isAdmin ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-shield-lock"></i> <span>Admin</span>
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
-                        <li><button class="dropdown-link" type="button" data-admin="bitacora"><i class="bi bi-journal-text"></i> Bitácora</button></li>
-                        <li><button class="dropdown-link" type="button" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</button></li>
-                        <li><button class="dropdown-link" type="button" data-admin="usuarios"><i class="bi bi-people"></i> Usuarios</button></li>
-                        <li><button class="dropdown-link" type="button" data-admin="roles"><i class="bi bi-person-badge"></i> Roles de usuario</button></li>
-                        <li><button class="dropdown-link" type="button" data-admin="cargar"><i class="bi bi-cloud-upload"></i> Cargar Datos</button></li>
-                        <li><button class="dropdown-link" type="button" data-admin="pipelines"><i class="bi bi-diagram-3"></i> Pipelines</button></li>
+                        <li><a class="dropdown-link" href="admin.php#usuarios"><i class="bi bi-people"></i> Usuarios</a></li>
+                        <li><a class="dropdown-link" href="admin.php#roles"><i class="bi bi-shield-check"></i> Roles</a></li>
+                        <li><a class="dropdown-link" href="admin.php#bitacora"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+                        <li><a class="dropdown-link" href="admin.php#configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
+                        <li><a class="dropdown-link" href="admin.php#cargar-datos"><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>
+                        <li><a class="dropdown-link" href="admin.php#pipelines"><i class="bi bi-diagram-3"></i> Pipelines</a></li>
                     </ul>
                 </li>
             </ul>
