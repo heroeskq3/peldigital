@@ -82,10 +82,15 @@ foreach ($pendientes as $path) {
 
     try {
         // Dividir en sentencias individuales y omitir las que solo tienen comentarios
+        $sql = preg_replace('/^\xEF\xBB\xBF/', '', $sql);
+        $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+        $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+        $sql = preg_replace('/^\s*#.*$/m', '', $sql);
+
         $sentencias = array_filter(
             array_map('trim', explode(';', $sql)),
             static function (string $s): bool {
-                return trim(preg_replace('/--[^\n]*/m', '', $s)) !== '';
+                return $s !== '';
             }
         );
 
