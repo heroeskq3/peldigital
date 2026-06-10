@@ -27,13 +27,15 @@ if ($format === 'json') {
 
 $pdo = dbConnect();
 
-$nivel      = in_array($_GET['nivel'] ?? '', ['province','canton','district']) ? $_GET['nivel'] : 'province';
-$provinceId = isset($_GET['province_id']) && $_GET['province_id'] !== '' ? (int)$_GET['province_id'] : null;
-$cantonId   = isset($_GET['canton_id'])   && $_GET['canton_id']   !== '' ? (int)$_GET['canton_id']   : null;
-$page       = max(1, (int)($_GET['page']  ?? 1));
-$size       = max(10, min(200, (int)($_GET['size'] ?? 25)));
-$order      = ($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-$q          = trim((string)($_GET['q'] ?? ''));
+$nivel       = in_array($_GET['nivel'] ?? '', ['province','canton','district']) ? $_GET['nivel'] : 'province';
+$provinceId  = isset($_GET['province_id'])   && $_GET['province_id']   !== '' ? (int)$_GET['province_id']  : null;
+$cantonId    = isset($_GET['canton_id'])     && $_GET['canton_id']     !== '' ? (int)$_GET['canton_id']    : null;
+$districtGeo5 = isset($_GET['district_geo5']) && $_GET['district_geo5'] !== '' ? preg_replace('/[^0-9]/', '', $_GET['district_geo5']) : null;
+$statsOnly   = !empty($_GET['stats_only']);
+$page        = max(1, (int)($_GET['page']  ?? 1));
+$size        = max(10, min(200, (int)($_GET['size'] ?? 25)));
+$order       = ($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+$q           = trim((string)($_GET['q'] ?? ''));
 
 // Seleccionar tabla y columnas según nivel
 switch ($nivel) {
@@ -73,6 +75,10 @@ if ($cantonId && $nivel === 'district') {
     $where[]  = 'canton_id = ?';
     $params[] = $cantonId;
 }
+if ($districtGeo5 && $nivel === 'district') {
+    $where[]  = 'geo5 = ?';
+    $params[] = $districtGeo5;
+}
 if ($q !== '') {
     $qLike    = '%' . str_replace(['%','_'], ['\\%','\\_'], $q) . '%';
     $where[]  = 'nombre LIKE ?';
@@ -100,10 +106,33 @@ $natF     = (int)$natRow[2];
 $natN     = (int)$natRow[3];
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-$statsRow = $pdo->prepare("SELECT MAX(inscritos), MIN(inscritos), SUM(inscritos), COUNT(*) FROM {$table} {$whereSql}");
+$statsRow = $pdo->prepare("SELECT MAX(inscritos), MIN(inscritos), SUM(inscritos), COUNT(*), SUM(inscritos_m), SUM(inscritos_f), SUM(inscritos_n) FROM {$table} {$whereSql}");
 $statsRow->execute($params);
-[$maxInsc, $minInsc, $sumInsc, $cnt] = $statsRow->fetch(PDO::FETCH_NUM);
+[$maxInsc, $minInsc, $sumInsc, $cnt, $filtM, $filtF, $filtN] = $statsRow->fetch(PDO::FETCH_NUM);
 $promedio = $cnt > 0 ? (int)round((int)$sumInsc / (int)$cnt) : 0;
+
+// ─── Stats-only (no rows, no paginación) — para dashboards ──────────────────
+if ($statsOnly) {
+    echo json_encode(['stats' => [
+        'total_inscritos'   => (int)$sumInsc,
+        'total_territorios' => $total,
+        'max_inscritos'     => (int)$maxInsc,
+        'promedio'          => $promedio,
+        'total_m'           => $natM,
+        'total_f'           => $natF,
+        'total_n'           => $natN,
+        'pct_m'             => round($natM / ($natTotal ?: 1) * 100, 1),
+        'pct_f'             => round($natF / ($natTotal ?: 1) * 100, 1),
+        'pct_n'             => round($natN / ($natTotal ?: 1) * 100, 1),
+        'filtered_m'        => (int)$filtM,
+        'filtered_f'        => (int)$filtF,
+        'filtered_n'        => (int)$filtN,
+        'pct_filtered_m'    => round((int)$filtM / ((int)$sumInsc ?: 1) * 100, 1),
+        'pct_filtered_f'    => round((int)$filtF / ((int)$sumInsc ?: 1) * 100, 1),
+        'pct_filtered_n'    => round((int)$filtN / ((int)$sumInsc ?: 1) * 100, 1),
+    ]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 // ─── CSV: devolver todo (hasta 5 000 filas), sin paginar ─────────────────────
 if ($format === 'csv') {
@@ -186,5 +215,11 @@ echo json_encode([
         'pct_m'             => round($natM / ($natTotal ?: 1) * 100, 1),
         'pct_f'             => round($natF / ($natTotal ?: 1) * 100, 1),
         'pct_n'             => round($natN / ($natTotal ?: 1) * 100, 1),
+        'filtered_m'        => (int)$filtM,
+        'filtered_f'        => (int)$filtF,
+        'filtered_n'        => (int)$filtN,
+        'pct_filtered_m'    => round((int)$filtM / ((int)$sumInsc ?: 1) * 100, 1),
+        'pct_filtered_f'    => round((int)$filtF / ((int)$sumInsc ?: 1) * 100, 1),
+        'pct_filtered_n'    => round((int)$filtN / ((int)$sumInsc ?: 1) * 100, 1),
     ],
 ], JSON_UNESCAPED_UNICODE);

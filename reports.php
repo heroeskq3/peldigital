@@ -48,6 +48,8 @@ require $rootDir . '/includes/reports/jrv-analisis.php';
 require $rootDir . '/includes/reports/segmentacion.php';
 require $rootDir . '/includes/reports/participacion.php';
 require $rootDir . '/includes/reports/analisis-territorial.php';
+require $rootDir . '/includes/reports/distritos-electorales.php';
+require $rootDir . '/includes/reports/juntas-padronal.php';
 
 // ── Panel "próximamente" superpuesto para reportes no construidos aún ─────────
 // Solo se muestra si no hay php_file; los reportes 'partial' con php_file

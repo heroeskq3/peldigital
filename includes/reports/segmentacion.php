@@ -1,121 +1,133 @@
 <div id="reporteSegmentacion" data-report="segmentacion" class="reporte-page d-none">
 
-    <div class="rp-head">
+    <!-- Cabecera estilo TSE -->
+    <div class="tse-report-head">
         <div>
-            <h1 class="rp-titulo">Segmentación Electoral</h1>
-            <p class="rp-sub muted">Distribución del padrón por territorio y sexo · TSE 2026</p>
+            <h1 class="tse-report-title">Padrón Nacional Electoral 2026</h1>
+            <h2 class="tse-report-sub">Provincia, Cantones y Distritos</h2>
         </div>
-        <div class="rp-head-actions">
-            <button id="segExportar" class="btn-export" type="button" title="Exportar tabla filtrada a CSV">
+        <div class="tse-report-actions">
+            <button id="sfBorrarFiltros" class="tse-btn" type="button">
+                <i class="bi bi-x-circle"></i> Borrar Filtros
+            </button>
+            <button id="segExportar" class="tse-btn" type="button">
                 <i class="bi bi-download"></i> Exportar CSV
             </button>
         </div>
     </div>
 
-    <!-- KPI Cards — inscritos -->
-    <div class="rp-stats">
-        <div class="rp-stat-card">
-            <div id="segStatTotal" class="rp-stat-num">—</div>
-            <div class="rp-stat-lbl">Inscritos totales</div>
-        </div>
-        <div class="rp-stat-card">
-            <div id="segStatTerr" class="rp-stat-num">—</div>
-            <div class="rp-stat-lbl" id="segStatTerrLbl">Territorios</div>
-        </div>
-        <div class="rp-stat-card">
-            <div id="segStatMax" class="rp-stat-num">—</div>
-            <div class="rp-stat-lbl" id="segStatMaxLbl">Mayor</div>
-        </div>
-        <div class="rp-stat-card">
-            <div id="segStatProm" class="rp-stat-num">—</div>
-            <div class="rp-stat-lbl">Promedio</div>
-        </div>
-    </div>
+    <!-- Contenido de dos paneles -->
+    <div class="tse-bicolumn">
 
-    <!-- KPI Cards — sexo (datos nacionales) -->
-    <div class="rp-stats" style="margin-top:.5rem">
-        <div class="rp-stat-card" style="border-left:3px solid #3b82f6">
-            <div id="segStatM" class="rp-stat-num" style="color:#3b82f6">—</div>
-            <div class="rp-stat-lbl"><i class="bi bi-gender-male"></i> Masculino · <span id="segStatMPct" class="muted">—</span></div>
-        </div>
-        <div class="rp-stat-card" style="border-left:3px solid #ec4899">
-            <div id="segStatF" class="rp-stat-num" style="color:#ec4899">—</div>
-            <div class="rp-stat-lbl"><i class="bi bi-gender-female"></i> Femenino · <span id="segStatFPct" class="muted">—</span></div>
-        </div>
-        <div class="rp-stat-card" style="border-left:3px solid #9ca3af">
-            <div id="segStatN" class="rp-stat-num" style="color:#9ca3af">—</div>
-            <div class="rp-stat-lbl"><i class="bi bi-question-circle"></i> Sin clasificar · <span id="segStatNPct" class="muted">—</span></div>
-        </div>
-    </div>
+        <!-- Panel izquierdo: listas de filtro -->
+        <div class="tse-left-panel">
+            <div class="tse-filter-cols">
 
-    <!-- Tabs + Filtros -->
-    <div class="rp-filtros" style="margin-top:.75rem">
-        <div class="rp-order-wrap">
-            <button class="seg-btn active" type="button" data-seg-tab="province">Provincias</button>
-            <button class="seg-btn"        type="button" data-seg-tab="canton">Cantones</button>
-            <button class="seg-btn"        type="button" data-seg-tab="district">Distritos</button>
+                <!-- Columna Provincia -->
+                <div class="tse-filter-col">
+                    <div class="tse-filter-col-head">Provincia</div>
+                    <ul class="tse-filter-list" id="sfProvList"></ul>
+                </div>
+
+                <!-- Columna Cantón -->
+                <div class="tse-filter-col">
+                    <div class="tse-filter-col-head">Cantón</div>
+                    <ul class="tse-filter-list" id="sfCantList">
+                        <li class="tse-filter-item-empty">Selecciona provincia</li>
+                    </ul>
+                </div>
+
+                <!-- Columna Distrito -->
+                <div class="tse-filter-col">
+                    <div class="tse-filter-col-head">Distrito</div>
+                    <ul class="tse-filter-list" id="sfDistList">
+                        <li class="tse-filter-item-empty">Selecciona cantón</li>
+                    </ul>
+                </div>
+
+            </div>
         </div>
-        <select id="segFiltProv" class="field" style="max-width:170px">
-            <option value="">Todas las provincias</option>
-        </select>
-        <select id="segFiltCant" class="field" style="max-width:170px" disabled>
-            <option value="">Todos los cantones</option>
-        </select>
-        <input  id="segBuscador" class="field" type="search" placeholder="Buscar…" style="max-width:180px">
-        <div class="rp-order-wrap">
-            <button id="segOrdDesc" class="seg-btn active" type="button">Mayor → Menor</button>
-            <button id="segOrdAsc"  class="seg-btn"        type="button">Menor → Mayor</button>
-        </div>
-        <select id="segPageSize" class="field page-size">
-            <option value="25">25 / pág.</option>
-            <option value="50">50 / pág.</option>
-            <option value="100">100 / pág.</option>
-        </select>
-    </div>
 
-    <!-- Tabla -->
-    <div class="padron-table-wrap" style="margin-top:.5rem">
-        <table class="padron-table">
-            <thead>
-                <tr>
-                    <th class="col-num">#</th>
-                    <th id="segThNombre">Provincia</th>
-                    <th id="segThSub1" class="d-none">Provincia</th>
-                    <th id="segThSub2" class="d-none">Cantón</th>
-                    <th class="col-num seg-col-drill" title="Clic en el número para ver inscritos">
-                        Inscritos <i class="bi bi-box-arrow-up-right" style="font-size:.7rem;opacity:.5"></i>
-                    </th>
-                    <th class="col-num" style="color:#3b82f6" title="Inscritos masculino">♂ M%</th>
-                    <th class="col-num" style="color:#ec4899" title="Inscritos femenino">♀ F%</th>
-                    <th class="col-num">% del total</th>
-                    <th class="col-bar">Concentración</th>
-                </tr>
-            </thead>
-            <tbody id="segBody">
-                <tr><td colspan="9" class="bita-empty">Cargando…</td></tr>
-            </tbody>
-        </table>
-    </div>
+        <!-- Panel derecho: gráficas + estadísticas -->
+        <div class="tse-right-panel">
 
-    <!-- Paginación -->
-    <div class="padron-paginacion" style="margin-top:.5rem">
-        <button id="segFirst" class="pag-btn" title="Primera">«</button>
-        <button id="segPrev"  class="pag-btn" title="Anterior">‹</button>
-        <span   id="segPages" class="pag-info">—</span>
-        <button id="segNext"  class="pag-btn" title="Siguiente">›</button>
-        <button id="segLast"  class="pag-btn" title="Última">»</button>
-        <span   id="segTotal" class="pag-total muted"></span>
-    </div>
+            <!-- Barras de edad (placeholder) -->
+            <div class="sf-age-wrap">
+                <div class="sf-section-label">Según grupo de edad</div>
+                <div class="sf-age-bars">
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 18 a 29 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:78%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 30 a 39 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:71%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 40 a 49 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:62%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 50 a 59 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:49%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 60 a 69 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:43%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 70 a 79 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:24%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">De 80 a 89 años</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:9%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                    <div class="sf-edad-row"><span class="sf-edad-lbl">90 años y más</span><div class="sf-edad-bar-outer"><div class="sf-edad-bar" style="width:2%"></div></div><span class="sf-edad-nd">N/D</span></div>
+                </div>
+                <div class="sf-age-overlay">
+                    <i class="bi bi-calendar-x"></i>
+                    <span>Requiere <code>fecha_nac</code> · pendiente integración TSE</span>
+                </div>
+            </div>
 
-    <!-- Pendientes restantes -->
-    <div class="coming-soon-requires" style="margin-top:1.5rem;max-width:600px">
-        <p class="coming-soon-requires-lbl">
-            <i class="bi bi-database-exclamation"></i> Segmentaciones pendientes de datos adicionales:
-        </p>
-        <ul>
-            <li>Por edad — <code>fecha_nac</code> requiere acuerdo oficial con TSE (WAF bloquea scraping masivo)</li>
-            <li>Por distrito electoral — requiere asignación de <code>electoral_district_id</code> en el padrón</li>
-        </ul>
-    </div>
+            <!-- KPIs: Edad Promedio + Electorado -->
+            <div class="sf-stat-row">
+                <div class="sf-stat-box">
+                    <div class="sf-stat-lbl">Edad Promedio</div>
+                    <div class="sf-stat-val nd">N/D</div>
+                </div>
+                <div class="sf-stat-box">
+                    <div class="sf-stat-lbl">Electorado</div>
+                    <div id="sfElectorado" class="sf-stat-val">—</div>
+                </div>
+            </div>
+
+            <!-- Fila inferior: dona + tabla de sexo -->
+            <div class="sf-bottom">
+                <div class="sf-pie-wrap">
+                    <div class="sf-pie-canvas-wrap">
+                        <canvas id="segSexChart"></canvas>
+                    </div>
+                    <div class="sf-pie-legend">
+                        <div class="sf-pie-leg-h">HOMBRE <span id="sfPctH">—</span></div>
+                        <div class="sf-pie-leg-m">MUJER <span id="sfPctM">—</span></div>
+                    </div>
+                </div>
+                <div class="sf-sex-table-wrap">
+                    <table class="sf-sex-table">
+                        <thead>
+                            <tr>
+                                <th>SEXO</th>
+                                <th>Electorado</th>
+                                <th>Edad Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="sf-sex-h sex-lbl">HOMBRE</td>
+                                <td id="sfHombre">—</td>
+                                <td class="muted" style="font-style:italic;font-size:.8rem">N/D</td>
+                            </tr>
+                            <tr>
+                                <td class="sf-sex-m sex-lbl">MUJER</td>
+                                <td id="sfMujer">—</td>
+                                <td class="muted" style="font-style:italic;font-size:.8rem">N/D</td>
+                            </tr>
+                            <tr>
+                                <td class="sex-lbl muted">SIN DATO</td>
+                                <td id="sfSinDato">—</td>
+                                <td class="muted" style="font-style:italic;font-size:.8rem">N/D</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="muted" style="font-size:.68rem;margin:.6rem 0 0">
+                        <i class="bi bi-info-circle"></i>
+                        Sexo estimado por lookup de nombres · 71.7% de cobertura
+                    </p>
+                </div>
+            </div>
+
+        </div><!-- /.tse-right-panel -->
+    </div><!-- /.tse-bicolumn -->
 
 </div>

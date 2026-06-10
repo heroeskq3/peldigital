@@ -32,6 +32,35 @@ function catHasActive(array $cat, int $activeRid): bool {
     foreach ($cat['reports'] as $r) { if ($r['id'] === $activeRid) return true; }
     return false;
 }
+
+// Renderiza el <a> de un reporte
+function navReportLink(array $nr, int $activeRid): string {
+    $isActive  = ($nr['id'] === $activeRid);
+    $isPending = ($nr['status'] !== 'active');
+    $cls = 'dropdown-link' . ($isActive ? ' report-active' : '') . ($isPending ? ' report-pending' : '');
+    $si  = match($nr['status']) {
+        'pending' => '<i class="bi bi-lock-fill" title="Próximamente" style="font-size:.7rem;opacity:.45;margin-left:auto"></i>',
+        'partial' => '<i class="bi bi-hourglass-split" title="Parcialmente disponible" style="font-size:.7rem;opacity:.55;margin-left:auto;color:#d97706"></i>',
+        default   => ''
+    };
+    $name = htmlspecialchars($nr['short_name']);
+    $icon = htmlspecialchars($nr['icon']);
+    return '<a class="'.$cls.'" href="reports.php?id='.$nr['id'].'" data-report-id="'.$nr['id'].'" title="'.$name.'">
+        <i class="bi '.$icon.'"></i><span>'.$name.'</span>
+        <span class="report-id-badge">#'.$nr['id'].'</span>'.$si.'</a>';
+}
+
+// Separar categoría Padrón TSE del resto
+$catPadron   = [];
+$catAnalisis = [];
+foreach ($navByCategory as $cid => $cat) {
+    if ($cat['slug'] === 'padron-tse') $catPadron[$cid]   = $cat;
+    else                               $catAnalisis[$cid] = $cat;
+}
+$padronActive  = false;
+foreach ($catPadron  as $cat) { if (catHasActive($cat, $activeRid)) { $padronActive  = true; break; } }
+$analisisActive = false;
+foreach ($catAnalisis as $cat) { if (catHasActive($cat, $activeRid)) { $analisisActive = true; break; } }
 ?>
 <header class="app-header">
     <div class="header-left">
@@ -54,13 +83,31 @@ function catHasActive(array $cat, int $activeRid): bool {
                 </button>
             </div>
             <ul class="nav-list">
+
+                <!-- ── Menú padre: Padrón (reportes estilo TSE) ── -->
+                <?php if (!empty($catPadron)): ?>
                 <li class="nav-item has-dropdown">
-                    <button class="nav-link<?= $activeRid > 0 ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
+                    <button class="nav-link<?= $padronActive ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="bi bi-person-vcard-fill"></i> <span>Padrón</span>
+                        <i class="bi bi-chevron-down nav-caret"></i>
+                    </button>
+                    <ul class="dropdown">
+                        <?php foreach ($catPadron as $cat):
+                            foreach ($cat['reports'] as $nr): ?>
+                        <li><?= navReportLink($nr, $activeRid) ?></li>
+                        <?php endforeach; endforeach; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
+
+                <!-- ── Menú padre: Análisis (resto de reportes agrupados por subcategoría) ── -->
+                <li class="nav-item has-dropdown">
+                    <button class="nav-link<?= $analisisActive ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-graph-up"></i> <span>Análisis</span>
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
-                        <?php foreach ($navByCategory as $cat): ?>
+                        <?php foreach ($catAnalisis as $cat): ?>
                         <li class="dropdown-submenu">
                             <button class="dropdown-link submenu-trigger<?= catHasActive($cat, $activeRid) ? ' submenu-trigger-active' : '' ?>"
                                     type="button" aria-haspopup="true" aria-expanded="false">
@@ -69,35 +116,16 @@ function catHasActive(array $cat, int $activeRid): bool {
                                 <i class="bi bi-chevron-right submenu-caret"></i>
                             </button>
                             <ul class="dropdown submenu-list">
-                                <?php foreach ($cat['reports'] as $nr):
-                                    $isActive  = ($nr['id'] === $activeRid);
-                                    $isPending = ($nr['status'] !== 'active');
-                                    $linkClass = 'dropdown-link'
-                                        . ($isActive  ? ' report-active'  : '')
-                                        . ($isPending ? ' report-pending' : '');
-                                    $statusIcon = match($nr['status']) {
-                                        'pending' => '<i class="bi bi-lock-fill" title="Próximamente" style="font-size:.7rem;opacity:.45;margin-left:auto"></i>',
-                                        'partial' => '<i class="bi bi-hourglass-split" title="Parcialmente disponible" style="font-size:.7rem;opacity:.55;margin-left:auto;color:#d97706"></i>',
-                                        default   => ''
-                                    };
-                                ?>
-                                <li>
-                                    <a class="<?= $linkClass ?>"
-                                       href="reports.php?id=<?= $nr['id'] ?>"
-                                       data-report-id="<?= $nr['id'] ?>"
-                                       title="<?= htmlspecialchars($nr['short_name']) ?>">
-                                        <i class="bi <?= htmlspecialchars($nr['icon']) ?>"></i>
-                                        <span><?= htmlspecialchars($nr['short_name']) ?></span>
-                                        <span class="report-id-badge">#<?= $nr['id'] ?></span>
-                                        <?= $statusIcon ?>
-                                    </a>
-                                </li>
+                                <?php foreach ($cat['reports'] as $nr): ?>
+                                <li><?= navReportLink($nr, $activeRid) ?></li>
                                 <?php endforeach; ?>
                             </ul>
                         </li>
                         <?php endforeach; ?>
                     </ul>
                 </li>
+
+                <!-- ── Menú padre: Admin ── -->
                 <li class="nav-item has-dropdown">
                     <button class="nav-link" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-shield-lock"></i> <span>Admin</span>
