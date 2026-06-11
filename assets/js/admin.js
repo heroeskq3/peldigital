@@ -187,7 +187,7 @@
             return `<tr>
                 <td class="col-num hide-mobile" style="color:var(--text-muted)">${i + 1 + (d.page - 1) * 25}</td>
                 <td style="font-weight:500">${esc(u.name)}</td>
-                <td style="color:var(--text-muted)">${esc(u.email)}</td>
+                <td class="hide-mobile" style="color:var(--text-muted)">${esc(u.email)}</td>
                 <td><span class="badge badge-blue">${esc(u.role_name || '—')}</span></td>
                 <td>${badge}</td>
                 <td class="hide-mobile" style="color:var(--text-muted);font-size:.8rem">${fecha}</td>

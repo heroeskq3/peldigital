@@ -23,7 +23,7 @@
                     <tr>
                         <th class="col-num hide-mobile">#</th>
                         <th>Nombre</th>
-                        <th>Email</th>
+                        <th class="hide-mobile">Email</th>
                         <th>Rol</th>
                         <th>Estado</th>
                         <th class="hide-mobile">Alta</th>
