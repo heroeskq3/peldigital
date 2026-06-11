@@ -23,7 +23,7 @@
 | 19 | Partir `assets/js/app.js` por modulos | Codigo | Alta | Hecho | Dividido en `assets/js/app/core.js`, `map.js`, `controls.js`, `padron-bitacora.js` y `reports.js`. |
 | 20 | Partir `assets/css/style.css` por dominios | Codigo | Media | Hecho | Dividido en `assets/css/app/tokens.css`, `nav.css`, `layout.css`, `modals.css`, `responsive.css`, `reports.css` y `admin.css`. |
 | 21 | Centralizar carga de vistas de reportes en `reports.php` | Codigo | Media | Pendiente | Segunda etapa; requiere validar rutas desde catalogo BD. |
-| 22 | Deshabilitar/restringir fallback `demo` en produccion | Seguridad | Alta | Pendiente | Recomendado condicionar por `APP_ENV`. |
-| 23 | Probar bloqueo web de carpetas sensibles por URL | Seguridad | Alta | Pendiente | `.htaccess` existe y Apache syntax OK; falta prueba HTTP. |
+| 22 | Deshabilitar/restringir fallback `demo` en produccion | Seguridad | Alta | Hecho | `auth.php` bloquea fallback cuando `APP_ENV=production`; prueba CLI confirmada. |
+| 23 | Probar bloqueo web de carpetas sensibles por URL | Seguridad | Alta | Hecho | XAMPP: `raw/`, `scripts/`, `migrations/`, `lib/` y `.env` devuelven `403`; rutas públicas devuelven `200`. |
 | 24 | Agregar pruebas minimas de parsers y ETL | Calidad | Media | Pendiente | Usar fixtures pequenas. |
 | 25 | Agregar smoke test de APIs principales | Calidad | Media | Pendiente | Requiere sesion/auth o harness CLI. |

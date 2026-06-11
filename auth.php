@@ -3,7 +3,7 @@
  * auth.php — Autenticación por sesión contra la tabla `users`.
  *
  * Login: campo "usuario" acepta email O nombre de usuario.
- * Fallback hardcodeado: usuario `demo` / `demo1234` (para acceso inicial).
+ * Fallback local: usuario `demo` / `demo1234` solo fuera de producción.
  */
 session_start();
 
@@ -46,7 +46,12 @@ function verificarLogin(string $usuario, string $contrasena): bool
         return true;
     }
 
-    // 2. Fallback hardcodeado (usuario demo)
+    // 2. Fallback local (usuario demo). Nunca se habilita en producción.
+    if (env('APP_ENV', 'development') === 'production') {
+        password_verify($contrasena, '$2y$12$invalidinvalidinvalidinvalid');
+        return false;
+    }
+
     static $FALLBACK = [
         'demo' => '$2y$12$EcFM4j2oK1pv3HSdhg9F5eeRVML.MXVzhiH9c7IJL1Y6gWYGTJYvW',
     ];

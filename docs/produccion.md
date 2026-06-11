@@ -167,7 +167,7 @@ producción porque es más difícil de omitir accidentalmente.
 
 - [ ] Configurar credenciales reales en `.env`
 - [ ] Crear usuarios reales en tabla `users`
-- [ ] Deshabilitar o restringir el fallback `demo` de `auth.php` antes de exponer producción
+- [x] Deshabilitar fallback `demo` en producción (`APP_ENV=production`)
 - [ ] Deshabilitar display_errors en php.ini: `display_errors = Off`
 - [ ] Configurar `error_log` a un archivo fuera del webroot
 - [ ] Bloquear acceso a carpetas sensibles en el servidor web (ver sección 7)
@@ -177,17 +177,16 @@ producción porque es más difícil de omitir accidentalmente.
 ### 9. Usuarios del sistema
 
 El login principal usa la tabla `users`; `auth.php` conserva un fallback `demo`
-para acceso inicial/desarrollo. Para producción crear usuarios reales con hashes
-bcrypt:
+solo fuera de producción. Con `APP_ENV=production`, el fallback queda bloqueado.
+Para producción crear usuarios reales con hashes bcrypt:
 
 ```php
 // Generar hash de nueva contraseña:
 echo password_hash('nueva_clave_segura', PASSWORD_BCRYPT);
 ```
 
-Insertar o actualizar esos hashes en la tabla `users`. El fallback `demo` debe
-eliminarse, deshabilitarse por `APP_ENV=production` o restringirse antes de
-publicar el sistema.
+Insertar o actualizar esos hashes en la tabla `users`. Verificar que `.env`
+tenga `APP_ENV=production` antes de publicar el sistema.
 
 ### 10. Monitoreo post-despliegue
 
@@ -212,7 +211,7 @@ Verificar en el browser:
 - [ ] Definir KPIs del Reporte 7 (Indicadores Estratégicos) con el cliente
 - [ ] Coordinar con TSE acceso oficial a `fecha_nac` para segmentación por edad
 - [ ] Obtener catálogo real de `polling_places` (~7,000 locales con direcciones)
-- [ ] Definir política para deshabilitar/restringir el fallback `demo` en producción
+- [x] Fallback `demo` bloqueado por `APP_ENV=production`
 
 ### Tiempo estimado de setup en servidor nuevo
 - Migraciones: ~2 minutos
