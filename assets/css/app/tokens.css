@@ -1,0 +1,78 @@
+/* ===========================================================
+   PEL Digital — Partido Esperanza y Libertad
+   Colores institucionales: navy CMYK(100,100,0,50)=#000080
+                            amarillo CMYK(0,0,100,0)=#FFEE00
+   Light / Dark mode via [data-theme] en <html>.
+   =========================================================== */
+
+:root {
+    --side-w: 320px;
+    --header-h: 56px;
+    --footer-h: 26px;
+    --radius: 10px;
+    --gap: 14px;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    /* Colores institucionales PEL */
+    --brand-navy:   #000080;
+    --brand-yellow: #FFEE00;
+    --brand-yellow-dark: #c9a800;   /* amarillo oscurecido para texto sobre blanco */
+}
+
+/* ---- Paleta: LIGHT ---- */
+[data-theme="light"] {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --surface-elevated: #ffffff;     /* modales / dropdowns — overlay da el contraste */
+    --surface-elevated-2: #f0f0f2;  /* inputs dentro de superficies elevadas */
+    --border-elevated: #d4d4d8;
+    --text: #0a0a0a;
+    --text-muted: #71717a;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --accent: #0a0a0a;          /* todo el "color" es negro/blanco */
+    --on-accent: #ffffff;
+    --map-bg: #e9e9ea;
+    --stroke: #ffffff;          /* borde entre regiones en el mapa */
+    --stroke-hover: #0a0a0a;
+    --shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+/* ---- Paleta: DARK ---- */
+[data-theme="dark"] {
+    --bg: #0b0b0c;
+    --surface: #141416;
+    --surface-2: #1c1c1f;
+    --surface-elevated: #2c2c31;     /* modales / dropdowns — claramente sobre el fondo */
+    --surface-elevated-2: #3a3a40;  /* inputs dentro de superficies elevadas */
+    --border-elevated: #4a4a52;
+    --text: #fafafa;
+    --text-muted: #8a8a90;
+    --border: #26262a;
+    --border-strong: #34343a;
+    --accent: #fafafa;
+    --on-accent: #0b0b0c;
+    --map-bg: #1a1a1c;
+    --stroke: #0b0b0c;
+    --stroke-hover: #fafafa;
+    --shadow: 0 4px 18px rgba(0,0,0,.5);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation; /* evita zoom por doble tap */
+}
+
+.d-none { display: none !important; }
+.muted { color: var(--text-muted); }
+.small { font-size: .78rem; }
+.mb-0 { margin-bottom: 0; }
+

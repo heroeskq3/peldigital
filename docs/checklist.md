@@ -20,8 +20,8 @@
 | 16 | Mantener `scripts/enrich_fecha_nac.php` como pendiente de desarrollo | Codigo | Media | Hecho | Documentado como pendiente en `docs/etl.md`. |
 | 17 | Eliminar datos demo de locales/distritos electorales | Datos | Alta | Hecho local | BD local limpiada: `polling_places=0`, `electoral_districts=0`. No se creo migracion destructiva. |
 | 18 | Revisar placeholders admin | Producto | Media | Hecho | Admin documentado como funcional: usuarios, roles, reportes, bitacora, configuracion, datos y pipelines. |
-| 19 | Partir `assets/js/app.js` por modulos | Codigo | Alta | Pendiente | Segunda etapa. |
-| 20 | Partir `assets/css/style.css` por dominios | Codigo | Media | Pendiente | Segunda etapa. |
+| 19 | Partir `assets/js/app.js` por modulos | Codigo | Alta | Hecho | Dividido en `assets/js/app/core.js`, `map.js`, `controls.js`, `padron-bitacora.js` y `reports.js`. |
+| 20 | Partir `assets/css/style.css` por dominios | Codigo | Media | Hecho | Dividido en `assets/css/app/tokens.css`, `nav.css`, `layout.css`, `modals.css`, `responsive.css`, `reports.css` y `admin.css`. |
 | 21 | Centralizar carga de vistas de reportes en `reports.php` | Codigo | Media | Pendiente | Segunda etapa; requiere validar rutas desde catalogo BD. |
 | 22 | Deshabilitar/restringir fallback `demo` en produccion | Seguridad | Alta | Pendiente | Recomendado condicionar por `APP_ENV`. |
 | 23 | Probar bloqueo web de carpetas sensibles por URL | Seguridad | Alta | Pendiente | `.htaccess` existe y Apache syntax OK; falta prueba HTTP. |

@@ -29,8 +29,8 @@ includes/layout/scripts.php
 |---|---|
 | `api/` | Endpoints JSON consumidos por el frontend. Siempre deben validar sesion con `requerirLoginApi()`. |
 | `api/admin/` | Endpoints del panel administrativo. |
-| `assets/css/` | CSS global de la aplicacion. `style.css` concentra estilos base, layout, reportes, admin y responsive. |
-| `assets/js/` | JavaScript del frontend. `app.js` concentra reportes publicos; `admin.js` concentra administracion; `nav.js` maneja navegacion. |
+| `assets/css/` | CSS de la aplicacion. Los estilos principales viven divididos en `assets/css/app/` por dominio. |
+| `assets/js/` | JavaScript del frontend. La app publica vive dividida en `assets/js/app/`; `admin.js` concentra administracion; `nav.js` maneja navegacion. |
 | `assets/img/` | Logos e imagenes de interfaz. |
 | `data/` | GeoJSON versionados y archivos generados de cache. Los caches no deben versionarse. |
 | `docs/` | Documentacion canonica del proyecto. |
@@ -58,8 +58,9 @@ includes/layout/scripts.php
 
 ## Riesgos actuales
 
-- `assets/js/app.js` y `assets/css/style.css` son monoliticos y ya tienen alto
-  costo de mantenimiento.
+- `assets/js/app/*` conserva estado compartido en scripts globales por
+  compatibilidad. La siguiente mejora debe convertir reportes a modulos con
+  dependencias explicitas.
 - `reports.php` aun incluye manualmente todas las vistas de reportes aunque el
   catalogo vive en BD.
 - Varias APIs repiten patrones de JSON, error y paginacion; usar `lib/api.php`

@@ -19,11 +19,10 @@ la minuta del cliente queda en `docs/roadmap/expectativas-cliente.md`.
 ## Prioridades tecnicas
 
 1. Restringir fallback `demo` en produccion.
-2. Modularizar `assets/js/app.js`.
-3. Modularizar `assets/css/style.css`.
-4. Usar helpers de `lib/api.php` en APIs nuevas y al tocar APIs existentes.
-5. Cargar catalogos reales faltantes para locales y distritos electorales.
-6. Completar estrategia de `fecha_nac`.
+2. Convertir gradualmente `assets/js/app/*` a modulos con dependencias explicitas.
+3. Usar helpers de `lib/api.php` en APIs nuevas y al tocar APIs existentes.
+4. Cargar catalogos reales faltantes para locales y distritos electorales.
+5. Completar estrategia de `fecha_nac`.
 
 ## Segunda etapa sugerida
 

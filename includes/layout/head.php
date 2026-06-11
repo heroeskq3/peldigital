@@ -17,7 +17,20 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=<?= filemtime($rootDir . '/assets/css/style.css') ?>" rel="stylesheet">
+    <?php
+    $defaultCss = [
+        'assets/css/app/tokens.css',
+        'assets/css/app/nav.css',
+        'assets/css/app/layout.css',
+        'assets/css/app/modals.css',
+        'assets/css/app/responsive.css',
+        'assets/css/app/reports.css',
+        'assets/css/app/admin.css',
+    ];
+    ?>
+    <?php foreach ($defaultCss as $css): ?>
+    <link href="<?= htmlspecialchars($css) ?>?v=<?= filemtime($rootDir . '/' . $css) ?>" rel="stylesheet">
+    <?php endforeach; ?>
     <?php foreach ($extraHeadLinks ?? [] as $link): ?>
     <link href="<?= htmlspecialchars($link) ?>?v=<?= filemtime($rootDir . '/' . $link) ?>" rel="stylesheet">
     <?php endforeach; ?>

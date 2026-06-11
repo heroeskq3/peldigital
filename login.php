@@ -38,7 +38,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" rel="stylesheet">
+    <?php
+    $loginCss = [
+        'assets/css/app/tokens.css',
+        'assets/css/app/nav.css',
+        'assets/css/app/layout.css',
+        'assets/css/app/modals.css',
+        'assets/css/app/responsive.css',
+        'assets/css/app/reports.css',
+        'assets/css/app/admin.css',
+    ];
+    ?>
+    <?php foreach ($loginCss as $css): ?>
+    <link href="<?= htmlspecialchars($css) ?>?v=<?= filemtime(__DIR__ . '/' . $css) ?>" rel="stylesheet">
+    <?php endforeach; ?>
 </head>
 <body class="login-body">
     <main class="login-card">

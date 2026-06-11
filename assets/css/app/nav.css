@@ -1,0 +1,156 @@
+.app-shell { display: flex; flex-direction: column; height: 100vh; }
+
+/* ---------- Header ---------- */
+.app-header {
+    height: var(--header-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    background: var(--brand-navy);
+    border-bottom: 1px solid var(--border);
+    z-index: 1002;
+}
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; cursor: pointer; }
+.brand-logo {
+    width: 34px; height: 34px;
+    flex: 0 0 auto;
+    display: block;
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-title { font-weight: 700; font-size: 1.35rem; letter-spacing: -.01em; color: #ffffff; }
+.brand-sub {
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--text-muted);
+}
+.header-actions { display: flex; align-items: center; gap: 6px; }
+.header-user {
+    color: #ffffff;
+    opacity: .8;
+    font-size: .8rem;
+    font-weight: 600;
+    margin: 0 4px 0 8px;
+    text-transform: capitalize;
+}
+.header-actions a.icon-only { color: #ffffff; }
+
+/* Icono desnudo: solo el glifo, sin recuadro ni fondo */
+.icon-only {
+    background: none;
+    border: 0;
+    padding: 6px;
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: .65;
+    transition: opacity .15s;
+    display: inline-flex;
+}
+.icon-only:hover { opacity: 1; }
+.icon-only:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Navegación (Análisis / Admin) ---------- */
+.header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.menu-toggle { display: none; }            /* hamburguesa: solo móvil */
+
+.main-nav { display: flex; align-items: center; margin-left: 10px; }
+.nav-drawer-head { display: none; }        /* encabezado: solo en drawer móvil */
+.nav-list { list-style: none; display: flex; align-items: center; gap: 4px; margin: 0; padding: 0; }
+.nav-item { position: relative; }
+
+.nav-link {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: none; border: 0; cursor: pointer;
+    color: #ffffff; opacity: .82;
+    font: inherit; font-size: .9rem; font-weight: 600;
+    padding: 8px 12px; border-radius: 8px;
+    white-space: nowrap; text-decoration: none;
+    transition: background .15s, opacity .15s;
+}
+.nav-tools { display: none; }   /* acciones del drawer: solo móvil */
+.nav-link:hover { opacity: 1; background: rgba(255, 255, 255, .10); }
+.nav-link .nav-caret { font-size: .72rem; transition: transform .18s; }
+.nav-item.open > .nav-link { opacity: 1; background: rgba(255, 255, 255, .14); }
+.nav-item.open > .nav-link .nav-caret { transform: rotate(180deg); }
+.nav-link:focus-visible { outline: 1px solid #fff; outline-offset: 2px; }
+
+.dropdown {
+    list-style: none; margin: 0; padding: 6px;
+    position: absolute; top: calc(100% + 6px); left: 0;
+    min-width: 300px;
+    max-width: 360px;
+    background: #000066;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 12px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .38);
+    display: none; z-index: 1200;
+}
+.nav-item.open > .dropdown { display: block; animation: navPop .14s ease; }
+@keyframes navPop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.dropdown-submenu { position: relative; }
+.submenu-trigger { justify-content: flex-start; }
+.submenu-caret { margin-left: auto; font-size: .72rem; transition: transform .18s; }
+.dropdown-submenu.open > .submenu-trigger { background: rgba(255, 255, 255, .14); color: #fff; }
+.dropdown-submenu.open > .submenu-trigger .submenu-caret { transform: rotate(90deg); }
+.submenu-list {
+    top: -6px;
+    left: calc(100% + 8px);
+    min-width: 340px;
+}
+.dropdown-submenu.open > .submenu-list { display: block; animation: navPop .14s ease; }
+
+.dropdown-link {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: none; border: 0; cursor: pointer;
+    color: #eef0ff; font: inherit; font-size: .86rem;
+    padding: 9px 11px; border-radius: 8px;
+    white-space: normal;
+    line-height: 1.25;
+    text-decoration: none;
+    transition: background .12s, color .12s;
+}
+.dropdown-link i { font-size: 1rem; opacity: .85; width: 1.15em; text-align: center; }
+.dropdown-link:hover { background: rgba(255, 255, 255, .14); color: #fff; text-decoration: none; }
+.dropdown-link:focus-visible { outline: 1px solid #fff; outline-offset: -2px; }
+.dropdown-link.report-pending { opacity: .5; cursor: default; pointer-events: none; }
+.report-id-badge {
+    margin-left: auto;
+    font-size: .7rem;
+    opacity: .5;
+    font-weight: 600;
+    letter-spacing: .03em;
+    flex-shrink: 0;
+}
+
+.nav-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(5, 3, 25, .5);
+    z-index: 1100;
+}
+/* Con el drawer abierto, los controles del mapa no deben asomarse sobre el menú */
+body.nav-open .leaflet-control-container { display: none; }
+
+/* Aviso flotante (módulos admin en construcción) */
+.app-toast {
+    position: fixed; left: 50%; bottom: 26px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--brand-navy); color: #fff;
+    border: 1px solid rgba(255, 255, 255, .18);
+    padding: 12px 18px; border-radius: 10px;
+    font-size: .88rem; font-weight: 500;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+    opacity: 0; pointer-events: none; max-width: 90vw;
+    transition: opacity .2s, transform .2s;
+    z-index: 2000;
+}
+.app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
