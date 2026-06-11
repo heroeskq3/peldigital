@@ -128,13 +128,25 @@
 
     restringirMapaNacional();
     setupMiniMap();
-    actualizarIconoTema();
     setupMetrica();
     setupPadron();
     setupBitacora();
-    setupNav();
     setupFilters();
-    $("btnTheme").addEventListener("click", alternarTema);
+
+    // nav.js maneja drawer/dropdowns/tema; app.js sólo actualiza el mapa al cambiar tema
+    document.addEventListener("themechange", () => {
+      setBasemap();
+      if (capaDiaspora) {
+        capaDiaspora.eachLayer((l) => l.setStyle({ color: cssVar("--stroke") }));
+      } else if (capa) {
+        capa.setStyle(estiloFeature);
+        if (state.codDistrito && capasPorCodigo[state.codDistrito]) {
+          capasPorCodigo[state.codDistrito].setStyle({ weight: 3, color: cssVar("--stroke-hover"), fillOpacity: 1 });
+        }
+      }
+      actualizarLeyenda();
+    });
+    document.addEventListener("navreset", reiniciarVista);
 
     try {
       POB = await fetchJSON("api/poblacion.php");
@@ -790,32 +802,6 @@
     setBasemap();
   }
 
-  function actualizarIconoTema() {
-    const oscuro = tema() === "dark";
-    $("btnTheme").querySelector("i").className = oscuro ? "bi bi-sun" : "bi bi-moon";
-    const icM = $("btnThemeM")?.querySelector("i");
-    if (icM) icM.className = oscuro ? "bi bi-sun" : "bi bi-moon";
-    const lbl = $("themeLabelM");
-    if (lbl) lbl.textContent = oscuro ? "Modo claro" : "Modo oscuro";
-  }
-
-  function alternarTema() {
-    const nuevo = tema() === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", nuevo);
-    localStorage.setItem("cr-theme", nuevo);
-    actualizarIconoTema();
-    setBasemap();
-    if (capaDiaspora) {
-      capaDiaspora.eachLayer((l) => l.setStyle({ color: cssVar("--stroke") }));
-    } else if (capa) {
-      capa.setStyle(estiloFeature);
-      if (state.codDistrito && capasPorCodigo[state.codDistrito]) {
-        capasPorCodigo[state.codDistrito].setStyle({ weight: 3, color: cssVar("--stroke-hover"), fillOpacity: 1 });
-      }
-    }
-    actualizarLeyenda();
-  }
-
   // ---- Selector de metrica (padron / residencia / saldo) ----
   const AYUDA_METRICA = {
     electoral: "Inscritos según domicilio electoral (padrón real · TSE 2026).",
@@ -840,133 +826,6 @@
     $("metricaAyuda").textContent = AYUDA_METRICA[m];
     aplicarMetrica();
     logEvento("metrica", `Métrica: ${m}`, { metrica: m });
-  }
-
-  // ---- Menú de navegación (Análisis / Admin) + drawer móvil ----
-  const ADMIN_LABEL = {
-    bitacora: "Bitácora", configuracion: "Configuración", usuarios: "Usuarios",
-    roles: "Roles de usuario", cargar: "Cargar Datos", pipelines: "Pipelines",
-  };
-
-  function setupNav() {
-    const nav = $("mainNav");
-    const toggle = $("btnMenu");
-    const backdrop = $("navBackdrop");
-    const mq = matchMedia("(max-width: 820px)");
-    const esMovil = () => mq.matches;
-
-    const cerrarDropdowns = () => {
-      nav.querySelectorAll(".nav-item.open").forEach((it) => {
-        it.classList.remove("open");
-        it.querySelector(".nav-link").setAttribute("aria-expanded", "false");
-      });
-      nav.querySelectorAll(".dropdown-submenu.open").forEach((it) => {
-        it.classList.remove("open");
-        it.querySelector(".submenu-trigger")?.setAttribute("aria-expanded", "false");
-      });
-    };
-    const cerrarSubmenusHermanos = (submenu) => {
-      submenu.parentElement.querySelectorAll(":scope > .dropdown-submenu.open").forEach((it) => {
-        if (it === submenu) return;
-        it.classList.remove("open");
-        it.querySelector(".submenu-trigger")?.setAttribute("aria-expanded", "false");
-      });
-    };
-    const abrirDrawer = () => {
-      nav.classList.add("open");
-      backdrop.classList.remove("d-none");
-      toggle.setAttribute("aria-expanded", "true");
-      document.body.classList.add("nav-open");
-      document.body.style.overflow = "hidden";
-    };
-    const cerrarDrawer = () => {
-      nav.classList.remove("open");
-      backdrop.classList.add("d-none");
-      toggle.setAttribute("aria-expanded", "false");
-      document.body.classList.remove("nav-open");
-      document.body.style.overflow = "";
-      cerrarDropdowns();
-    };
-    const cerrarTodo = () => { cerrarDropdowns(); if (esMovil()) cerrarDrawer(); };
-
-    toggle.addEventListener("click", () => {
-      nav.classList.contains("open") ? cerrarDrawer() : abrirDrawer();
-    });
-    $("btnMenuClose").addEventListener("click", cerrarDrawer);
-    backdrop.addEventListener("click", cerrarDrawer);
-
-    // Abrir/cerrar cada menú (acordeón en móvil, popover en desktop).
-    nav.querySelectorAll(".nav-item.has-dropdown > .nav-link").forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const item = link.parentElement;
-        const abierto = item.classList.contains("open");
-        cerrarDropdowns();
-        if (!abierto) {
-          item.classList.add("open");
-          link.setAttribute("aria-expanded", "true");
-        }
-      });
-    });
-
-    nav.querySelectorAll(".dropdown-submenu > .submenu-trigger").forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const item = link.parentElement;
-        const abierto = item.classList.contains("open");
-        cerrarSubmenusHermanos(item);
-        item.classList.toggle("open", !abierto);
-        link.setAttribute("aria-expanded", String(!abierto));
-      });
-    });
-
-    // Click fuera cierra los popovers (desktop).
-    document.addEventListener("click", (e) => {
-      if (!nav.contains(e.target) && !toggle.contains(e.target)) cerrarDropdowns();
-    });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarTodo(); });
-    mq.addEventListener("change", (ev) => { if (!ev.matches) cerrarDrawer(); });
-
-    // Análisis predisenados: aplican una métrica con vista nacional.
-    nav.querySelectorAll("[data-analisis]").forEach((b) => {
-      b.addEventListener("click", () => {
-        activarReporte("padron-distribucion");
-        navegarA("provincia", null, null, null);
-        map.setView([9.75, -84.1], 8);
-        seleccionarMetrica(b.dataset.analisis);
-        cerrarTodo();
-      });
-    });
-
-    // Reportes completos (reemplazan la vista del mapa).
-    nav.querySelectorAll("[data-reporte]").forEach((b) => {
-      b.addEventListener("click", () => {
-        const id = b.dataset.reporte;
-        cerrarTodo();
-        if (id === "jrv-inscritos")           abrirReporteJrv();
-        else if (id === "jrv-analisis")       abrirReporteJrvAnalisis();
-        else if (id === "segmentacion")       abrirReporteSegmentacion();
-        else if (id === "participacion")       abrirReporteParticipacion();
-        else if (id === "analisis-territorial") abrirAnalisisTerritorial();
-        else if (id === "distritos-electorales") abrirDistritosElectorales();
-        else if (id === "juntas-padronal")    abrirJuntasPadronal();
-      });
-    });
-
-    // Admin: la Bitácora abre su visor; el resto sigue en construcción.
-    nav.querySelectorAll("[data-admin]").forEach((b) => {
-      b.addEventListener("click", () => {
-        const mod = b.dataset.admin;
-        logEvento("admin_open", `Admin: ${ADMIN_LABEL[mod]}`, { modulo: mod });
-        cerrarTodo();
-        if (mod === "bitacora") abrirBitacora();
-        else toast(`${ADMIN_LABEL[mod]}: módulo en construcción.`);
-      });
-    });
-
-    // Acciones del drawer (tema / reiniciar) — solo móvil.
-    $("btnThemeM").addEventListener("click", alternarTema);
-    $("btnResetM").addEventListener("click", () => { reiniciarVista(); cerrarTodo(); });
   }
 
   // ---- Panel de filtros (bottom sheet en móvil) ----

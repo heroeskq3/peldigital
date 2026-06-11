@@ -1,3 +1,4 @@
+<script src="assets/js/nav.js?v=<?= filemtime($rootDir . '/assets/js/nav.js') ?>"></script>
 <?php if (empty($pageScripts)): ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>

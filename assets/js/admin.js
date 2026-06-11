@@ -55,6 +55,7 @@
         if (sectionEl) sectionEl.classList.add('active');
 
         history.replaceState(null, '', '#' + slug);
+        window.navCerrarTodo?.();
 
         const s = sections[slug];
         if (s && !s.loaded) { s.init(); s.loaded = true; }
@@ -738,31 +739,5 @@
         } catch (e) { alert(e.message); }
     };
     window.adminRepEdit = id => abrirModalRep(id);
-
-    // ── Tema (toggle claro/oscuro) ────────────────────────────────────────────
-
-    function applyTheme(t) {
-        document.documentElement.setAttribute('data-theme', t);
-        localStorage.setItem('cr-theme', t);
-        const isDark = t === 'dark';
-        ['btnTheme', 'btnThemeM'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.querySelector('i').className = isDark ? 'bi bi-sun' : 'bi bi-moon';
-            const lbl = el.querySelector('span');
-            if (lbl) lbl.textContent = isDark ? 'Modo claro' : 'Modo oscuro';
-        });
-    }
-
-    ['btnTheme', 'btnThemeM'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('click', () => {
-            const cur = document.documentElement.getAttribute('data-theme') || 'light';
-            applyTheme(cur === 'dark' ? 'light' : 'dark');
-        });
-    });
-
-    applyTheme(localStorage.getItem('cr-theme') ||
-        (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
 })();
