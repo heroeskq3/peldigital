@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#150857">
+    <?php if (function_exists('csrfToken') && estaAutenticado()): ?>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <title><?= htmlspecialchars($pageTitle ?? 'PEL Digital') ?></title>
 
     <!-- Evita el parpadeo de tema: aplica el tema guardado antes de pintar. -->

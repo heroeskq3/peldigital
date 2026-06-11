@@ -22,8 +22,10 @@
 | 18 | Revisar placeholders admin | Producto | Media | Hecho | Admin documentado como funcional: usuarios, roles, reportes, bitacora, configuracion, datos y pipelines. |
 | 19 | Partir `assets/js/app.js` por modulos | Codigo | Alta | Hecho | Dividido en `assets/js/app/core.js`, `map.js`, `controls.js`, `padron-bitacora.js` y `reports.js`. |
 | 20 | Partir `assets/css/style.css` por dominios | Codigo | Media | Hecho | Dividido en `assets/css/app/tokens.css`, `nav.css`, `layout.css`, `modals.css`, `responsive.css`, `reports.css` y `admin.css`. |
-| 21 | Centralizar carga de vistas de reportes en `reports.php` | Codigo | Media | Pendiente | Segunda etapa; requiere validar rutas desde catalogo BD. |
+| 21 | Centralizar carga de vistas de reportes en `reports.php` | Codigo | Media | Hecho | Carga `php_file` del reporte activo desde BD con whitelist; mantiene `padron-distribucion.php` como base por dependencia de `#map`. |
 | 22 | Deshabilitar/restringir fallback `demo` en produccion | Seguridad | Alta | Hecho | `auth.php` bloquea fallback cuando `APP_ENV=production`; prueba CLI confirmada. |
 | 23 | Probar bloqueo web de carpetas sensibles por URL | Seguridad | Alta | Hecho | XAMPP: `raw/`, `scripts/`, `migrations/`, `lib/` y `.env` devuelven `403`; rutas públicas devuelven `200`. |
 | 24 | Agregar pruebas minimas de parsers y ETL | Calidad | Media | Pendiente | Usar fixtures pequenas. |
 | 25 | Agregar smoke test de APIs principales | Calidad | Media | Pendiente | Requiere sesion/auth o harness CLI. |
+| 26 | Restringir panel y APIs admin por rol | Seguridad | Alta | Hecho | `admin.php` y `api/admin/*` requieren rol `administrador`; el menú Admin se oculta para otros roles. |
+| 27 | Agregar CSRF para escrituras admin | Seguridad | Alta | Hecho | `api/admin/*` valida `X-CSRF-Token` en métodos mutables; `admin.js` lo envía automáticamente. |

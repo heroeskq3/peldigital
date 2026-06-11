@@ -5,8 +5,13 @@
 
     const $ = id => document.getElementById(id);
     const fmt = n => (n < 0 ? 'N/D' : Number(n).toLocaleString('es-CR'));
+    const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     async function api(url, opts = {}) {
+        const method = (opts.method || 'GET').toUpperCase();
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+            opts.headers = Object.assign({}, opts.headers || {}, { 'X-CSRF-Token': csrf() });
+        }
         const res = await fetch(url, opts);
         if (!res.ok) {
             const e = await res.json().catch(() => ({ error: 'Error ' + res.status }));

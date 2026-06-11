@@ -424,7 +424,8 @@ resumidos:
 7. Configurar Apache para bloquear acceso web a `raw/`, `migrations/`,
    `scripts/`, `lib/`. Ver directivas en `docs/produccion.md`.
 8. Habilitar HTTPS.
-9. Crear usuarios reales en la tabla `users`; dejar el fallback `demo` solo para desarrollo.
+9. Crear usuarios reales en la tabla `users`; el fallback `demo` queda disponible
+   solo fuera de producción (`APP_ENV!=production`).
 
 **Carpetas que no deben ser accesibles desde el browser:**
 `raw/`, `migrations/`, `scripts/`, `lib/`
@@ -434,7 +435,7 @@ resumidos:
 | Item | Archivo | Impacto |
 |---|---|---|
 | `fecha_nac` NULL en todos los registros | `lib/parsers/PadronTSEParser.php` | Bloquea segmentación por edad |
-| Fallback `demo` sigue activo en `auth.php` | `auth.php` | Debe deshabilitarse o restringirse en producción |
+| Fallback `demo` solo activo fuera de producción | `auth.php` | Restringido por `APP_ENV=production` |
 | `polling_places` sin catálogo oficial cargado | BD | Reporte de locales de votación no debe publicarse hasta cargar fuente real |
 | `electoral_district_id` y `polling_place_id` NULL en `voters` | BD | Asignación de JRV no está cruzada |
 | Reporte #7 Indicadores Estratégicos no construido | — | Requiere definir KPIs con el cliente |

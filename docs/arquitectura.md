@@ -13,15 +13,21 @@ datos, define el reporte activo y ensambla la pagina con esta cadena:
 ```text
 includes/layout/head.php
 includes/layout/header.php
-includes/reports/*.php
+includes/reports/padron-distribucion.php
+includes/reports/{reporte-activo}.php
 includes/layout/footer.php
 includes/modals/*.php
 includes/layout/loader.php
 includes/layout/scripts.php
 ```
 
+`reports.php` siempre carga `padron-distribucion.php` porque el frontend
+inicializa Leaflet contra `#map`. Si el reporte activo tiene `php_file`, carga
+solo esa vista adicional desde el catalogo BD tras validar el nombre contra una
+whitelist.
+
 `admin.php` usa la misma cadena de layout, pero carga parciales desde
-`includes/admin/` y usa `assets/js/admin.js`.
+`includes/admin/`, usa `assets/js/admin.js` y requiere rol `administrador`.
 
 ## Directorios
 
@@ -61,7 +67,7 @@ includes/layout/scripts.php
 - `assets/js/app/*` conserva estado compartido en scripts globales por
   compatibilidad. La siguiente mejora debe convertir reportes a modulos con
   dependencias explicitas.
-- `reports.php` aun incluye manualmente todas las vistas de reportes aunque el
-  catalogo vive en BD.
+- `padron-distribucion.php` sigue siendo una dependencia base del frontend
+  porque `assets/js/app/core.js` inicializa Leaflet contra `#map`.
 - Varias APIs repiten patrones de JSON, error y paginacion; usar `lib/api.php`
   para cambios nuevos.

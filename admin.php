@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/auth.php';
 require_once __DIR__ . '/lib/db.php';
-requerirLogin();
+requerirAdmin();
 
 $rootDir   = __DIR__;
 $pageTitle = 'Administración · PEL Digital';

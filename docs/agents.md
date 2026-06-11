@@ -31,7 +31,7 @@ Login de acceso: usuario `demo`, contrasena `demo1234`.
 ```
 index.php                        # Entrada minima. Valida sesion y redirige a reports.php?id=1.
 auth.php                         # Sesion PHP. Login, logout, helpers de autenticacion.
-                                 # Autentica contra tabla users; fallback demo para acceso inicial.
+                                 # Autentica contra tabla users; fallback demo solo local.
 login.php / logout.php           # Pantallas de acceso / cierre de sesion.
 
 includes/
@@ -311,7 +311,8 @@ El padron actual (voters) solo dice quien ESTABA inscrito, no quien VOTO.
 
 ## Pendientes criticos conocidos
 
-- `auth.php` conserva fallback `demo`; deshabilitarlo o restringirlo en produccion.
+- `auth.php` conserva fallback `demo` solo fuera de produccion; confirmar
+  `APP_ENV=production` antes de publicar.
 - `fecha_nac` es NULL en todos los registros de `voters`; requiere fuente oficial
   o completar parser/ingesta si el archivo disponible contiene el campo.
 - `electoral_district_id` y `polling_place_id` son NULL en `voters` — datos

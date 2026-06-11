@@ -58,14 +58,14 @@ Archivo monolítico IIFE (~2700 líneas). Funciones clave:
 
 ```
 index.php               ← ensamblador de vistas (incluye todos los reports/)
-auth.php                ← sesión PHP, login contra users con fallback demo
+auth.php                ← sesión PHP, login contra users; fallback demo solo local
 includes/layout/
   head.php              ← CSS, anti-flash de tema
   header.php            ← nav con dropdown por categoría de reporte (BD-driven)
   scripts.php           ← Leaflet + app.js al final del body
 includes/reports/       ← una vista .php por reporte
 api/                    ← una API .php por reporte
-assets/js/app.js        ← TODO el frontend
+assets/js/app/*.js      ← frontend público dividido por dominio
 assets/css/style.css    ← CSS con variables de tema claro/oscuro
 lib/db.php              ← dbConnect() PDO singleton
 migrations/             ← migraciones SQL (runner: scripts/migrate.php)
@@ -74,9 +74,10 @@ migrations/             ← migraciones SQL (runner: scripts/migrate.php)
 ## Pendientes conocidos
 
 1. **Reporte 7 — Indicadores Estratégicos**: sin definición de KPIs con el cliente. Requiere reunión.
-2. **Fallback demo**: `auth.php` ya usa tabla `users`, pero conserva usuario demo para acceso inicial/desarrollo.
+2. **Permisos admin**: `admin.php` y `api/admin/*` requieren rol administrador;
+   falta definir permisos granulares si se necesitan administradores parciales.
 3. **fecha_nac**: requiere acuerdo oficial con TSE. Desbloquea segmentación por edad.
-4. **Producción**: deshabilitar o restringir el fallback `demo` y configurar usuarios reales.
+4. **Producción**: configurar usuarios reales y confirmar `APP_ENV=production`.
 5. **polling_places**: catálogo real de locales de votación con ~7,000 locales + direcciones.
 6. **Comparativos históricos en UI**: AVR2022 importado en BD pero la UI de Participación solo muestra 2026 y 2024. Agregar selector de elección 2022.
 

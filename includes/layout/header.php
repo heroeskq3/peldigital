@@ -104,6 +104,7 @@ foreach ($navByCategory as $cat) {
                 </li>
 
                 <!-- ── Menú padre: Admin ── -->
+                <?php if (function_exists('esAdministrador') && esAdministrador()): ?>
                 <?php $isAdmin = strpos($_SERVER['REQUEST_URI'] ?? '', 'admin.php') !== false; ?>
                 <li class="nav-item has-dropdown">
                     <button class="nav-link<?= $isAdmin ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
@@ -120,6 +121,7 @@ foreach ($navByCategory as $cat) {
                         <li><a class="dropdown-link" href="admin.php#pipelines"     data-admin="pipelines"    ><i class="bi bi-diagram-3"></i> Pipelines</a></li>
                     </ul>
                 </li>
+                <?php endif; ?>
             </ul>
 
             <div class="nav-tools">

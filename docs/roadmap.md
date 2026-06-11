@@ -18,15 +18,16 @@ la minuta del cliente queda en `docs/roadmap/expectativas-cliente.md`.
 
 ## Prioridades tecnicas
 
-1. Restringir fallback `demo` en produccion.
-2. Convertir gradualmente `assets/js/app/*` a modulos con dependencias explicitas.
-3. Usar helpers de `lib/api.php` en APIs nuevas y al tocar APIs existentes.
-4. Cargar catalogos reales faltantes para locales y distritos electorales.
-5. Completar estrategia de `fecha_nac`.
+1. Convertir gradualmente `assets/js/app/*` a modulos con dependencias explicitas.
+2. Usar helpers de `lib/api.php` en APIs nuevas y al tocar APIs existentes.
+3. Cargar catalogos reales faltantes para locales y distritos electorales.
+4. Completar estrategia de `fecha_nac`.
+5. Agregar pruebas automatizadas para parsers y APIs principales.
 
 ## Segunda etapa sugerida
 
 - Refactor de reportes para cargar vistas desde el catalogo BD con una capa de
   validacion de rutas permitidas.
 - Pruebas automatizadas para parsers y APIs principales.
-- Politicas de permisos por rol en APIs y UI.
+- Politicas de permisos por rol mas granulares si se necesitan roles de admin
+  parciales. Hoy el panel admin requiere rol `administrador`.

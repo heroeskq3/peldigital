@@ -74,6 +74,7 @@ function iniciarSesionConUsuario(array $user): void
     $_SESSION['user_id']  = $user['id']      ?? 0;
     $_SESSION['role_id']  = $user['role_id'] ?? 1;
     $_SESSION['email']    = $user['email']   ?? '';
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 /** Inicia sesión (compatibilidad — solo nombre de usuario). */
@@ -113,11 +114,51 @@ function usuarioActual(): ?string
     return $_SESSION['usuario'] ?? null;
 }
 
+/** Rol actual como id numerico. */
+function rolActualId(): int
+{
+    return (int)($_SESSION['role_id'] ?? 0);
+}
+
+/** ¿La sesion actual tiene rol administrador? */
+function esAdministrador(): bool
+{
+    return estaAutenticado() && rolActualId() === 1;
+}
+
+/** Token CSRF estable para la sesion actual. */
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/** Valida el token CSRF enviado por header o formulario. */
+function csrfValido(?string $token): bool
+{
+    return is_string($token)
+        && $token !== ''
+        && hash_equals(csrfToken(), $token);
+}
+
 /** Exige login en una página; si no, redirige. */
 function requerirLogin(): void
 {
     if (!estaAutenticado()) {
         header('Location: login.php');
+        exit;
+    }
+}
+
+/** Exige rol administrador en una pagina HTML. */
+function requerirAdmin(): void
+{
+    requerirLogin();
+    if (!esAdministrador()) {
+        http_response_code(403);
+        echo 'Acceso denegado';
         exit;
     }
 }
@@ -129,6 +170,35 @@ function requerirLoginApi(): void
         http_response_code(401);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['error' => 'No autenticado']);
+        exit;
+    }
+}
+
+/** Exige rol administrador en un endpoint JSON. */
+function requerirAdminApi(): void
+{
+    requerirLoginApi();
+    if (!esAdministrador()) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Acceso denegado']);
+        exit;
+    }
+}
+
+/** Exige CSRF para metodos que modifican estado. */
+function requerirCsrfParaMetodosMutables(): void
+{
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+        return;
+    }
+
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['_csrf'] ?? null);
+    if (!csrfValido($token)) {
+        http_response_code(419);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Token CSRF inválido']);
         exit;
     }
 }

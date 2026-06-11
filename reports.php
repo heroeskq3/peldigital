@@ -30,6 +30,19 @@ $activeReportSlug = $report['js_report_id'] ?? 'padron-distribucion';
 $reportStatus     = $report['status'];
 $reportPhpFile    = $report['php_file'];
 
+$reportViewDir = $rootDir . '/includes/reports';
+$allowedReportViews = [];
+$viewStmt = $pdo->query("
+    SELECT DISTINCT php_file
+    FROM reports
+    WHERE php_file IS NOT NULL AND php_file <> ''
+");
+foreach ($viewStmt->fetchAll(PDO::FETCH_COLUMN) as $file) {
+    if (preg_match('/^[a-z0-9-]+\.php$/', $file)) {
+        $allowedReportViews[$file] = $reportViewDir . '/' . $file;
+    }
+}
+
 require $rootDir . '/includes/layout/head.php';
 ?>
 <script>
@@ -40,16 +53,19 @@ require $rootDir . '/includes/layout/head.php';
 <?php
 require $rootDir . '/includes/layout/header.php';
 
-// ── Partials de reportes activos (siempre incluidos porque app.js necesita
-//    el elemento #map para inicializar Leaflet, independientemente del reporte).
+// El mapa base se carga siempre porque el frontend inicializa Leaflet en #map.
 require $rootDir . '/includes/reports/padron-distribucion.php';
-require $rootDir . '/includes/reports/jrv-inscritos.php';
-require $rootDir . '/includes/reports/jrv-analisis.php';
-require $rootDir . '/includes/reports/segmentacion.php';
-require $rootDir . '/includes/reports/participacion.php';
-require $rootDir . '/includes/reports/analisis-territorial.php';
-require $rootDir . '/includes/reports/distritos-electorales.php';
-require $rootDir . '/includes/reports/juntas-padronal.php';
+
+// La vista del reporte activo se resuelve desde el catalogo BD y se valida
+// contra nombres permitidos para evitar includes arbitrarios.
+if ($reportPhpFile && $reportPhpFile !== 'padron-distribucion.php') {
+    $activeView = $allowedReportViews[$reportPhpFile] ?? null;
+    if ($activeView && is_file($activeView)) {
+        require $activeView;
+    } else {
+        $reportPhpFile = null;
+    }
+}
 
 // ── Panel "próximamente" superpuesto para reportes no construidos aún ─────────
 // Solo se muestra si no hay php_file; los reportes 'partial' con php_file

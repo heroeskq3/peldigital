@@ -2,7 +2,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../auth.php';
 require_once __DIR__ . '/../../lib/db.php';
-requerirLoginApi();
+requerirAdminApi();
+requerirCsrfParaMetodosMutables();
 
 header('Content-Type: application/json; charset=utf-8');
 

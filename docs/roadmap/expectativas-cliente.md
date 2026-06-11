@@ -190,14 +190,16 @@ Solicitado/implícito:
 Estado actual:
 
 - La aplicacion tiene login basico por sesion.
-- Existe fallback `demo` en `auth.php`; el login principal ya consulta `users`.
+- Existe fallback `demo` en `auth.php` solo fuera de produccion; el login
+  principal ya consulta `users`.
 - La BD tiene tablas de usuarios, roles y permisos, pero no estan integradas al
   login actual.
 
 Pendiente:
 
 - Integrar autenticacion contra `users`.
-- Activar roles/permisos por modulo.
+- Definir permisos granulares por modulo si se necesitan roles administrativos
+  parciales. Actualmente el panel admin requiere rol administrador.
 - Revisar politicas de acceso antes de despliegue externo.
 
 ## Valoracion de avance (revisado 06 junio 2026)
