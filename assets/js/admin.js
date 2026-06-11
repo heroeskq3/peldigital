@@ -30,6 +30,37 @@
         });
     });
 
+    // ── Menú de acciones (tres puntos) ───────────────────────────────────────
+
+    function menuAcciones(items) {
+        const lis = items.map(it => {
+            if (it.separator) return '<li class="crud-sep"></li>';
+            const dis = it.disabled ? 'disabled' : '';
+            const cls = it.danger ? 'crud-item--danger' : '';
+            const icon = it.icon ? `<i class="bi ${it.icon}"></i>` : '';
+            return `<li><button class="crud-item ${cls}" ${dis} onclick="${it.fn};closeCrudMenu(this)">${icon}${it.label}</button></li>`;
+        }).join('');
+        return `<div class="crud-actions"><button class="crud-dots" type="button" data-crud-toggle><i class="bi bi-three-dots-vertical"></i></button><ul class="crud-menu">${lis}</ul></div>`;
+    }
+
+    // Toggle al hacer clic en ⋮ — cierra otros menús abiertos
+    document.addEventListener('click', e => {
+        const toggle = e.target.closest('[data-crud-toggle]');
+        if (toggle) {
+            e.stopPropagation();
+            const wrap = toggle.closest('.crud-actions');
+            const wasOpen = wrap.classList.contains('open');
+            document.querySelectorAll('.crud-actions.open').forEach(el => el.classList.remove('open'));
+            if (!wasOpen) wrap.classList.add('open');
+            return;
+        }
+        if (!e.target.closest('.crud-actions')) {
+            document.querySelectorAll('.crud-actions.open').forEach(el => el.classList.remove('open'));
+        }
+    });
+
+    window.closeCrudMenu = btn => btn.closest('.crud-actions')?.classList.remove('open');
+
     // ── Section routing ──────────────────────────────────────────────────────
 
     const sections = {
@@ -160,15 +191,14 @@
                 <td><span class="badge badge-blue">${esc(u.role_name || '—')}</span></td>
                 <td>${badge}</td>
                 <td style="color:var(--text-muted);font-size:.8rem">${fecha}</td>
-                <td class="col-actions">
-                    <div class="btn-actions">
-                        <button class="btn-icon btn-icon-blue"  onclick="adminEditUsu(${u.id})" title="Editar"><i class="bi bi-pencil"></i> Editar</button>
-                        <button class="btn-icon btn-icon-amber" onclick="adminToggleUsu(${u.id},this)" title="${u.active == 1 ? 'Desactivar' : 'Activar'}">
-                            <i class="bi bi-${u.active == 1 ? 'pause-circle' : 'play-circle'}"></i> ${u.active == 1 ? 'Desactivar' : 'Activar'}
-                        </button>
-                        <button class="btn-icon btn-icon-red"   onclick="adminDeleteUsu(${u.id},'${esc(u.name)}')" title="Eliminar"><i class="bi bi-trash3"></i></button>
-                    </div>
-                </td>
+                <td class="col-actions">${menuAcciones([
+                        { icon:'bi-pencil',       label:'Editar',    fn:`adminEditUsu(${u.id})` },
+                        { icon: u.active==1 ? 'bi-pause-circle':'bi-play-circle',
+                          label: u.active==1 ? 'Desactivar':'Activar',
+                          fn:`adminToggleUsu(${u.id},this)` },
+                        { separator: true },
+                        { icon:'bi-trash3',       label:'Eliminar',  fn:`adminDeleteUsu(${u.id},'${esc(u.name)}')`, danger:true },
+                    ])}</td>
             </tr>`;
         }).join('');
     }
@@ -287,11 +317,9 @@
                 <td style="font-weight:600">${esc(r.name)}</td>
                 <td style="color:var(--text-muted)">${esc(r.description || '—')}</td>
                 <td class="col-num"><span class="badge badge-blue">${r.user_count}</span></td>
-                <td class="col-actions">
-                    <button class="btn-icon btn-icon-blue" onclick="adminEditRol(${r.id},'${esc(r.name)}','${esc(r.description || '')}')">
-                        <i class="bi bi-pencil"></i> Editar
-                    </button>
-                </td>
+                <td class="col-actions">${menuAcciones([
+                        { icon:'bi-pencil', label:'Editar', fn:`adminEditRol(${r.id},'${esc(r.name)}','${esc(r.description || '')}')` },
+                    ])}</td>
             </tr>
         `).join('');
     }
@@ -607,17 +635,12 @@
             <td><code style="font-size:.75rem;opacity:.7">${esc(c.slug)}</code></td>
             <td><code style="font-size:.75rem">${esc(c.icon)}</code></td>
             <td class="col-num">${counts[c.id] || 0}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="btn-action" onclick="adminRepEditCat(${c.id})">
-                        <i class="bi bi-pencil"></i> Editar
-                    </button>
-                    <button class="btn-action btn-danger" onclick="adminRepDeleteCat(${c.id})"
-                        ${(counts[c.id] || 0) > 0 ? 'disabled title="Tiene reportes asignados"' : ''}>
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </td>
+            <td class="col-actions">${menuAcciones([
+                    { icon:'bi-pencil', label:'Editar',   fn:`adminRepEditCat(${c.id})` },
+                    { separator: true },
+                    { icon:'bi-trash',  label:'Eliminar', fn:`adminRepDeleteCat(${c.id})`, danger:true,
+                      disabled:(counts[c.id]||0)>0 },
+                ])}</td>
         </tr>`).join('') || '<tr><td colspan="6" class="admin-empty">Sin categorías</td></tr>';
     }
 
@@ -644,11 +667,9 @@
                     <option value="pending" ${r.status==='pending' ? 'selected':''}>Pendiente</option>
                 </select>
             </td>
-            <td>
-                <button class="btn-action" onclick="adminRepEdit(${r.id})">
-                    <i class="bi bi-pencil"></i> Editar
-                </button>
-            </td>
+            <td class="col-actions">${menuAcciones([
+                    { icon:'bi-pencil', label:'Editar', fn:`adminRepEdit(${r.id})` },
+                ])}</td>
         </tr>`).join('') || '<tr><td colspan="6" class="admin-empty">Sin reportes</td></tr>';
     }
 
