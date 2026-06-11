@@ -832,6 +832,8 @@
   function setupFilters() {
     const btn = $("btnFilters");
     if (!btn) return;
+    // Solo mostrar el botón de filtros en el reporte 1 (padrón-distribución)
+    if (window.ACTIVE_REPORT_DB === 1) document.body.classList.add("show-filters-btn");
     const side = document.querySelector(".app-side");
     const backdrop = $("filtersBackdrop");
     const handle = $("sideHandle");

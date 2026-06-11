@@ -928,8 +928,8 @@ select.field {
         font-size: 16px;
     }
 
-    /* ---- Panel de filtros (bottom sheet) ---- */
-    .btn-filters-mob {
+    /* ---- Panel de filtros (bottom sheet) — solo reporte 1 ---- */
+    .show-filters-btn .btn-filters-mob {
         display: inline-flex;
         position: absolute;
         right: 12px; top: 50%;
