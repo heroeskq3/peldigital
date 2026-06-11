@@ -730,8 +730,8 @@
 }
 
 .rep-tab.active {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--brand-navy);
+    border-color: var(--brand-navy);
     color: #fff;
 }
 
