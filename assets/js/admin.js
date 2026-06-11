@@ -412,10 +412,10 @@
         $('bitBody').innerHTML = d.rows.map(r => `
             <tr>
                 <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap">${r.created_at || '—'}</td>
-                <td style="font-size:.82rem">${esc(r.user_name || 'Sistema')}</td>
+                <td class="hide-mobile" style="font-size:.82rem">${esc(r.user_name || 'Sistema')}</td>
                 <td><span class="badge badge-blue">${esc(r.action || '')}</span></td>
                 <td style="font-size:.82rem;color:var(--text-muted)">${esc(r.description || '—')}</td>
-                <td style="font-size:.78rem;color:var(--text-muted);font-family:monospace">${esc(r.ip_address || '—')}</td>
+                <td class="hide-mobile" style="font-size:.78rem;color:var(--text-muted);font-family:monospace">${esc(r.ip_address || '—')}</td>
             </tr>
         `).join('');
     }
@@ -525,9 +525,9 @@
                                 : '<span class="badge badge-gray">N/D</span>';
             return `<tr>
                 <td style="font-family:monospace;font-size:.8rem">${esc(s.table)}</td>
-                <td style="color:var(--text-muted);font-size:.83rem">${esc(labels[s.key] || s.label)}</td>
+                <td class="hide-mobile" style="color:var(--text-muted);font-size:.83rem">${esc(labels[s.key] || s.label)}</td>
                 <td class="col-num" style="font-weight:600">${s.count >= 0 ? fmt(s.count) : '—'}</td>
-                <td class="col-num" style="color:var(--text-muted)">${s.size_mb != null ? s.size_mb + ' MB' : '—'}</td>
+                <td class="col-num hide-mobile" style="color:var(--text-muted)">${s.size_mb != null ? s.size_mb + ' MB' : '—'}</td>
                 <td>${badge}</td>
             </tr>`;
         }).join('');

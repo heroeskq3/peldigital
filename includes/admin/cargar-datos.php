@@ -37,9 +37,9 @@
                 <thead>
                     <tr>
                         <th>Tabla</th>
-                        <th>Descripción</th>
+                        <th class="hide-mobile">Descripción</th>
                         <th class="col-num">Registros</th>
-                        <th class="col-num">Tamaño</th>
+                        <th class="col-num hide-mobile">Tamaño</th>
                         <th>Estado</th>
                     </tr>
                 </thead>

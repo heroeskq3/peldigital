@@ -27,10 +27,10 @@
                 <thead>
                     <tr>
                         <th>Fecha</th>
-                        <th>Usuario</th>
+                        <th class="hide-mobile">Usuario</th>
                         <th>Acción</th>
                         <th>Descripción</th>
-                        <th>IP</th>
+                        <th class="hide-mobile">IP</th>
                     </tr>
                 </thead>
                 <tbody id="bitBody">
