@@ -11,6 +11,124 @@ Uso exclusivo interno del partido. No distribuir.
 - Bootstrap Icons 1.11.3
 - HTML / CSS / JavaScript puro — sin bundler, sin npm
 
+## Arquitectura del layout
+
+Todas las páginas del sistema comparten los **mismos cuatro parciales** de layout,
+sin duplicación. El HTML de cada página se ensambla en esta cadena exacta:
+
+```
+head.php  →  header.php  →  [contenido de la página]  →  footer.php  →  scripts.php
+```
+
+### Qué produce cada parcial
+
+| Archivo | Abre | Cierra | Contenido |
+|---|---|---|---|
+| `includes/layout/head.php` | `<html>` `<head>` `<body>` `<div class="app-shell">` | — | DOCTYPE, meta, anti-flash de tema, Bootstrap Icons, Leaflet CSS, `style.css`, CSS extra de la página (`$extraHeadLinks`) |
+| `includes/layout/header.php` | — | — | Barra superior + menú dinámico cargado desde BD (`reports` + `report_categories`) |
+| `includes/layout/footer.php` | — | `</div>` (cierra `app-shell`) | Footer con atribución TSE |
+| `includes/layout/scripts.php` | — | `</body>` `</html>` | JS de la página (`$pageScripts` si se define, o leaflet + chart.js + app.js por defecto) |
+
+El `<div class="app-shell">` lo abre `head.php` y lo cierra `footer.php`.
+El `</body></html>` lo cierra **siempre** `scripts.php`. Ninguna página los escribe
+manualmente.
+
+### Cómo funciona el HTML generado
+
+```
+<!-- head.php -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta ...>
+  <link href="bootstrap-icons.css">
+  <link href="leaflet.css">
+  <link href="style.css">
+  <!-- si $extraHeadLinks está definido: -->
+  <link href="assets/css/mi-pagina.css">
+</head>
+<body>
+<div class="app-shell">
+
+<!-- header.php -->
+<header class="app-header"> ... </header>
+
+<!-- contenido específico de la página -->
+<div class="mi-contenido"> ... </div>
+
+<!-- footer.php -->
+<footer class="app-footer"> ... </footer>
+</div>  <!-- cierra app-shell -->
+
+<!-- scripts.php — si NO hay $pageScripts: -->
+<script src="leaflet.js"></script>
+<script src="chart.js"></script>
+<script src="assets/js/app.js"></script>
+<!-- scripts.php — si HAY $pageScripts: -->
+<script src="assets/js/mi-pagina.js"></script>
+
+</body>
+</html>
+```
+
+### Variables de inyección
+
+Para incluir CSS o JS específico de una página sin tocar los parciales compartidos,
+definir antes de hacer el primer `require`:
+
+```php
+// CSS extra — se inyecta en <head> antes de </head>
+$extraHeadLinks = ['assets/css/admin.css'];
+
+// JS de la página — reemplaza leaflet+chart+app.js
+// Si no se define, scripts.php carga leaflet + chart.js + app.js
+$pageScripts = ['assets/js/admin.js'];
+```
+
+### Páginas actuales y sus cadenas de layout
+
+| Página | `$extraHeadLinks` | `$pageScripts` | Incluye además |
+|---|---|---|---|
+| `reports.php` | — | — (leaflet + chart + app.js) | modals/padron.php, modals/bitacora.php, loader.php |
+| `admin.php` | `admin.css` | `admin.js` | includes/admin/*.php |
+| `login.php` | — | — | solo HTML inline |
+
+### Cómo crear una nueva página
+
+1. Crear `mi-pagina.php` en la raíz del proyecto.
+2. Definir `$pageTitle`, `$reportId = 0`, `$pdo`, y las variables opcionales
+   `$extraHeadLinks` / `$pageScripts`.
+3. Incluir la cadena completa:
+
+```php
+<?php
+require __DIR__ . '/auth.php';
+require_once __DIR__ . '/lib/db.php';
+requerirLogin();
+
+$rootDir        = __DIR__;
+$pageTitle      = 'Mi página · PEL Digital';
+$reportId       = 0;
+$extraHeadLinks = ['assets/css/mi-pagina.css']; // opcional
+$pageScripts    = ['assets/js/mi-pagina.js'];   // opcional
+
+$pdo = dbConnect();
+
+require $rootDir . '/includes/layout/head.php';
+require $rootDir . '/includes/layout/header.php';
+?>
+
+<!-- contenido específico aquí -->
+
+<?php
+require $rootDir . '/includes/layout/footer.php';
+require $rootDir . '/includes/layout/scripts.php';
+```
+
+4. Si necesita JS con toggle de tema (sin app.js), implementarlo dentro del IIFE
+   de `mi-pagina.js` usando `btnTheme` / `btnThemeM` — los botones ya están en el
+   header compartido.
+
 ## Requisitos del servidor
 
 | Componente | Versión mínima | Notas |

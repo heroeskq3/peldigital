@@ -816,6 +816,42 @@
     border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
 }
 
+/* ── Reportes: sub-tabs ───────────────────────────────────────────────────── */
+
+.rep-tabs {
+    display: flex;
+    gap: .25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .5rem;
+}
+
+.rep-tab {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .82rem;
+    font-weight: 500;
+    padding: .35rem .85rem;
+    transition: color .15s, background .15s, border-color .15s;
+}
+
+.rep-tab:hover {
+    background: var(--surface);
+    color: var(--text);
+}
+
+.rep-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 700px) {

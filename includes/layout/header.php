@@ -50,17 +50,11 @@ function navReportLink(array $nr, int $activeRid): string {
         <span class="report-id-badge">#'.$nr['id'].'</span>'.$si.'</a>';
 }
 
-// Separar categoría Padrón TSE del resto
-$catPadron   = [];
-$catAnalisis = [];
-foreach ($navByCategory as $cid => $cat) {
-    if ($cat['slug'] === 'padron-tse') $catPadron[$cid]   = $cat;
-    else                               $catAnalisis[$cid] = $cat;
-}
-$padronActive  = false;
-foreach ($catPadron  as $cat) { if (catHasActive($cat, $activeRid)) { $padronActive  = true; break; } }
+// ¿Alguna categoría contiene el reporte activo?
 $analisisActive = false;
-foreach ($catAnalisis as $cat) { if (catHasActive($cat, $activeRid)) { $analisisActive = true; break; } }
+foreach ($navByCategory as $cat) {
+    if (catHasActive($cat, $activeRid)) { $analisisActive = true; break; }
+}
 ?>
 <header class="app-header">
     <div class="header-left">
@@ -84,30 +78,14 @@ foreach ($catAnalisis as $cat) { if (catHasActive($cat, $activeRid)) { $analisis
             </div>
             <ul class="nav-list">
 
-                <!-- ── Menú padre: Padrón (reportes estilo TSE) ── -->
-                <?php if (!empty($catPadron)): ?>
-                <li class="nav-item has-dropdown">
-                    <button class="nav-link<?= $padronActive ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
-                        <i class="bi bi-person-vcard-fill"></i> <span>Padrón</span>
-                        <i class="bi bi-chevron-down nav-caret"></i>
-                    </button>
-                    <ul class="dropdown">
-                        <?php foreach ($catPadron as $cat):
-                            foreach ($cat['reports'] as $nr): ?>
-                        <li><?= navReportLink($nr, $activeRid) ?></li>
-                        <?php endforeach; endforeach; ?>
-                    </ul>
-                </li>
-                <?php endif; ?>
-
-                <!-- ── Menú padre: Análisis (resto de reportes agrupados por subcategoría) ── -->
+                <!-- ── Menú padre: Análisis (todas las categorías como subcategorías) ── -->
                 <li class="nav-item has-dropdown">
                     <button class="nav-link<?= $analisisActive ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-graph-up"></i> <span>Análisis</span>
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
-                        <?php foreach ($catAnalisis as $cat): ?>
+                        <?php foreach ($navByCategory as $cat): ?>
                         <li class="dropdown-submenu">
                             <button class="dropdown-link submenu-trigger<?= catHasActive($cat, $activeRid) ? ' submenu-trigger-active' : '' ?>"
                                     type="button" aria-haspopup="true" aria-expanded="false">
@@ -135,6 +113,7 @@ foreach ($catAnalisis as $cat) { if (catHasActive($cat, $activeRid)) { $analisis
                     <ul class="dropdown">
                         <li><a class="dropdown-link" href="admin.php#usuarios"><i class="bi bi-people"></i> Usuarios</a></li>
                         <li><a class="dropdown-link" href="admin.php#roles"><i class="bi bi-shield-check"></i> Roles</a></li>
+                        <li><a class="dropdown-link" href="admin.php#reportes"><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
                         <li><a class="dropdown-link" href="admin.php#bitacora"><i class="bi bi-journal-text"></i> Bitácora</a></li>
                         <li><a class="dropdown-link" href="admin.php#configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
                         <li><a class="dropdown-link" href="admin.php#cargar-datos"><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>

@@ -7,17 +7,23 @@ $rootDir   = __DIR__;
 $pageTitle = 'Administración · PEL Digital';
 $reportId  = 0;
 
+// CSS específico de admin — inyectado en <head> via $extraHeadLinks
+$extraHeadLinks = ['assets/css/admin.css'];
+
+// JS específico de admin — reemplaza leaflet+chart+app.js en scripts.php
+$pageScripts = ['assets/js/admin.js'];
+
 $pdo = dbConnect();
 
 require $rootDir . '/includes/layout/head.php';
+require $rootDir . '/includes/layout/header.php';
 ?>
-<link href="assets/css/admin.css?v=<?= filemtime($rootDir . '/assets/css/admin.css') ?>" rel="stylesheet">
-<?php require $rootDir . '/includes/layout/header.php'; ?>
 
 <!-- Mobile section tabs -->
 <div class="admin-mobile-tabs">
     <button class="admin-mob-tab" data-section="usuarios">    <i class="bi bi-people"></i> Usuarios</button>
     <button class="admin-mob-tab" data-section="roles">       <i class="bi bi-shield-check"></i> Roles</button>
+    <button class="admin-mob-tab" data-section="reportes">    <i class="bi bi-layout-text-sidebar"></i> Reportes</button>
     <button class="admin-mob-tab" data-section="bitacora">    <i class="bi bi-journal-text"></i> Bitácora</button>
     <button class="admin-mob-tab" data-section="configuracion"><i class="bi bi-sliders"></i> Config</button>
     <button class="admin-mob-tab" data-section="cargar-datos"><i class="bi bi-cloud-upload"></i> Datos</button>
@@ -39,6 +45,11 @@ require $rootDir . '/includes/layout/head.php';
                 <li>
                     <button class="admin-sidebar-link" data-section="roles">
                         <i class="bi bi-shield-check"></i> Roles
+                    </button>
+                </li>
+                <li>
+                    <button class="admin-sidebar-link" data-section="reportes">
+                        <i class="bi bi-layout-text-sidebar"></i> Reportes
                     </button>
                 </li>
                 <li>
@@ -70,6 +81,7 @@ require $rootDir . '/includes/layout/head.php';
         <?php
         require $rootDir . '/includes/admin/usuarios.php';
         require $rootDir . '/includes/admin/roles.php';
+        require $rootDir . '/includes/admin/reportes.php';
         require $rootDir . '/includes/admin/bitacora.php';
         require $rootDir . '/includes/admin/configuracion.php';
         require $rootDir . '/includes/admin/cargar-datos.php';
@@ -79,34 +91,6 @@ require $rootDir . '/includes/layout/head.php';
 
 </div>
 
-<?php require $rootDir . '/includes/layout/footer.php'; ?>
-
-<script>
-    // Theme toggle — reuses same logic as app.js
-    (function () {
-        function applyTheme(t) {
-            document.documentElement.setAttribute('data-theme', t);
-            localStorage.setItem('cr-theme', t);
-            const isDark = t === 'dark';
-            ['btnTheme','btnThemeM'].forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.querySelector('i').className = isDark ? 'bi bi-sun' : 'bi bi-moon';
-                const lbl = el.querySelector('span');
-                if (lbl) lbl.textContent = isDark ? 'Modo claro' : 'Modo oscuro';
-            });
-        }
-        ['btnTheme','btnThemeM'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('click', () => {
-                const cur = document.documentElement.getAttribute('data-theme') || 'light';
-                applyTheme(cur === 'dark' ? 'light' : 'dark');
-            });
-        });
-        applyTheme(localStorage.getItem('cr-theme') ||
-            (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-    })();
-</script>
-<script src="assets/js/admin.js?v=<?= filemtime($rootDir . '/assets/js/admin.js') ?>"></script>
-</body>
-</html>
+<?php
+require $rootDir . '/includes/layout/footer.php';
+require $rootDir . '/includes/layout/scripts.php';

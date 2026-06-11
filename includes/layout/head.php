@@ -18,6 +18,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="assets/css/style.css?v=<?= filemtime($rootDir . '/assets/css/style.css') ?>" rel="stylesheet">
+    <?php foreach ($extraHeadLinks ?? [] as $link): ?>
+    <link href="<?= htmlspecialchars($link) ?>?v=<?= filemtime($rootDir . '/' . $link) ?>" rel="stylesheet">
+    <?php endforeach; ?>
 </head>
 <body>
 <div class="app-shell">

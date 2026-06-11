@@ -35,6 +35,7 @@
     const sections = {
         usuarios:     { init: initUsuarios,     loaded: false },
         roles:        { init: initRoles,         loaded: false },
+        reportes:     { init: initReportes,      loaded: false },
         bitacora:     { init: initBitacora,      loaded: false },
         configuracion:{ init: initConfiguracion, loaded: false },
         'cargar-datos':{ init: initDatos,        loaded: false },
@@ -550,5 +551,220 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+
+    // ── REPORTES ─────────────────────────────────────────────────────────────
+
+    let repData = { categories: [], reports: [] };
+
+    function initReportes() {
+        // Sub-tabs
+        document.querySelectorAll('.rep-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.rep-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.reptab;
+                $('repPanelCategorias').classList.toggle('d-none', tab !== 'categorias');
+                $('repPanelReportes').classList.toggle('d-none', tab !== 'reportes');
+            });
+        });
+
+        $('btnRefreshReportes').addEventListener('click', cargarReportes);
+        $('btnNuevaCat').addEventListener('click', () => abrirModalCat(null));
+        $('catModalClose').addEventListener('click', () => hideModal('catModal'));
+        $('catModalCancel').addEventListener('click', () => hideModal('catModal'));
+        $('repModalClose').addEventListener('click', () => hideModal('repModal'));
+        $('repModalCancel').addEventListener('click', () => hideModal('repModal'));
+        $('catModalSave').addEventListener('click', guardarCat);
+        $('repModalSave').addEventListener('click', guardarRep);
+
+        // Ícono preview en tiempo real
+        $('catIcon').addEventListener('input', () => {
+            $('catIconPreview').className = 'bi ' + $('catIcon').value;
+        });
+        $('repIcon').addEventListener('input', () => {
+            $('repIconPreview').className = 'bi ' + $('repIcon').value;
+        });
+
+        cargarReportes();
+    }
+
+    async function cargarReportes() {
+        try {
+            repData = await api('api/admin/reportes.php');
+            renderCats();
+            renderReps();
+        } catch (e) {
+            $('catBody').innerHTML = `<tr><td colspan="6" class="admin-empty">${esc(e.message)}</td></tr>`;
+        }
+    }
+
+    function renderCats() {
+        const counts = {};
+        repData.reports.forEach(r => { counts[r.category_id] = (counts[r.category_id] || 0) + 1; });
+        $('catBody').innerHTML = repData.categories.map(c => `
+        <tr>
+            <td class="col-num">${esc(c.sort_order)}</td>
+            <td><i class="bi ${esc(c.icon)}" style="margin-right:.4rem"></i>${esc(c.name)}</td>
+            <td><code style="font-size:.75rem;opacity:.7">${esc(c.slug)}</code></td>
+            <td><code style="font-size:.75rem">${esc(c.icon)}</code></td>
+            <td class="col-num">${counts[c.id] || 0}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="btn-action" onclick="adminRepEditCat(${c.id})">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button class="btn-action btn-danger" onclick="adminRepDeleteCat(${c.id})"
+                        ${(counts[c.id] || 0) > 0 ? 'disabled title="Tiene reportes asignados"' : ''}>
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`).join('') || '<tr><td colspan="6" class="admin-empty">Sin categorías</td></tr>';
+    }
+
+    function renderReps() {
+        const catMap = {};
+        repData.categories.forEach(c => { catMap[c.id] = c.name; });
+        const statusLabel = { active: 'Activo', partial: 'Parcial', pending: 'Pendiente' };
+        const statusClass = { active: 'badge-green', partial: 'badge-amber', pending: 'badge-muted' };
+        $('repBody').innerHTML = repData.reports.map(r => `
+        <tr>
+            <td class="col-num">${r.id}</td>
+            <td>
+                <i class="bi ${esc(r.icon)}" style="margin-right:.35rem;opacity:.7"></i>
+                <strong>${esc(r.short_name)}</strong>
+                <div style="font-size:.75rem;opacity:.55;margin-top:.1rem">${esc(r.name)}</div>
+            </td>
+            <td>${esc(catMap[r.category_id] ?? '—')}</td>
+            <td class="col-num">${r.sort_order}</td>
+            <td>
+                <select class="form-input" style="padding:.25rem .5rem;font-size:.78rem;width:110px"
+                    onchange="adminRepSetStatus(${r.id}, this.value)">
+                    <option value="active"  ${r.status==='active'  ? 'selected':''}>Activo</option>
+                    <option value="partial" ${r.status==='partial' ? 'selected':''}>Parcial</option>
+                    <option value="pending" ${r.status==='pending' ? 'selected':''}>Pendiente</option>
+                </select>
+            </td>
+            <td>
+                <button class="btn-action" onclick="adminRepEdit(${r.id})">
+                    <i class="bi bi-pencil"></i> Editar
+                </button>
+            </td>
+        </tr>`).join('') || '<tr><td colspan="6" class="admin-empty">Sin reportes</td></tr>';
+    }
+
+    function abrirModalCat(id) {
+        const cat = id ? repData.categories.find(c => c.id === id) : null;
+        $('catModalTitle').textContent = cat ? 'Editar categoría' : 'Nueva categoría';
+        $('catId').value       = cat ? cat.id : '';
+        $('catName').value     = cat ? cat.name : '';
+        $('catIcon').value     = cat ? cat.icon : 'bi-folder';
+        $('catSort').value     = cat ? cat.sort_order : 99;
+        $('catIconPreview').className = 'bi ' + (cat ? cat.icon : 'bi-folder');
+        showModal('catModal');
+    }
+
+    async function guardarCat() {
+        const id   = $('catId').value;
+        const body = {
+            action:     id ? 'cat_update' : 'cat_create',
+            id:         id ? parseInt(id) : undefined,
+            name:       $('catName').value.trim(),
+            icon:       $('catIcon').value.trim(),
+            sort_order: parseInt($('catSort').value) || 99,
+        };
+        try {
+            await api('api/admin/reportes.php', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            hideModal('catModal');
+            cargarReportes();
+        } catch (e) { alert(e.message); }
+    }
+
+    function abrirModalRep(id) {
+        const r = repData.reports.find(r => r.id === id);
+        if (!r) return;
+        $('repId').value        = r.id;
+        $('repName').value      = r.name;
+        $('repShortName').value = r.short_name;
+        $('repIcon').value      = r.icon;
+        $('repSort').value      = r.sort_order;
+        $('repStatus').value    = r.status;
+        $('repIconPreview').className = 'bi ' + r.icon;
+        // Poblar select de categorías
+        $('repCatId').innerHTML = repData.categories
+            .map(c => `<option value="${c.id}" ${c.id === r.category_id ? 'selected':''}>${esc(c.name)}</option>`)
+            .join('');
+        showModal('repModal');
+    }
+
+    async function guardarRep() {
+        const body = {
+            action:      'rep_update',
+            id:          parseInt($('repId').value),
+            category_id: parseInt($('repCatId').value),
+            name:        $('repName').value.trim(),
+            short_name:  $('repShortName').value.trim(),
+            icon:        $('repIcon').value.trim(),
+            sort_order:  parseInt($('repSort').value) || 10,
+            status:      $('repStatus').value,
+        };
+        try {
+            await api('api/admin/reportes.php', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            hideModal('repModal');
+            cargarReportes();
+        } catch (e) { alert(e.message); }
+    }
+
+    async function adminRepSetStatus(id, status) {
+        try {
+            await api('api/admin/reportes.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'rep_status', id, status }),
+            });
+            const r = repData.reports.find(r => r.id === id);
+            if (r) r.status = status;
+        } catch (e) { alert(e.message); cargarReportes(); }
+    }
+
+    // Funciones globales llamadas desde onclick en la tabla
+    window.adminRepEditCat    = id => abrirModalCat(id);
+    window.adminRepDeleteCat  = async id => {
+        if (!confirm('¿Eliminar esta categoría?')) return;
+        try {
+            await api('api/admin/reportes.php', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ action:'cat_delete', id }),
+            });
+            cargarReportes();
+        } catch (e) { alert(e.message); }
+    };
+    window.adminRepEdit = id => abrirModalRep(id);
+
+    // ── Tema (toggle claro/oscuro) ────────────────────────────────────────────
+
+    function applyTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('cr-theme', t);
+        const isDark = t === 'dark';
+        ['btnTheme', 'btnThemeM'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.querySelector('i').className = isDark ? 'bi bi-sun' : 'bi bi-moon';
+            const lbl = el.querySelector('span');
+            if (lbl) lbl.textContent = isDark ? 'Modo claro' : 'Modo oscuro';
+        });
+    }
+
+    ['btnTheme', 'btnThemeM'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', () => {
+            const cur = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(cur === 'dark' ? 'light' : 'dark');
+        });
+    });
+
+    applyTheme(localStorage.getItem('cr-theme') ||
+        (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
 })();
