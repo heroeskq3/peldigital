@@ -2053,12 +2053,19 @@ select.field {
 /* Reiniciar vista solo aplica al mapa — ocultarlo en páginas admin */
 body.page-admin #btnResetM { display: none; }
 
+/* En mobile el CSS global pone html/body en navy (para el mapa).
+   En admin.php necesitamos el fondo normal --bg. */
+body.page-admin,
+body.page-admin html { background: var(--bg); }
+
 .admin-main {
     max-width: 1100px;
     margin: 0 auto;
     padding: 2rem 2rem;
     width: 100%;
     box-sizing: border-box;
+    background: var(--bg);
+    min-height: calc(100vh - var(--header-h));
 }
 
 .admin-section { display: none; }
