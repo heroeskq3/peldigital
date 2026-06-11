@@ -43,31 +43,29 @@
     };
 
     function activarSeccion(slug) {
-        // Update sidebar + mobile tabs
-        document.querySelectorAll('.admin-sidebar-link').forEach(el => {
-            el.classList.toggle('active', el.dataset.section === slug);
-        });
-        document.querySelectorAll('.admin-mob-tab').forEach(el => {
-            el.classList.toggle('active', el.dataset.section === slug);
+        // Marcar item activo en el dropdown Admin del header
+        document.querySelectorAll('[data-admin]').forEach(el => {
+            el.classList.toggle('report-active', el.dataset.admin === slug);
         });
 
-        // Show/hide sections
+        // Mostrar sección correspondiente
         document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
         const sectionEl = document.getElementById('admin' + slug.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
             .replace(/^./, c => c.toUpperCase()));
         if (sectionEl) sectionEl.classList.add('active');
 
-        // Update URL hash
         history.replaceState(null, '', '#' + slug);
 
-        // Init once
         const s = sections[slug];
         if (s && !s.loaded) { s.init(); s.loaded = true; }
     }
 
-    // Sidebar & mobile nav click
-    document.querySelectorAll('.admin-sidebar-link, .admin-mob-tab').forEach(el => {
-        el.addEventListener('click', () => activarSeccion(el.dataset.section));
+    // Interceptar links [data-admin] del header — navegar sin reload al cambiar de sección
+    document.querySelectorAll('[data-admin]').forEach(el => {
+        el.addEventListener('click', e => {
+            e.preventDefault();
+            activarSeccion(el.dataset.admin);
+        });
     });
 
     // ── State (declared before activarSeccion to avoid TDZ) ─────────────────

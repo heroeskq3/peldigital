@@ -111,13 +111,13 @@ foreach ($navByCategory as $cat) {
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
-                        <li><a class="dropdown-link" href="admin.php#usuarios"><i class="bi bi-people"></i> Usuarios</a></li>
-                        <li><a class="dropdown-link" href="admin.php#roles"><i class="bi bi-shield-check"></i> Roles</a></li>
-                        <li><a class="dropdown-link" href="admin.php#reportes"><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
-                        <li><a class="dropdown-link" href="admin.php#bitacora"><i class="bi bi-journal-text"></i> Bitácora</a></li>
-                        <li><a class="dropdown-link" href="admin.php#configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
-                        <li><a class="dropdown-link" href="admin.php#cargar-datos"><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>
-                        <li><a class="dropdown-link" href="admin.php#pipelines"><i class="bi bi-diagram-3"></i> Pipelines</a></li>
+                        <li><a class="dropdown-link" href="admin.php#usuarios"     data-admin="usuarios"     ><i class="bi bi-people"></i> Usuarios</a></li>
+                        <li><a class="dropdown-link" href="admin.php#roles"         data-admin="roles"        ><i class="bi bi-shield-check"></i> Roles</a></li>
+                        <li><a class="dropdown-link" href="admin.php#reportes"      data-admin="reportes"     ><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
+                        <li><a class="dropdown-link" href="admin.php#bitacora"      data-admin="bitacora"     ><i class="bi bi-journal-text"></i> Bitácora</a></li>
+                        <li><a class="dropdown-link" href="admin.php#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
+                        <li><a class="dropdown-link" href="admin.php#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>
+                        <li><a class="dropdown-link" href="admin.php#pipelines"     data-admin="pipelines"    ><i class="bi bi-diagram-3"></i> Pipelines</a></li>
                     </ul>
                 </li>
             </ul>
