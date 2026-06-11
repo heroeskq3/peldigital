@@ -185,12 +185,12 @@
                 : '<span class="badge badge-gray"><i class="bi bi-dash-circle"></i> Inactivo</span>';
             const fecha = u.created_at ? u.created_at.slice(0, 10) : '—';
             return `<tr>
-                <td class="col-num" style="color:var(--text-muted)">${i + 1 + (d.page - 1) * 25}</td>
+                <td class="col-num hide-mobile" style="color:var(--text-muted)">${i + 1 + (d.page - 1) * 25}</td>
                 <td style="font-weight:500">${esc(u.name)}</td>
                 <td style="color:var(--text-muted)">${esc(u.email)}</td>
                 <td><span class="badge badge-blue">${esc(u.role_name || '—')}</span></td>
                 <td>${badge}</td>
-                <td style="color:var(--text-muted);font-size:.8rem">${fecha}</td>
+                <td class="hide-mobile" style="color:var(--text-muted);font-size:.8rem">${fecha}</td>
                 <td class="col-actions">${menuAcciones([
                         { icon:'bi-pencil',       label:'Editar',    fn:`adminEditUsu(${u.id})` },
                         { icon: u.active==1 ? 'bi-pause-circle':'bi-play-circle',
@@ -313,9 +313,9 @@
     function renderRoles(rows) {
         $('rolesBody').innerHTML = rows.map(r => `
             <tr>
-                <td class="col-num" style="color:var(--text-muted)">${r.id}</td>
+                <td class="col-num hide-mobile" style="color:var(--text-muted)">${r.id}</td>
                 <td style="font-weight:600">${esc(r.name)}</td>
-                <td style="color:var(--text-muted)">${esc(r.description || '—')}</td>
+                <td class="hide-mobile" style="color:var(--text-muted)">${esc(r.description || '—')}</td>
                 <td class="col-num"><span class="badge badge-blue">${r.user_count}</span></td>
                 <td class="col-actions">${menuAcciones([
                         { icon:'bi-pencil', label:'Editar', fn:`adminEditRol(${r.id},'${esc(r.name)}','${esc(r.description || '')}')` },
@@ -595,7 +595,6 @@
             });
         });
 
-        $('btnRefreshReportes').addEventListener('click', cargarReportes);
         $('btnNuevaCat').addEventListener('click', () => abrirModalCat(null));
         $('catModalClose').addEventListener('click', () => hideModal('catModal'));
         $('catModalCancel').addEventListener('click', () => hideModal('catModal'));
@@ -632,8 +631,8 @@
         <tr>
             <td class="col-num">${esc(c.sort_order)}</td>
             <td><i class="bi ${esc(c.icon)}" style="margin-right:.4rem"></i>${esc(c.name)}</td>
-            <td><code style="font-size:.75rem;opacity:.7">${esc(c.slug)}</code></td>
-            <td><code style="font-size:.75rem">${esc(c.icon)}</code></td>
+            <td class="hide-mobile"><code style="font-size:.75rem;opacity:.7">${esc(c.slug)}</code></td>
+            <td class="hide-mobile"><code style="font-size:.75rem">${esc(c.icon)}</code></td>
             <td class="col-num">${counts[c.id] || 0}</td>
             <td class="col-actions">${menuAcciones([
                     { icon:'bi-pencil', label:'Editar',   fn:`adminRepEditCat(${c.id})` },
@@ -651,22 +650,15 @@
         const statusClass = { active: 'badge-green', partial: 'badge-amber', pending: 'badge-muted' };
         $('repBody').innerHTML = repData.reports.map(r => `
         <tr>
-            <td class="col-num">${r.id}</td>
+            <td class="col-num hide-mobile">${r.id}</td>
             <td>
                 <i class="bi ${esc(r.icon)}" style="margin-right:.35rem;opacity:.7"></i>
                 <strong>${esc(r.short_name)}</strong>
                 <div style="font-size:.75rem;opacity:.55;margin-top:.1rem">${esc(r.name)}</div>
             </td>
             <td>${esc(catMap[r.category_id] ?? '—')}</td>
-            <td class="col-num">${r.sort_order}</td>
-            <td>
-                <select class="form-input" style="padding:.25rem .5rem;font-size:.78rem;width:110px"
-                    onchange="adminRepSetStatus(${r.id}, this.value)">
-                    <option value="active"  ${r.status==='active'  ? 'selected':''}>Activo</option>
-                    <option value="partial" ${r.status==='partial' ? 'selected':''}>Parcial</option>
-                    <option value="pending" ${r.status==='pending' ? 'selected':''}>Pendiente</option>
-                </select>
-            </td>
+            <td class="col-num hide-mobile">${r.sort_order}</td>
+            <td><span class="badge ${statusClass[r.status] || 'badge-muted'}">${statusLabel[r.status] || r.status}</span></td>
             <td class="col-actions">${menuAcciones([
                     { icon:'bi-pencil', label:'Editar', fn:`adminRepEdit(${r.id})` },
                 ])}</td>
@@ -733,18 +725,6 @@
             hideModal('repModal');
             cargarReportes();
         } catch (e) { alert(e.message); }
-    }
-
-    async function adminRepSetStatus(id, status) {
-        try {
-            await api('api/admin/reportes.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'rep_status', id, status }),
-            });
-            const r = repData.reports.find(r => r.id === id);
-            if (r) r.status = status;
-        } catch (e) { alert(e.message); cargarReportes(); }
     }
 
     // Funciones globales llamadas desde onclick en la tabla

@@ -12,9 +12,9 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th class="col-num">#</th>
+                        <th class="col-num hide-mobile">#</th>
                         <th>Nombre del rol</th>
-                        <th>Descripción</th>
+                        <th class="hide-mobile">Descripción</th>
                         <th class="col-num">Usuarios</th>
                         <th class="col-actions">Acciones</th>
                     </tr>

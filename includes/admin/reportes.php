@@ -5,9 +5,6 @@
             <h1 class="admin-page-title"><i class="bi bi-layout-text-sidebar"></i> Reportes y Categorías</h1>
             <p class="admin-page-sub">Gestión del menú de análisis y estado de cada reporte</p>
         </div>
-        <button class="btn-secondary" id="btnRefreshReportes" type="button">
-            <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
     </div>
 
     <!-- Sub-tabs -->
@@ -29,8 +26,8 @@
                         <tr>
                             <th class="col-num">Orden</th>
                             <th>Nombre</th>
-                            <th>Slug</th>
-                            <th>Ícono</th>
+                            <th class="hide-mobile">Slug</th>
+                            <th class="hide-mobile">Ícono</th>
                             <th class="col-num">Reportes</th>
                             <th>Acciones</th>
                         </tr>
@@ -55,10 +52,10 @@
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th class="col-num">#</th>
+                            <th class="col-num hide-mobile">#</th>
                             <th>Nombre</th>
                             <th>Categoría</th>
-                            <th class="col-num">Orden</th>
+                            <th class="col-num hide-mobile">Orden</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>

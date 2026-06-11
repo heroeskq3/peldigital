@@ -22,5 +22,5 @@
     <link href="<?= htmlspecialchars($link) ?>?v=<?= filemtime($rootDir . '/' . $link) ?>" rel="stylesheet">
     <?php endforeach; ?>
 </head>
-<body>
+<body<?= isset($bodyClass) ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
 <div class="app-shell">

@@ -7,8 +7,8 @@ $rootDir   = __DIR__;
 $pageTitle = 'Administración · PEL Digital';
 $reportId  = 0;
 
-$extraHeadLinks = ['assets/css/admin.css'];
 $pageScripts    = ['assets/js/admin.js'];
+$bodyClass      = 'page-admin';
 
 $pdo = dbConnect();
 

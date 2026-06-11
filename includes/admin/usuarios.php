@@ -21,12 +21,12 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th class="col-num">#</th>
+                        <th class="col-num hide-mobile">#</th>
                         <th>Nombre</th>
                         <th>Email</th>
                         <th>Rol</th>
                         <th>Estado</th>
-                        <th>Alta</th>
+                        <th class="hide-mobile">Alta</th>
                         <th class="col-actions">Acciones</th>
                     </tr>
                 </thead>
