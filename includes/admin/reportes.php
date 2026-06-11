@@ -73,7 +73,7 @@
         <div class="admin-modal">
             <div class="admin-modal-head">
                 <h2 class="admin-modal-title" id="catModalTitle">Categoría</h2>
-                <button class="icon-only" id="catModalClose" type="button"><i class="bi bi-x-lg"></i></button>
+                <button class="admin-modal-close" id="catModalClose" type="button"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="admin-modal-body">
                 <input type="hidden" id="catId">
@@ -107,7 +107,7 @@
         <div class="admin-modal">
             <div class="admin-modal-head">
                 <h2 class="admin-modal-title">Editar reporte</h2>
-                <button class="icon-only" id="repModalClose" type="button"><i class="bi bi-x-lg"></i></button>
+                <button class="admin-modal-close" id="repModalClose" type="button"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="admin-modal-body">
                 <input type="hidden" id="repId">
@@ -123,7 +123,7 @@
                     <label class="form-label">Categoría</label>
                     <select class="form-input" id="repCatId"></select>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="admin-field-row">
                     <div class="form-group">
                         <label class="form-label">Ícono Bootstrap</label>
                         <div style="display:flex;gap:.5rem;align-items:center">

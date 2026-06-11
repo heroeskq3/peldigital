@@ -2381,7 +2381,7 @@ body.page-admin #btnResetM { display: none; }
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.48);
-    z-index: 1010;
+    z-index: 1400;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2632,8 +2632,8 @@ body.page-admin #btnResetM { display: none; }
     .admin-pag               { justify-content: center; }
     .admin-pag-total         { width: 100%; text-align: center; margin-left: 0; }
     .admin-toolbar           { gap: .5rem; }
-    .admin-toolbar .admin-search { flex: 1 1 100%; }
-    .admin-toolbar .admin-select { flex: 1 1 calc(50% - .25rem); }
+    .admin-toolbar .admin-search { flex: 1 1 100%; min-width: 0; }
+    .admin-toolbar .admin-select { flex: 1 1 calc(50% - .25rem); min-width: 0; }
     .admin-toolbar .btn-primary,
     .admin-toolbar .btn-secondary { padding: .4rem .65rem; font-size: .8rem; }
     .admin-table .hide-mobile { display: none; }
