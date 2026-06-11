@@ -259,6 +259,32 @@ body.nav-open .leaflet-control-container { display: none; }
 }
 .panel-title-lg { font-size: 1rem; font-weight: 700; margin: 0 0 4px; letter-spacing: -.01em; }
 
+.side-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.side-top-row .label { margin-bottom: 0; }
+.btn-reset-side {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .72rem;
+    padding: .2rem .55rem;
+    transition: color .15s, border-color .15s, background .15s;
+}
+.btn-reset-side:hover {
+    border-color: var(--brand-navy);
+    color: var(--brand-navy);
+    background: var(--surface-2);
+}
+
 /* ---------- Campos ---------- */
 .field {
     width: 100%;

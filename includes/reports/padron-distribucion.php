@@ -5,6 +5,12 @@
         <div class="side-handle" id="sideHandle"><div class="side-handle-bar"></div></div>
 
         <section class="panel">
+            <div class="side-top-row">
+                <span class="label mb-0">Filtros</span>
+                <button id="btnReset" class="btn-reset-side" aria-label="Reiniciar vista" title="Reiniciar vista">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar
+                </button>
+            </div>
             <div class="search-wrap">
                 <i class="bi bi-search search-ico"></i>
                 <input id="buscador" type="text" class="field search-input"

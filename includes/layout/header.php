@@ -143,9 +143,6 @@ foreach ($navByCategory as $cat) {
         <button id="btnTheme" class="icon-only" aria-label="Cambiar tema" title="Cambiar tema">
             <i class="bi bi-moon"></i>
         </button>
-        <button id="btnReset" class="icon-only" aria-label="Reiniciar vista" title="Reiniciar vista">
-            <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
         <span class="header-user" title="Sesión activa"><?= htmlspecialchars(usuarioActual() ?? '') ?></span>
         <a href="logout.php" class="icon-only" aria-label="Cerrar sesión" title="Cerrar sesión">
             <i class="bi bi-box-arrow-right"></i>
