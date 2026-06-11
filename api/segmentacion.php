@@ -18,11 +18,11 @@
 require __DIR__ . '/../auth.php';
 requerirLoginApi();
 require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../lib/api.php';
 
-$format = ($_GET['format'] ?? 'json') === 'csv' ? 'csv' : 'json';
+$format = apiFormat();
 if ($format === 'json') {
-    header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-store');
+    apiJsonHeaders();
 }
 
 $pdo = dbConnect();
@@ -32,8 +32,9 @@ $provinceId  = isset($_GET['province_id'])   && $_GET['province_id']   !== '' ? 
 $cantonId    = isset($_GET['canton_id'])     && $_GET['canton_id']     !== '' ? (int)$_GET['canton_id']    : null;
 $districtGeo5 = isset($_GET['district_geo5']) && $_GET['district_geo5'] !== '' ? preg_replace('/[^0-9]/', '', $_GET['district_geo5']) : null;
 $statsOnly   = !empty($_GET['stats_only']);
-$page        = max(1, (int)($_GET['page']  ?? 1));
-$size        = max(10, min(200, (int)($_GET['size'] ?? 25)));
+$pageInfo    = apiPaginationFromRequest(25, 200);
+$page        = $pageInfo['page'];
+$size        = max(10, $pageInfo['size']);
 $order       = ($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 $q           = trim((string)($_GET['q'] ?? ''));
 
@@ -95,8 +96,10 @@ $cntStmt->execute($params);
 $total      = (int)$total;
 $grandTotal = (int)$grandTotal ?: 1;
 
-$pages = max(1, (int)ceil($total / $size));
-$page  = min($page, $pages);
+$pageInfo = apiPagination($total, $size, 200);
+$page  = $pageInfo['page'];
+$size  = max(10, $pageInfo['size']);
+$pages = $pageInfo['pages'];
 
 // ─── Grand total nacional para % ─────────────────────────────────────────────
 $natRow   = $pdo->query("SELECT SUM(inscritos), SUM(inscritos_m), SUM(inscritos_f), SUM(inscritos_n) FROM {$table}")->fetch(PDO::FETCH_NUM);
@@ -113,7 +116,7 @@ $promedio = $cnt > 0 ? (int)round((int)$sumInsc / (int)$cnt) : 0;
 
 // ─── Stats-only (no rows, no paginación) — para dashboards ──────────────────
 if ($statsOnly) {
-    echo json_encode(['stats' => [
+    apiJson(['stats' => [
         'total_inscritos'   => (int)$sumInsc,
         'total_territorios' => $total,
         'max_inscritos'     => (int)$maxInsc,
@@ -130,8 +133,7 @@ if ($statsOnly) {
         'pct_filtered_m'    => round((int)$filtM / ((int)$sumInsc ?: 1) * 100, 1),
         'pct_filtered_f'    => round((int)$filtF / ((int)$sumInsc ?: 1) * 100, 1),
         'pct_filtered_n'    => round((int)$filtN / ((int)$sumInsc ?: 1) * 100, 1),
-    ]], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]]);
 }
 
 // ─── CSV: devolver todo (hasta 5 000 filas), sin paginar ─────────────────────
@@ -172,7 +174,7 @@ if ($format === 'csv') {
 }
 
 // ─── Paginación SQL ───────────────────────────────────────────────────────────
-$offset = ($page - 1) * $size;
+$offset = $pageInfo['offset'];
 $pageSql = "SELECT {$idCol} AS id, {$nameSql} AS nombre{$extraSel}, inscritos, inscritos_m, inscritos_f, inscritos_n, pct_nacional
             FROM {$table} {$whereSql} {$orderSql}
             LIMIT {$size} OFFSET {$offset}";
@@ -197,7 +199,7 @@ foreach ($rows as &$r) {
 }
 unset($r);
 
-echo json_encode([
+apiJson([
     'nivel'       => $nivel,
     'rows'        => $rows,
     'total'       => $total,
@@ -222,4 +224,4 @@ echo json_encode([
         'pct_filtered_f'    => round((int)$filtF / ((int)$sumInsc ?: 1) * 100, 1),
         'pct_filtered_n'    => round((int)$filtN / ((int)$sumInsc ?: 1) * 100, 1),
     ],
-], JSON_UNESCAPED_UNICODE);
+]);

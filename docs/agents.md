@@ -1,4 +1,4 @@
-# CLAUDE.md — PEL Digital
+# Agentes de codigo — PEL Digital
 
 Guia tecnica para agentes de codigo. Describe la arquitectura real del proyecto,
 convenciones activas y puntos criticos a tener en cuenta.
@@ -6,7 +6,7 @@ convenciones activas y puntos criticos a tener en cuenta.
 ## Stack
 
 - PHP 8.x (sin framework — funciones globales, include directo)
-- MySQL / MariaDB via XAMPP (puerto 3306, DB: `pel_electoral`, usuario: `root`, sin password)
+- MySQL / MariaDB via XAMPP; credenciales por `.env` (`.env.example` documenta defaults locales)
 - Leaflet 1.9.4 (mapas)
 - Bootstrap Icons 1.11.3 (iconos)
 - HTML / CSS / JavaScript — sin framework de build, sin bundler, sin npm
@@ -29,24 +29,30 @@ Login de acceso: usuario `demo`, contrasena `demo1234`.
 ## Estructura de archivos
 
 ```
-index.php                        # Ensamblador de vistas (14 lineas). Valida sesion y
-                                 # concatena parciales de includes/.
+index.php                        # Entrada minima. Valida sesion y redirige a reports.php?id=1.
 auth.php                         # Sesion PHP. Login, logout, helpers de autenticacion.
-                                 # Usuarios hardcodeados en arreglo $USUARIOS (bcrypt).
+                                 # Autentica contra tabla users; fallback demo para acceso inicial.
 login.php / logout.php           # Pantallas de acceso / cierre de sesion.
 
 includes/
   layout/
     head.php                     # DOCTYPE, meta, CSS, anti-flash de tema
     header.php                   # Barra superior + menu principal (nav con dropdowns)
-    footer.php                   # Pie de pagina (ATENCION: aun dice "simulada")
+    footer.php                   # Pie de pagina con atribucion TSE y fecha/fuente si la API la expone.
     loader.php                   # Spinner de carga inicial
     scripts.php                  # Tags <script> al final del body (Leaflet + app.js)
   modals/
     padron.php                   # Modal de consulta del padron (tabla paginada)
     bitacora.php                 # Modal de bitacora de actividad
   reports/
-    padron-distribucion.php      # Vista HTML del reporte actual: mapa + panel lateral
+    padron-distribucion.php      # Reporte de distribucion territorial.
+    jrv-inscritos.php            # Reporte de inscritos por JRV.
+    jrv-analisis.php             # Analisis estrategico por JRV.
+    participacion.php            # Participacion electoral.
+    segmentacion.php             # Segmentacion electoral.
+    analisis-territorial.php     # Comparativos territoriales.
+    distritos-electorales.php    # Distritos electorales.
+    juntas-padronal.php          # Juntas padronales.
 
 api/
   poblacion.php                  # Agrega conteos del padron por provincia/canton/
@@ -60,8 +66,8 @@ api/
   log.php                        # Registro de eventos desde frontend.
 
 assets/
-  css/style.css                  # CSS global (929 lineas). Variables CSS para temas.
-  js/app.js                      # JS monolitico (1393 lineas). Todo el frontend vive
+  css/style.css                  # CSS global (~2600 lineas). Variables CSS para temas.
+  js/app.js                      # JS monolitico (~2700 lineas). Todo el frontend vive
                                  # aqui: mapa, navegacion, panel, diaspora, padron,
                                  # bitacora, busqueda, exportacion, toast, minimapa.
   img/logo.svg / logo02.png      # Logos del partido
@@ -101,7 +107,7 @@ scripts/
                                  #   Uso: php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P
                                  #        php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A
   migrate.php                    # Runner de migraciones SQL desde migrations/.
-  test_batch.php                 # Pruebas de importacion por lotes.
+  dev/test_batch.php             # Pruebas de importacion por lotes (desarrollo).
 
 migrations/
   20260601_000003_diaspora_index.sql  # Indice de diaspora
@@ -165,8 +171,8 @@ php scripts/enrich_sexo.php --batch=0
 | `districts` | Catalogo de distritos con campo `codelec` (TSE) | ~500+ |
 | `users` | Usuarios de la plataforma con roles | 3 (demo) |
 | `roles` | Roles: administrador, analista, consulta | 3 |
-| `polling_places` | Locales de votacion (JRV) | 13 (datos de prueba) |
-| `electoral_districts` | Distritos electorales | 10 (datos de prueba) |
+| `polling_places` | Locales de votacion (JRV) | Pendiente de carga oficial |
+| `electoral_districts` | Distritos electorales | Pendiente de carga oficial |
 | `audit_logs` | Bitacora de actividad | variable |
 
 ### Campos poblados en voters
@@ -193,7 +199,7 @@ como "cantones" hijos de esa provincia.
 
 El campo `junta` en voters es el numero de junta receptora de votos (string
 con padding a 5 digitos). Hay 7,154 juntas distintas. No hay FK a
-`polling_places` porque esa tabla tiene datos de prueba.
+`polling_places` porque falta cargar el catalogo oficial de locales.
 
 ## app.js: arquitectura interna
 
@@ -249,17 +255,17 @@ con clave `cr-theme`. Anti-flash en `head.php` (script inline antes del CSS).
 
 ## Roadmap de reportes
 
-### Estado por reporte (al 06 junio 2026)
+### Estado por reporte (al 11 junio 2026)
 
-| # | Reporte | Estado | Bloqueado por |
+| # | Reporte | Estado | Nota |
 |---|---|---|---|
-| 0 | Distribución Territorial del Padrón (actual) | ✅ Construido | — |
-| 1 | Participación Electoral | ❌ Pendiente | Requiere votos emitidos por elección y JRV del TSE |
-| 2 | Segmentación Electoral | ⚠️ Parcial posible | sexo/fecha_nac vacios; electoral_district_id vacio |
-| 3 | Análisis Territorial | ⚠️ Parcial posible | Resultados electorales historicos no cargados |
-| 4 | JRV — Inscritos | ✅ Construible ahora | Campo junta disponible, 7,063 juntas nacionales |
-| 4 | JRV — Participación | ❌ Pendiente | Requiere votos emitidos por JRV del TSE |
-| 5 | Indicadores Estratégicos | ❌ Pendiente | Depende de reportes 1-4 |
+| 1 | Distribucion Territorial del Padron | Activo | Mapa + panel territorial con padron real |
+| 2 | Distribucion Padron / JRV | Activo | Inscritos por junta desde `summary_jrv` |
+| 3 | Analisis Estrategico JRV | Activo | Usa padron y resultados disponibles |
+| 4 | Participacion Electoral | Activo | Usa AVR importado |
+| 5 | Segmentacion Electoral | Parcial | Sexo enriquecido; edad bloqueada por `fecha_nac` |
+| 6 | Analisis Territorial | Activo | Comparativos con resultados historicos |
+| 7 | Indicadores Estrategicos | Pendiente | Requiere definir KPIs con el cliente |
 
 ### Reporte #4 JRV — contexto para construcción futura
 
@@ -281,8 +287,8 @@ con clave `cr-theme`. Anti-flash en `head.php` (script inline antes del CSS).
 **Lo que requiere datos adicionales del TSE:**
 - Participacion real (votos emitidos / inscritos por JRV).
 - Abstencion por JRV.
-- Nombre y direccion del local de votacion (catalogo real de polling_places).
-  Hoy polling_places tiene 13 filas de prueba; el real deberia tener ~7,000+.
+- Nombre y direccion del local de votacion (catalogo real de `polling_places`,
+  pendiente de carga oficial).
 - Comparativos historicos por JRV.
 
 **API sugerida para cuando se construya:**
@@ -305,15 +311,10 @@ El padron actual (voters) solo dice quien ESTABA inscrito, no quien VOTO.
 
 ## Pendientes criticos conocidos
 
-- `includes/layout/footer.php` dice "Poblacion simulada (no oficial)" — cambiar
-  a atribucion real del TSE.
-- `assets/js/app.js` linea 3 tiene comentario "Poblacion dummy" — corregir.
-- Login usa arreglo hardcodeado en `auth.php`; integrar contra tabla `users`.
-- `sexo` y `fecha_nac` son NULL en todos los registros de `voters` — revisar
-  el parser TSE.
+- `auth.php` conserva fallback `demo`; deshabilitarlo o restringirlo en produccion.
+- `fecha_nac` es NULL en todos los registros de `voters`; requiere fuente oficial
+  o completar parser/ingesta si el archivo disponible contiene el campo.
 - `electoral_district_id` y `polling_place_id` son NULL en `voters` — datos
   de las tablas de catalogo no son reales.
-- La fecha y fuente de actualizacion TSE se deben mostrar en la interfaz
-  (el API ya las devuelve en los campos `fuente` y `generado`).
-- Falta reporte de inscritos por JRV (datos disponibles: campo `junta`).
-- Falta cargar resultados electorales historicos para reportes de participacion.
+- Reporte #7 Indicadores Estrategicos requiere definicion de KPIs con el cliente.
+- `polling_places` no tiene catalogo oficial cargado; falta fuente real de locales.

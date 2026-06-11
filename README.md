@@ -90,7 +90,7 @@ $pageScripts = ['assets/js/admin.js'];
 | Página | `$extraHeadLinks` | `$pageScripts` | Incluye además |
 |---|---|---|---|
 | `reports.php` | — | — (leaflet + chart + app.js) | modals/padron.php, modals/bitacora.php, loader.php |
-| `admin.php` | `admin.css` | `admin.js` | includes/admin/*.php |
+| `admin.php` | — | `admin.js` | includes/admin/*.php |
 | `login.php` | — | — | solo HTML inline |
 
 ### Cómo crear una nueva página
@@ -148,7 +148,7 @@ pel_02/
 │                                  # reporte solicitado por ?id= desde la BD
 ├── login.php / logout.php         # Pantallas de acceso / cierre de sesión
 ├── auth.php                       # Sesión PHP. Login, logout, helpers de auth.
-│                                  # Usuarios hardcodeados en $USUARIOS (bcrypt).
+│                                  # Autentica contra users; fallback demo.
 │
 ├── includes/
 │   ├── layout/
@@ -182,8 +182,8 @@ pel_02/
 │   └── log.php                    # Registro de eventos desde el frontend
 │
 ├── assets/
-│   ├── css/style.css              # CSS global (~930 líneas). Variables de tema.
-│   ├── js/app.js                  # JS monolítico (~1400 líneas). Todo el frontend.
+│   ├── css/style.css              # CSS global (~2600 líneas). Variables de tema.
+│   ├── js/app.js                  # JS monolítico (~2700 líneas). Todo el frontend.
 │   └── img/                       # Logos del partido
 │
 ├── data/
@@ -208,7 +208,7 @@ pel_02/
 │   ├── enrich_sexo.php            # Enriquecimiento: sexo por lookup de nombres
 │   ├── enrich_fecha_nac.php       # Enriquecimiento: fecha de nacimiento (pendiente)
 │   ├── refresh_summaries.php      # Regenera tablas de resumen summary_*
-│   └── test_batch.php             # Pruebas de importación por lotes
+│   └── dev/test_batch.php         # Pruebas de importación por lotes (desarrollo)
 │
 ├── migrations/                    # Migraciones SQL versionadas (runner: migrate.php)
 │   ├── 20260601_000001_base_schema.sql
@@ -222,7 +222,10 @@ pel_02/
 │   ├── 20260610_000009_voters_fecha_nac.sql
 │   ├── 20260610_000010_name_gender_lookup.sql
 │   ├── 20260610_000011_voter_enrichments.sql
-│   └── 20260610_000012_summary_sexo.sql
+│   ├── 20260610_000012_summary_sexo.sql
+│   ├── 20260610_000013_padron_tse_menu.sql
+│   ├── 20260610_000014_reports_distritos_juntas.sql
+│   └── 20260610_000015_analisis_menu_restructure.sql
 │
 ├── raw/                           # Archivos crudos del TSE — NO están en git
 │   ├── padron/
@@ -267,8 +270,8 @@ php scripts/migrate.php
 # Verificar qué migraciones se han aplicado
 php -r "
   require_once 'lib/db.php';
-  foreach (dbConnect()->query('SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at') as \$r)
-    echo \$r['filename'] . '  →  ' . \$r['applied_at'] . PHP_EOL;
+  foreach (dbConnect()->query('SELECT migration, executed_at FROM schema_migrations ORDER BY executed_at') as \$r)
+    echo \$r['migration'] . '  →  ' . \$r['executed_at'] . PHP_EOL;
 "
 ```
 
@@ -353,8 +356,8 @@ php scripts/refresh_summaries.php
 | `reports` | Catálogo de reportes (nombre, estado, archivo) | 7 |
 | `report_categories` | Categorías del menú de análisis | 5 |
 | `audit_logs` | Bitácora de actividad | variable |
-| `polling_places` | Locales de votación (datos de prueba, no reales) | 13 |
-| `electoral_districts` | Distritos electorales (datos de prueba) | 10 |
+| `polling_places` | Locales de votación reales | Pendiente de carga oficial |
+| `electoral_districts` | Distritos electorales reales | Pendiente de carga oficial |
 
 ### Campos en `voters`
 
@@ -395,17 +398,17 @@ si aparecen activos, con advertencia o bloqueados en el menú.
 
 ## Módulo de Gestión y Administración
 
-El menú Admin incluye los siguientes módulos. Los marcados como *placeholder*
-muestran una pantalla de "próximamente" — la lógica está pendiente.
+El menú Admin incluye módulos operativos para administrar usuarios/roles/reportes
+y consultar estado del sistema, datos y migraciones.
 
 | Módulo | Acceso | Estado |
 |---|---|---|
 | Bitácora | `data-admin="bitacora"` | Funcional — muestra `audit_logs` |
-| Configuración | `data-admin="configuracion"` | Placeholder |
-| Usuarios | `data-admin="usuarios"` | Placeholder — tabla `users` existe con roles |
-| Roles de usuario | `data-admin="roles"` | Placeholder — tabla `roles` existe |
-| Cargar Datos | `data-admin="cargar"` | Placeholder |
-| Pipelines | `data-admin="pipelines"` | Placeholder |
+| Configuración | `data-admin="configuracion"` | Funcional — muestra entorno y metadatos |
+| Usuarios | `data-admin="usuarios"` | Funcional — CRUD contra tabla `users` |
+| Roles de usuario | `data-admin="roles"` | Funcional — CRUD contra tabla `roles` |
+| Cargar Datos | `data-admin="cargar-datos"` | Funcional — estado de tablas y comandos de ingesta |
+| Pipelines | `data-admin="pipelines"` | Funcional — estado de migraciones |
 
 ## Despliegue en producción
 
@@ -421,7 +424,7 @@ resumidos:
 7. Configurar Apache para bloquear acceso web a `raw/`, `migrations/`,
    `scripts/`, `lib/`. Ver directivas en `docs/produccion.md`.
 8. Habilitar HTTPS.
-9. Cambiar contraseñas en `auth.php` con hashes bcrypt nuevos.
+9. Crear usuarios reales en la tabla `users`; dejar el fallback `demo` solo para desarrollo.
 
 **Carpetas que no deben ser accesibles desde el browser:**
 `raw/`, `migrations/`, `scripts/`, `lib/`
@@ -431,12 +434,12 @@ resumidos:
 | Item | Archivo | Impacto |
 |---|---|---|
 | `fecha_nac` NULL en todos los registros | `lib/parsers/PadronTSEParser.php` | Bloquea segmentación por edad |
-| Login hardcodeado en `auth.php` — no usa tabla `users` | `auth.php` | Gestión de usuarios desde Admin no funciona |
-| `polling_places` tiene 13 filas de prueba | BD | Reporte de locales de votación no es real |
+| Fallback `demo` sigue activo en `auth.php` | `auth.php` | Debe deshabilitarse o restringirse en producción |
+| `polling_places` sin catálogo oficial cargado | BD | Reporte de locales de votación no debe publicarse hasta cargar fuente real |
 | `electoral_district_id` y `polling_place_id` NULL en `voters` | BD | Asignación de JRV no está cruzada |
 | Reporte #7 Indicadores Estratégicos no construido | — | Requiere definir KPIs con el cliente |
 | Coordinar con TSE acceso oficial a `fecha_nac` | Externo | Requerido para segmentación por edad |
-| Obtener catálogo real de locales de votación (~7,000 filas) | Externo | `polling_places` tiene datos de prueba |
+| Obtener catálogo real de locales de votación (~7,000 filas) | Externo | Requerido para poblar `polling_places` |
 
 ## Cumplimiento normativo y límites de responsabilidad
 

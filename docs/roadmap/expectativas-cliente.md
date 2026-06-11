@@ -190,7 +190,7 @@ Solicitado/implícito:
 Estado actual:
 
 - La aplicacion tiene login basico por sesion.
-- El usuario demo esta hardcodeado en `auth.php`.
+- Existe fallback `demo` en `auth.php`; el login principal ya consulta `users`.
 - La BD tiene tablas de usuarios, roles y permisos, pero no estan integradas al
   login actual.
 

@@ -17,19 +17,20 @@
 require __DIR__ . '/../auth.php';
 requerirLoginApi();
 require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../lib/api.php';
 
-$format = ($_GET['format'] ?? 'json') === 'csv' ? 'csv' : 'json';
+$format = apiFormat();
 if ($format === 'json') {
-    header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-store');
+    apiJsonHeaders();
 }
 
 $pdo = dbConnect();
 
 $province_id = isset($_GET['province_id']) && $_GET['province_id'] !== '' ? (int)$_GET['province_id'] : null;
 $canton_id   = isset($_GET['canton_id'])   && $_GET['canton_id']   !== '' ? (int)$_GET['canton_id']   : null;
-$page  = max(1, (int)($_GET['page']  ?? 1));
-$size  = max(10, min(200, (int)($_GET['size'] ?? 50)));
+$pageInfo = apiPaginationFromRequest(50, 200);
+$page = $pageInfo['page'];
+$size = max(10, $pageInfo['size']);
 $order = ($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
 // Resolver geo5 → district_id
@@ -66,9 +67,11 @@ $maxInscritos = (int)$st['max_ins'];
 $minInscritos = (int)$st['min_ins'];
 $promedio     = $totalJuntas > 0 ? (int)round($sumInscritos / $totalJuntas) : 0;
 
-$pages = max(1, (int)ceil($totalJuntas / $size));
-$page  = min($page, $pages);
-$offset = ($page - 1) * $size;
+$pageInfo = apiPagination($totalJuntas, $size, 200);
+$page = $pageInfo['page'];
+$size = max(10, $pageInfo['size']);
+$pages = $pageInfo['pages'];
+$offset = $pageInfo['offset'];
 
 // ─── CSV ──────────────────────────────────────────────────────────────────────
 if ($format === 'csv') {
@@ -106,7 +109,7 @@ $pageStmt = $pdo->prepare("
 $pageStmt->execute($params);
 $pageRows = $pageStmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo json_encode([
+apiJson([
     'stats' => [
         'juntas'          => $totalJuntas,
         'min_inscritos'   => $minInscritos,
@@ -120,4 +123,4 @@ echo json_encode([
     'size'  => $size,
     'pages' => $pages,
     'order' => $order,
-], JSON_UNESCAPED_UNICODE);
+]);

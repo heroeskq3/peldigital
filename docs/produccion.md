@@ -34,13 +34,17 @@ GRANT ALL PRIVILEGES ON pel_electoral.* TO 'pel_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-**IMPORTANTE**: En producción cambiar credenciales en `lib/db.php`:
-```php
-// lib/db.php — cambiar estos valores
-$host = '127.0.0.1';
-$db   = 'pel_electoral';
-$user = 'pel_user';        // ← cambiar de root
-$pass = 'NUEVO_PASSWORD';  // ← agregar password real
+**IMPORTANTE**: En producción no editar `lib/db.php`. Copiar `.env.example` a
+`.env` y cambiar las credenciales ahí:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=pel_electoral
+DB_USER=pel_user
+DB_PASS=CAMBIAR_PASSWORD_SEGURO
+APP_ENV=production
+SESSION_NAME=PEL_SESSION
 ```
 
 ### 3. Ejecutar todas las migraciones
@@ -63,6 +67,9 @@ Verificar que aplica todas las migraciones en orden:
 20260610_000010_name_gender_lookup.sql
 20260610_000011_voter_enrichments.sql
 20260610_000012_summary_sexo.sql
+20260610_000013_padron_tse_menu.sql
+20260610_000014_reports_distritos_juntas.sql
+20260610_000015_analisis_menu_restructure.sql
 ```
 
 ### 4. Descargar los archivos de datos crudos
@@ -125,7 +132,10 @@ SELECT 'distritos', COUNT(*), SUM(inscritos) FROM summary_inscritos_distrito;
 
 Si alguna está vacía, regenerar:
 ```bash
-# Forzar regeneración del caché de la API
+# Regenerar tablas de resumen desde la BD
+php scripts/refresh_summaries.php
+
+# Luego forzar regeneración del caché de la API si aplica
 curl http://localhost/pel_02/api/poblacion.php?refresh=1
 ```
 
@@ -149,11 +159,15 @@ curl http://localhost/pel_02/api/poblacion.php?refresh=1
 ```
 
 **CRÍTICO**: Las carpetas `raw/`, `migrations/`, `scripts/`, `lib/` NO deben ser accesibles desde el browser.
+El repositorio incluye un `.htaccess` base que bloquea estas rutas cuando Apache
+permite `AllowOverride All`; mantener también la regla del VirtualHost en
+producción porque es más difícil de omitir accidentalmente.
 
 ### 8. Seguridad en producción
 
-- [ ] Cambiar credenciales de BD en `lib/db.php`
-- [ ] Cambiar contraseñas en `auth.php` (array `$USUARIOS`) con nuevos hashes bcrypt
+- [ ] Configurar credenciales reales en `.env`
+- [ ] Crear usuarios reales en tabla `users`
+- [ ] Deshabilitar o restringir el fallback `demo` de `auth.php` antes de exponer producción
 - [ ] Deshabilitar display_errors en php.ini: `display_errors = Off`
 - [ ] Configurar `error_log` a un archivo fuera del webroot
 - [ ] Bloquear acceso a carpetas sensibles en el servidor web (ver sección 7)
@@ -162,16 +176,18 @@ curl http://localhost/pel_02/api/poblacion.php?refresh=1
 
 ### 9. Usuarios del sistema
 
-Los usuarios actuales están hardcodeados en `auth.php`. Para producción crear hashes bcrypt nuevos:
+El login principal usa la tabla `users`; `auth.php` conserva un fallback `demo`
+para acceso inicial/desarrollo. Para producción crear usuarios reales con hashes
+bcrypt:
 
 ```php
 // Generar hash de nueva contraseña:
 echo password_hash('nueva_clave_segura', PASSWORD_BCRYPT);
 ```
 
-Reemplazar en el array `$USUARIOS` de `auth.php`.
-
-> **Pendiente a futuro**: integrar login contra la tabla `users` en BD (ya existe la tabla con roles).
+Insertar o actualizar esos hashes en la tabla `users`. El fallback `demo` debe
+eliminarse, deshabilitarse por `APP_ENV=production` o restringirse antes de
+publicar el sistema.
 
 ### 10. Monitoreo post-despliegue
 
@@ -189,14 +205,14 @@ Verificar en el browser:
 - [ ] Descargar `PADRON_COMPLETO.txt` desde tse.go.cr (427 MB)
 - [ ] Descargar `distelec.txt` (viene en el mismo ZIP del padrón)
 - [ ] Descargar los 4 archivos AVR JSON (2026, 2024, 2022 1ra, 2022 2da)
-- [ ] Cambiar credenciales de BD y usuarios
+- [ ] Configurar `.env`, credenciales de BD y usuarios reales
 - [ ] Configurar bloqueo de carpetas sensibles en el servidor
 
 ### Recomendado para primera reunión de producción
 - [ ] Definir KPIs del Reporte 7 (Indicadores Estratégicos) con el cliente
 - [ ] Coordinar con TSE acceso oficial a `fecha_nac` para segmentación por edad
 - [ ] Obtener catálogo real de `polling_places` (~7,000 locales con direcciones)
-- [ ] Definir si se integra login contra BD (`users`) o se mantiene hardcodeado
+- [ ] Definir política para deshabilitar/restringir el fallback `demo` en producción
 
 ### Tiempo estimado de setup en servidor nuevo
 - Migraciones: ~2 minutos

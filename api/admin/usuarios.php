@@ -2,27 +2,25 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../auth.php';
 require_once __DIR__ . '/../../lib/db.php';
+require_once __DIR__ . '/../../lib/api.php';
 requerirLoginApi();
 
-header('Content-Type: application/json; charset=utf-8');
+apiJsonHeaders();
 
 $pdo    = dbConnect();
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-function jsonOk(array $data): void  { echo json_encode($data, JSON_UNESCAPED_UNICODE); exit; }
-function jsonErr(string $msg, int $code = 400): void {
-    http_response_code($code);
-    echo json_encode(['error' => $msg], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+function jsonOk(array $data): never  { apiJson($data); }
+function jsonErr(string $msg, int $code = 400): never { apiError($msg, $code); }
 
 // ── GET: list ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
     $q      = trim($_GET['q'] ?? '');
     $roleId = isset($_GET['role_id']) && $_GET['role_id'] !== '' ? (int)$_GET['role_id'] : null;
-    $page   = max(1, (int)($_GET['page'] ?? 1));
-    $size   = min(100, max(10, (int)($_GET['size'] ?? 25)));
-    $offset = ($page - 1) * $size;
+    $pageInfo = apiPaginationFromRequest(25, 100);
+    $page     = $pageInfo['page'];
+    $size     = max(10, $pageInfo['size']);
+    $offset   = ($page - 1) * $size;
 
     $where  = [];
     $params = [];
@@ -44,18 +42,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
           . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
           . ' ORDER BY u.id ASC';
 
-    $total  = (int)$pdo->prepare("SELECT COUNT(*) FROM users u" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''))
-                        ->execute($params) ? $pdo->prepare("SELECT COUNT(*) FROM users u" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''))->execute($params) : 0;
-
     $stCount = $pdo->prepare("SELECT COUNT(*) FROM users u" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''));
     $stCount->execute($params);
     $total = (int)$stCount->fetchColumn();
+    $pages = max(1, (int)ceil($total / $size));
+    $page = min($page, $pages);
+    $offset = ($page - 1) * $size;
 
     $stRows = $pdo->prepare($sql . " LIMIT {$size} OFFSET {$offset}");
     $stRows->execute($params);
     $rows = $stRows->fetchAll(PDO::FETCH_ASSOC);
 
-    jsonOk(['rows' => $rows, 'total' => $total, 'pages' => (int)ceil($total / $size), 'page' => $page]);
+    jsonOk(['rows' => $rows, 'total' => $total, 'pages' => $pages, 'page' => $page]);
 }
 
 // ── POST actions ───────────────────────────────────────────────────────────

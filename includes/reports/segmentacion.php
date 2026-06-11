@@ -51,7 +51,7 @@
         <!-- Panel derecho: gráficas + estadísticas -->
         <div class="tse-right-panel">
 
-            <!-- Barras de edad (placeholder) -->
+            <!-- Barras de edad pendientes hasta cargar fecha_nac oficial -->
             <div class="sf-age-wrap">
                 <div class="sf-section-label">Según grupo de edad</div>
                 <div class="sf-age-bars">

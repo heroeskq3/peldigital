@@ -1,0 +1,15 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloquear acceso web a carpetas internas o de datos crudos.
+    RewriteRule ^(?:raw|migrations|scripts|lib)(?:/|$) - [F,L]
+
+    # Bloquear archivos sensibles aunque queden dentro del webroot.
+    RewriteRule ^(?:\.env(?:\..*)?|.*\.sql|.*\.log)$ - [F,L]
+</IfModule>
+
+<FilesMatch "^(?:\.env(?:\..*)?|composer\.(?:json|lock)|.*\.log)$">
+    Require all denied
+</FilesMatch>
