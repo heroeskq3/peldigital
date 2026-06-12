@@ -360,7 +360,7 @@ select.field {
     white-space: nowrap;
 }
 .footer-oval:hover { opacity: 1; }
-.footer-oval-logo { height: 18px; width: auto; display: block; }
+.footer-oval-logo { height: 18px; width: auto; display: block; filter: var(--oval-logo-filter, none); }
 .footer-oval-label { font-size: .6rem; letter-spacing: .04em; }
 
 /* Login — "Powered by" flotante abajo */

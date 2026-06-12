@@ -57,6 +57,7 @@
     --stroke: #0b0b0c;
     --stroke-hover: #fafafa;
     --shadow: 0 4px 18px rgba(0,0,0,.5);
+    --oval-logo-filter: invert(1) brightness(1.8);
 }
 
 * { box-sizing: border-box; }
