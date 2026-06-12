@@ -10,23 +10,23 @@ WHERE NOT EXISTS (
 );
 
 -- 2. Reportes (lookup de category_id por slug de la categoría)
-INSERT INTO `reports` (category_id, name, short_name, slug, icon, php_file, sort_order, status)
+INSERT INTO `reports` (category_id, name, short_name, slug, js_report_id, icon, php_file, sort_order, status)
 SELECT
     (SELECT id FROM report_categories WHERE slug = 'movilizacion-territorial'),
-    'Locales de Votación', 'Locales', 'locales-votacion',
+    'Locales de Votación', 'Locales', 'locales-votacion', 'locales-votacion',
     'bi-building', 'locales-votacion.php', 10, 'active'
 WHERE NOT EXISTS (SELECT 1 FROM `reports` WHERE slug = 'locales-votacion');
 
-INSERT INTO `reports` (category_id, name, short_name, slug, icon, php_file, sort_order, status)
+INSERT INTO `reports` (category_id, name, short_name, slug, js_report_id, icon, php_file, sort_order, status)
 SELECT
     (SELECT id FROM report_categories WHERE slug = 'movilizacion-territorial'),
-    'Densidad Electoral por Local', 'Densidad', 'densidad-electoral',
+    'Densidad Electoral por Local', 'Densidad', 'densidad-electoral', 'densidad-electoral',
     'bi-bar-chart-steps', 'densidad-electoral.php', 20, 'active'
 WHERE NOT EXISTS (SELECT 1 FROM `reports` WHERE slug = 'densidad-electoral');
 
-INSERT INTO `reports` (category_id, name, short_name, slug, icon, php_file, sort_order, status)
+INSERT INTO `reports` (category_id, name, short_name, slug, js_report_id, icon, php_file, sort_order, status)
 SELECT
     (SELECT id FROM report_categories WHERE slug = 'movilizacion-territorial'),
-    'Circunscripciones Legislativas', 'Circunscripciones', 'circunscripciones',
+    'Circunscripciones Legislativas', 'Circunscripciones', 'circunscripciones', 'circunscripciones',
     'bi-diagram-3', 'circunscripciones.php', 30, 'active'
 WHERE NOT EXISTS (SELECT 1 FROM `reports` WHERE slug = 'circunscripciones');
