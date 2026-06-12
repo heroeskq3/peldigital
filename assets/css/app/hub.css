@@ -17,6 +17,14 @@ body.page-hub .app-shell {
     min-height: calc(100vh - var(--header-h, 56px));
 }
 
+/* fondo de toda la página hub */
+body.page-hub {
+    background: var(--surface-2);
+}
+body.page-hub .app-shell {
+    background: var(--surface-2);
+}
+
 /* ── Hero ─────────────────────────────────────────────── */
 .hub-hero {
     display: flex;
