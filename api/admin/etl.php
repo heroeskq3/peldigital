@@ -210,6 +210,23 @@ $etls = [
         'tipo'        => 'agregado',
     ],
 
+    [
+        'id'          => 'refresh_bastiones',
+        'nombre'      => 'Regenerar Análisis de Bastiones',
+        'script'      => 'scripts/refresh_bastiones.php',
+        'descripcion' => 'Clasifica cada JRV como bastión fuerte/moderado, competitivo, en transición o volátil según resultados históricos presidenciales. Requiere correr migrate --db=data primero si la tabla no existe.',
+        'origen'      => 'election_results · summary_jrv',
+        'destino'     => 'summary_bastiones',
+        'estado'      => safe_count($dw, 'summary_bastiones') > 0 ? 'completado' : 'pendiente',
+        'registros_ok'=> safe_count($dw, 'summary_bastiones'),
+        'ultima_exec' => safe_max($dw, 'summary_bastiones', 'updated_at'),
+        'duracion'    => null,
+        'detalle'     => safe_count($dw, 'summary_bastiones') > 0
+            ? safe_count($dw, 'summary_bastiones') . ' JRVs · Última actualización: ' . (safe_max($dw, 'summary_bastiones', 'updated_at') ?? 'N/D')
+            : 'Tabla no generada — correr migrate --db=data y refresh_bastiones.php',
+        'tipo'        => 'agregado',
+    ],
+
 ];
 
 echo json_encode([
