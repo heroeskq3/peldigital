@@ -76,6 +76,7 @@
         configuracion:{ init: initConfiguracion, loaded: false },
         'cargar-datos':{ init: initDatos,        loaded: false },
         pipelines:    { init: initPipelines,     loaded: false },
+        etl:          { init: initETL,           loaded: false },
     };
 
     function activarSeccion(slug) {
@@ -442,43 +443,61 @@
     }
 
     function renderConfiguracion(d) {
-        const voters   = d.sources.find(s => s.key === 'voters');
-        const users    = d.sources.find(s => s.key === 'users');
-        const audit    = d.sources.find(s => s.key === 'audit_logs');
-        const reports  = d.sources.find(s => s.key === 'reports');
-        const mig      = d.sources.find(s => s.key === 'migrations');
+        const src      = k => d.sources.find(s => s.key === k);
+        const voters   = src('voters');
+        const enriched = src('voter_enrichments');
+        const polling  = src('polling');
+        const elDist   = src('electoral_districts');
+        const results  = src('results');
+        const sjrv     = src('summary_jrv');
+        const users    = src('users');
+        const audit    = src('audit_logs');
+        const reports  = src('reports');
+        const repCats  = src('report_categories');
+        const mig      = src('migrations');
+        const pctVoters = voters?.count > 0 ? ('<span style="color:var(--success-color)">' + fmt(voters.count) + '</span>') : '<span style="color:var(--text-muted)">0</span>';
 
         $('configGrid').innerHTML = `
             <div class="admin-info-card">
                 <div class="admin-info-card-head"><i class="bi bi-server"></i> Entorno</div>
                 <ul class="admin-info-rows">
-                    <li class="admin-info-row"><span class="admin-info-key">Servidor</span><span class="admin-info-val">${esc(d.server)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Base de datos</span><span class="admin-info-val">${esc(d.db)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Fecha del servidor</span><span class="admin-info-val">${esc(d.now)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Servidor</span><span class="admin-info-val" style="font-size:.8rem">${esc(d.server)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">BD sistema</span><span class="admin-info-val"><code style="font-size:.75rem">${esc(d.sys_db)}</code></span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">BD datos (DW)</span><span class="admin-info-val"><code style="font-size:.75rem">${esc(d.dw_db)}</code></span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Tamaño DW</span><span class="admin-info-val">${d.dw_tables != null ? d.dw_tables + ' MB' : 'N/D'}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Fecha servidor</span><span class="admin-info-val">${esc(d.now)}</span></li>
                 </ul>
             </div>
             <div class="admin-info-card">
-                <div class="admin-info-card-head"><i class="bi bi-database"></i> Datos electorales</div>
+                <div class="admin-info-card-head"><i class="bi bi-database-fill"></i> Padrón electoral (DW)</div>
                 <ul class="admin-info-rows">
-                    <li class="admin-info-row"><span class="admin-info-key">Padrón (voters)</span><span class="admin-info-val">${fmt(voters?.count)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Juntas nacionales</span><span class="admin-info-val">${fmt(d.juntas)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Electores (voters)</span><span class="admin-info-val">${pctVoters}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Juntas únicas</span><span class="admin-info-val">${fmt(d.juntas)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Centros votación</span><span class="admin-info-val">${fmt(polling?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Circunscripciones</span><span class="admin-info-val">${fmt(elDist?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Enriquecimientos sexo</span><span class="admin-info-val">${fmt(enriched?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Resultados electorales</span><span class="admin-info-val">${fmt(results?.count)}</span></li>
                     <li class="admin-info-row"><span class="admin-info-key">Tamaño voters</span><span class="admin-info-val">${voters?.size_mb != null ? voters.size_mb + ' MB' : 'N/D'}</span></li>
                 </ul>
             </div>
             <div class="admin-info-card">
-                <div class="admin-info-card-head"><i class="bi bi-people"></i> Usuarios y acceso</div>
+                <div class="admin-info-card-head"><i class="bi bi-bar-chart-steps"></i> Resumen pre-agregado (Gold)</div>
                 <ul class="admin-info-rows">
-                    <li class="admin-info-row"><span class="admin-info-key">Usuarios registrados</span><span class="admin-info-val">${fmt(users?.count)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Registros de bitácora</span><span class="admin-info-val">${fmt(audit?.count)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Reportes configurados</span><span class="admin-info-val">${fmt(reports?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">JRVs en summary_jrv</span><span class="admin-info-val">${fmt(sjrv?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Provincias</span><span class="admin-info-val">${fmt(src('provinces')?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Cantones</span><span class="admin-info-val">${fmt(src('cantons')?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Distritos</span><span class="admin-info-val">${fmt(src('districts')?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Partidos</span><span class="admin-info-val">${fmt(src('parties')?.count)}</span></li>
                 </ul>
             </div>
             <div class="admin-info-card">
-                <div class="admin-info-card-head"><i class="bi bi-sliders2"></i> Parámetros del sistema</div>
+                <div class="admin-info-card-head"><i class="bi bi-people"></i> Sistema (pel_electoral)</div>
                 <ul class="admin-info-rows">
-                    <li class="admin-info-row"><span class="admin-info-key">Cache padrón TTL</span><span class="admin-info-val">1 hora</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Migraciones aplicadas</span><span class="admin-info-val">${fmt(mig?.count)}</span></li>
-                    <li class="admin-info-row"><span class="admin-info-key">Tema predeterminado</span><span class="admin-info-val">Sistema (claro/oscuro)</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Usuarios</span><span class="admin-info-val">${fmt(users?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Bitácora (eventos)</span><span class="admin-info-val">${fmt(audit?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Reportes</span><span class="admin-info-val">${fmt(reports?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Categorías de reportes</span><span class="admin-info-val">${fmt(repCats?.count)}</span></li>
+                    <li class="admin-info-row"><span class="admin-info-key">Migraciones sistema</span><span class="admin-info-val">${fmt(mig?.count)}</span></li>
                 </ul>
             </div>
         `;
@@ -570,6 +589,160 @@
         } catch (e) {
             $('pipeList').innerHTML = `<li class="pipe-item" style="color:var(--text-muted)">${e.message}</li>`;
         }
+    }
+
+
+    // ── ETL PIPELINES ─────────────────────────────────────────────────────────
+
+    const ETL_TIPO_LABEL = {
+        dimension:       'Dimensión',
+        hecho:           'Hecho',
+        enriquecimiento: 'Enriquecimiento',
+        agregado:        'Agregado Gold',
+    };
+    const ETL_TIPO_CLASS = {
+        dimension:       'badge-gray',
+        hecho:           'badge-blue',
+        enriquecimiento: 'badge-purple',
+        agregado:        'badge-green',
+    };
+    const ETL_ESTADO_ICON = {
+        completado: '<i class="bi bi-check-circle-fill" style="color:#22c55e"></i>',
+        parcial:    '<i class="bi bi-exclamation-circle-fill" style="color:#f59e0b"></i>',
+        pendiente:  '<i class="bi bi-clock" style="color:#94a3b8"></i>',
+        bloqueado:  '<i class="bi bi-lock-fill" style="color:#94a3b8"></i>',
+        error:      '<i class="bi bi-x-circle-fill" style="color:#ef4444"></i>',
+        nunca:      '<i class="bi bi-dash-circle" style="color:#94a3b8"></i>',
+        failed:     '<i class="bi bi-x-circle-fill" style="color:#ef4444"></i>',
+        processing: '<i class="bi bi-hourglass-split" style="color:#f59e0b"></i>',
+    };
+    const ETL_ESTADO_LABEL = {
+        completado: 'Completado', completed: 'Completado',
+        parcial:    'Parcial',
+        pendiente:  'Pendiente',
+        bloqueado:  'Bloqueado',
+        error:      'Error',      failed: 'Error',
+        nunca:      'Sin ejecutar',
+        processing: 'Procesando',
+    };
+
+    function initETL() {
+        cargarETL();
+        $('btnRefreshEtl').addEventListener('click', cargarETL);
+    }
+
+    async function cargarETL() {
+        $('etlBody').innerHTML = `<tr><td colspan="7" class="admin-empty"><i class="bi bi-hourglass-split"></i> Cargando…</td></tr>`;
+        try {
+            const d = await api('api/admin/etl.php');
+            renderETL(d);
+        } catch(e) {
+            $('etlBody').innerHTML = `<tr><td colspan="7" class="admin-empty">${esc(e.message)}</td></tr>`;
+        }
+    }
+
+    function renderETL(d) {
+        const etls = d.etls || [];
+        const ok   = etls.filter(e => e.estado === 'completado' || e.estado === 'completed').length;
+        const pend = etls.filter(e => e.estado === 'pendiente'  || e.estado === 'nunca').length;
+        const blk  = etls.filter(e => e.estado === 'bloqueado').length;
+        $('etlTotal').textContent = etls.length;
+        $('etlOk').textContent    = ok;
+        $('etlPend').textContent  = pend;
+        $('etlBlock').textContent = blk;
+
+        $('etlBody').innerHTML = etls.map(e => {
+            const icon  = ETL_ESTADO_ICON[e.estado]  || ETL_ESTADO_ICON['pendiente'];
+            const label = ETL_ESTADO_LABEL[e.estado] || e.estado;
+            const tipo  = ETL_TIPO_LABEL[e.tipo]  || e.tipo;
+            const tipoCls = ETL_TIPO_CLASS[e.tipo] || 'badge-gray';
+            const fecha = e.ultima_exec ? e.ultima_exec.slice(0, 16) : '—';
+            const dur   = e.duracion || '—';
+            const recs  = e.registros_ok > 0 ? fmt(e.registros_ok) : '—';
+            const errs  = e.registros_err > 0 ? ` <span style="color:#ef4444;font-size:.75rem">(${e.registros_err} err)</span>` : '';
+            return `<tr title="${esc(e.detalle || '')}">
+                <td>
+                    <div style="font-weight:500;font-size:.9rem">${esc(e.nombre)}</div>
+                    <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px">${esc(e.descripcion)}</div>
+                    <code style="font-size:.7rem;opacity:.55">${esc(e.script)}</code>
+                </td>
+                <td class="hide-mobile"><span class="badge ${tipoCls}" style="font-size:.68rem">${esc(tipo)}</span></td>
+                <td class="hide-mobile" style="font-size:.78rem;color:var(--text-muted)">
+                    <div>${esc(e.origen)}</div>
+                    <div style="margin-top:2px">→ <span style="color:var(--color-text-primary)">${esc(e.destino)}</span></div>
+                </td>
+                <td style="white-space:nowrap">${icon} <span style="font-size:.82rem">${esc(label)}</span></td>
+                <td class="col-num">${recs}${errs}</td>
+                <td class="hide-mobile" style="font-size:.8rem;color:var(--text-muted)">${fecha}</td>
+                <td class="hide-mobile" style="font-size:.8rem;color:var(--text-muted)">${dur}</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="7" class="admin-empty">Sin ETLs</td></tr>';
+
+        // Historial de runs
+        let runsHtml = '';
+        etls.filter(e => e.sync_runs && e.sync_runs.length > 0).forEach(e => {
+            runsHtml += `<div style="margin-bottom:1rem">
+                <div style="font-weight:500;font-size:.9rem;margin-bottom:.5rem">
+                    <i class="bi bi-clock-history" style="margin-right:.4rem"></i>${esc(e.nombre)}
+                </div>
+                <div class="admin-card" style="padding:0;overflow-x:auto">
+                <table class="admin-table">
+                    <thead><tr>
+                        <th>ID</th><th>Etiqueta / Archivo</th><th>Estado</th>
+                        <th class="col-num">Registros</th><th>Inicio</th><th>Fin</th><th>Duración</th>
+                    </tr></thead>
+                    <tbody>`;
+            e.sync_runs.forEach(r => {
+                const icon2  = ETL_ESTADO_ICON[r.status]  || ETL_ESTADO_ICON['pendiente'];
+                const label2 = ETL_ESTADO_LABEL[r.status] || r.status;
+                const dur2   = (r.started_at && r.finished_at) ? calcDur(r.started_at, r.finished_at) : '—';
+                const lbl    = r.election_label || r.zip_filename || r.filename || '—';
+                const errs2  = r.records_error > 0 ? ` <span style="color:#ef4444;font-size:.75rem">(${r.records_error} err)</span>` : '';
+                runsHtml += `<tr>
+                    <td class="col-num muted">${r.id}</td>
+                    <td style="font-size:.8rem">${esc(lbl)}</td>
+                    <td style="white-space:nowrap">${icon2} <span style="font-size:.8rem">${esc(label2)}</span></td>
+                    <td class="col-num">${fmt(r.records_ok)}${errs2}</td>
+                    <td style="font-size:.78rem;white-space:nowrap">${(r.started_at||'').slice(0,16)}</td>
+                    <td style="font-size:.78rem;white-space:nowrap">${(r.finished_at||'').slice(0,16) || '—'}</td>
+                    <td style="font-size:.78rem">${dur2}</td>
+                </tr>`;
+            });
+            runsHtml += '</tbody></table></div></div>';
+        });
+
+        // Import jobs
+        if (d.import_jobs && d.import_jobs.length > 0) {
+            runsHtml += `<div style="margin-bottom:1rem">
+                <div style="font-weight:500;font-size:.9rem;margin-bottom:.5rem">
+                    <i class="bi bi-cloud-upload" style="margin-right:.4rem"></i>Import Jobs (últimos 5)
+                </div>
+                <div class="admin-card" style="padding:0;overflow-x:auto">
+                <table class="admin-table"><thead><tr>
+                    <th>ID</th><th>Archivo</th><th>Estado</th><th class="col-num">Registros</th><th>Fecha</th>
+                </tr></thead><tbody>`;
+            d.import_jobs.forEach(j => {
+                const icon3  = ETL_ESTADO_ICON[j.status]  || ETL_ESTADO_ICON['pendiente'];
+                const label3 = ETL_ESTADO_LABEL[j.status] || j.status;
+                runsHtml += `<tr>
+                    <td class="col-num muted">${j.id}</td>
+                    <td style="font-size:.8rem">${esc(j.filename)}</td>
+                    <td>${icon3} <span style="font-size:.8rem">${esc(label3)}</span></td>
+                    <td class="col-num">${fmt(j.records_ok)}</td>
+                    <td style="font-size:.78rem">${(j.created_at||'').slice(0,16)}</td>
+                </tr>`;
+            });
+            runsHtml += '</tbody></table></div></div>';
+        }
+
+        $('etlRuns').innerHTML = runsHtml || '<p class="muted" style="padding:1rem">Sin historial de ejecuciones registrado.</p>';
+    }
+
+    function calcDur(start, end) {
+        const s = Math.floor((new Date(end) - new Date(start)) / 1000);
+        if (s < 60)   return s + 's';
+        if (s < 3600) return (s/60).toFixed(1) + 'min';
+        return (s/3600).toFixed(1) + 'h';
     }
 
     // ── Escape HTML ──────────────────────────────────────────────────────────

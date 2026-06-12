@@ -29,18 +29,23 @@ $dwDb  = $dw->query("SELECT DATABASE()")->fetchColumn();
 // Fuentes de datos: [pdo, tabla, label, icon]
 $sources = [
     // ── Datos electorales (peldigital_data) ─────────────────────────────────
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'voters',     'label' => 'Padrón Electoral',      'table' => 'voters',            'icon' => 'bi-people'],
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'provinces',  'label' => 'Provincias',             'table' => 'provinces',         'icon' => 'bi-geo-alt'],
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'cantons',    'label' => 'Cantones',               'table' => 'cantons',           'icon' => 'bi-pin-map'],
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'districts',  'label' => 'Distritos',              'table' => 'districts',         'icon' => 'bi-map'],
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'polling',    'label' => 'Centros de votación',    'table' => 'polling_places',    'icon' => 'bi-building'],
-    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'results',    'label' => 'Resultados electorales', 'table' => 'election_results',  'icon' => 'bi-bar-chart'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'voters',              'label' => 'Padrón Electoral',           'table' => 'voters',                        'icon' => 'bi-people'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'voter_enrichments',   'label' => 'Enriquecimientos',           'table' => 'voter_enrichments',             'icon' => 'bi-person-check'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'provinces',           'label' => 'Provincias',                 'table' => 'provinces',                     'icon' => 'bi-geo-alt'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'cantons',             'label' => 'Cantones',                   'table' => 'cantons',                       'icon' => 'bi-pin-map'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'districts',           'label' => 'Distritos',                  'table' => 'districts',                     'icon' => 'bi-map'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'polling',             'label' => 'Centros de votación',        'table' => 'polling_places',                'icon' => 'bi-building'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'electoral_districts', 'label' => 'Circunscripciones legis.',  'table' => 'electoral_districts',           'icon' => 'bi-diagram-3'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'results',             'label' => 'Resultados electorales',     'table' => 'election_results',              'icon' => 'bi-bar-chart'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'parties',             'label' => 'Partidos políticos',         'table' => 'parties',                       'icon' => 'bi-flag'],
+    ['pdo' => $dw,  'db' => $dwDb,  'key' => 'summary_jrv',         'label' => 'Resumen JRV (Gold)',         'table' => 'summary_jrv',                   'icon' => 'bi-table'],
     // ── Sistema (pel_electoral) ──────────────────────────────────────────────
-    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'users',      'label' => 'Usuarios',               'table' => 'users',             'icon' => 'bi-person'],
-    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'roles',      'label' => 'Roles',                  'table' => 'roles',             'icon' => 'bi-shield'],
-    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'audit_logs', 'label' => 'Registros de auditoría', 'table' => 'audit_logs',        'icon' => 'bi-journal'],
-    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'reports',    'label' => 'Reportes configurados',  'table' => 'reports',           'icon' => 'bi-bar-chart-line'],
-    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'migrations', 'label' => 'Migraciones aplicadas',  'table' => 'schema_migrations', 'icon' => 'bi-database-check'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'users',               'label' => 'Usuarios',                   'table' => 'users',                         'icon' => 'bi-person'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'roles',               'label' => 'Roles',                      'table' => 'roles',                         'icon' => 'bi-shield'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'audit_logs',          'label' => 'Registros de auditoría',     'table' => 'audit_logs',                    'icon' => 'bi-journal'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'reports',             'label' => 'Reportes configurados',      'table' => 'reports',                       'icon' => 'bi-bar-chart-line'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'report_categories',   'label' => 'Categorías de reportes',     'table' => 'report_categories',             'icon' => 'bi-folder'],
+    ['pdo' => $sys, 'db' => $sysDb, 'key' => 'migrations',          'label' => 'Migraciones sistema',        'table' => 'schema_migrations',             'icon' => 'bi-database-check'],
 ];
 
 $result = [];

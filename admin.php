@@ -25,6 +25,7 @@ require $rootDir . '/includes/layout/header.php';
     require $rootDir . '/includes/admin/configuracion.php';
     require $rootDir . '/includes/admin/cargar-datos.php';
     require $rootDir . '/includes/admin/pipelines.php';
+    require $rootDir . '/includes/admin/etl.php';
     ?>
 </main>
 

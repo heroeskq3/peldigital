@@ -119,6 +119,7 @@ foreach ($navByCategory as $cat) {
                         <li><a class="dropdown-link" href="admin.php#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
                         <li><a class="dropdown-link" href="admin.php#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>
                         <li><a class="dropdown-link" href="admin.php#pipelines"     data-admin="pipelines"    ><i class="bi bi-diagram-3"></i> Pipelines</a></li>
+                        <li><a class="dropdown-link" href="admin.php#etl"          data-admin="etl"          ><i class="bi bi-arrow-repeat"></i> Pipelines ETL</a></li>
                     </ul>
                 </li>
                 <?php endif; ?>
