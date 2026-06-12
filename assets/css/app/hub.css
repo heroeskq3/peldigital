@@ -107,7 +107,8 @@ body.page-hub .app-shell {
 /* ── Search bar ───────────────────────────────────────── */
 .hub-search-wrap {
     position: relative;
-    margin-bottom: 2rem;
+    max-width: 520px;
+    margin: 0 auto 2rem;
 }
 .hub-search-ico {
     position: absolute;
