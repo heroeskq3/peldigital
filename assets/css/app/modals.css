@@ -196,6 +196,17 @@
     color: #ffffff;
     margin-bottom: 16px;
 }
+/* Badge reCAPTCHA v3 — esquina inferior derecha */
+.grecaptcha-badge {
+    bottom: 16px !important;
+    right: 16px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.35) !important;
+    border-radius: 8px !important;
+    opacity: .85;
+    transition: opacity .2s;
+}
+.grecaptcha-badge:hover { opacity: 1; }
+
 /* Ojito contraseña */
 .field-pw { position: relative; }
 .field-pw .field { padding-right: 38px; }

@@ -11,7 +11,7 @@ if (estaAutenticado()) {
 $RECAPTCHA_SITE_KEY = env('RECAPTCHA_SITE_KEY');
 $RECAPTCHA_SECRET   = env('RECAPTCHA_SECRET');
 
-/** Verifica el token reCAPTCHA con la API de Google. */
+/** Verifica el token reCAPTCHA (v2 checkbox o v3 score) con la API de Google. */
 function verificarRecaptcha(string $token, string $secret): bool
 {
     if ($token === '') return false;
@@ -24,7 +24,9 @@ function verificarRecaptcha(string $token, string $secret): bool
     $raw = @file_get_contents('https://www.google.com/recaptcha/api/siteverify', false, $ctx);
     if (!$raw) return false;
     $data = json_decode($raw, true);
-    return !empty($data['success']);
+    if (empty($data['success'])) return false;
+    // v3 devuelve score (0.0–1.0); v2 no tiene score → siempre pasa
+    return !isset($data['score']) || (float)$data['score'] >= 0.5;
 }
 
 $error = '';
@@ -63,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })();
     </script>
 
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>" async defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php
     $loginCss = [
@@ -110,9 +112,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="checkbox" name="recordar" value="1" <?= !empty($_POST['recordar']) ? 'checked' : '' ?>>
                 Mantener sesión iniciada
             </label>
-            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>" style="margin-bottom:.75rem;"></div>
+            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
             <button type="submit" class="btn-wide"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
         </form>
     </main>
+    <script>
+        var _rcKey = '<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>';
+        document.querySelector('.login-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = this;
+            grecaptcha.ready(function () {
+                grecaptcha.execute(_rcKey, { action: 'login' }).then(function (token) {
+                    document.getElementById('g-recaptcha-response').value = token;
+                    form.submit();
+                });
+            });
+        });
+    </script>
 </body>
 </html>
