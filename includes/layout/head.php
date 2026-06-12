@@ -16,8 +16,7 @@
     <!-- Evita el parpadeo de tema: aplica el tema guardado antes de pintar. -->
     <script>
         (function () {
-            var t = localStorage.getItem("cr-theme");
-            if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            var t = localStorage.getItem("cr-theme") || "light";
             document.documentElement.setAttribute("data-theme", t);
         })();
         window.APP_BASE = <?= json_encode($appBaseUrl) ?>;

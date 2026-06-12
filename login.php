@@ -59,8 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script>
         (function () {
-            var t = localStorage.getItem("cr-theme");
-            if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            var t = localStorage.getItem("cr-theme") || "light";
             document.documentElement.setAttribute("data-theme", t);
         })();
     </script>
