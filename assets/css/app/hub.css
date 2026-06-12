@@ -34,7 +34,7 @@ body.page-hub .app-shell {
     gap: 1.5rem;
     padding: 2rem 2.5rem;
     border-radius: 1rem;
-    background: var(--surface-2);
+    background: var(--surface);
     border: 1px solid var(--border);
     margin-bottom: 2.5rem;
 }
