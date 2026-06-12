@@ -26,6 +26,7 @@ require $rootDir . '/includes/layout/header.php';
     require $rootDir . '/includes/admin/cargar-datos.php';
     require $rootDir . '/includes/admin/etl.php';
     require $rootDir . '/includes/admin/explorador.php';
+    require $rootDir . '/includes/admin/documentacion.php';
     ?>
 </main>
 

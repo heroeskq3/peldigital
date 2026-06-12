@@ -296,8 +296,8 @@ Duración: ~2 minutos
 | Tabla | Filas | MB | Descripción |
 |-------|-------|----|-------------|
 | `voters` | 3,731,788 | 2,179 | Padrón electoral TSE 2026 completo |
-| `voter_enrichments` | 3,466,813 | 128 | Cache de sexo/fecha_nac por cédula (sobrevive TRUNCATE) |
-| `election_results` | 30,868 | 9.73 | Resultados AVR por nivel/circunscripción/partido (JSON) |
+| `voter_enrichments` | 3,731,788 | 128 | Cache de sexo/fecha_nac por cédula (sobrevive TRUNCATE) |
+| `election_results` | 29,909 | 9.73 | Resultados AVR por nivel/circunscripción/partido (JSON) |
 
 ### Gold (pre-agregadas — alimentan las APIs directamente)
 

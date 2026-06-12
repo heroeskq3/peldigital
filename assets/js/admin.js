@@ -78,6 +78,7 @@
         pipelines:    { init: initPipelines,     loaded: false },
         etl:          { init: initETL,           loaded: false },
         explorador:   { init: initExplorador,    loaded: false },
+        documentacion:{ init: initDocumentacion, loaded: false },
     };
 
     function activarSeccion(slug) {
@@ -103,6 +104,16 @@
     document.querySelectorAll('[data-admin]').forEach(el => {
         el.addEventListener('click', e => {
             e.preventDefault();
+            const tab = el.dataset.docsTab;
+            if (el.dataset.admin === 'documentacion' && tab) {
+                if (sections.documentacion?.loaded) {
+                    document.querySelectorAll('[data-docs-tab]').forEach(b => b.classList.remove('active'));
+                    document.querySelector(`[data-docs-tab="${tab}"]`)?.classList.add('active');
+                    cargarDoc(tab);
+                } else {
+                    docsNextTab = tab;
+                }
+            }
             activarSeccion(el.dataset.admin);
         });
     });
@@ -110,6 +121,7 @@
     // ── State (declared before activarSeccion to avoid TDZ) ─────────────────
     const usu = { page: 1, pages: 1, editId: null, roles: [] };
     const bit = { page: 1, pages: 1 };
+    let docsNextTab = null;
 
     // Initial section from hash
     const hash = location.hash.slice(1);
@@ -1133,5 +1145,49 @@
         } catch (e) { alert(e.message); }
     };
     window.adminRepEdit = id => abrirModalRep(id);
+
+    // ── DOCUMENTACIÓN ────────────────────────────────────────────────────────
+
+    function initDocumentacion() {
+        let currentTab = docsNextTab || 'datawarehouse';
+        docsNextTab = null;
+        document.querySelectorAll('[data-docs-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-docs-tab]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTab = btn.dataset.docsTab;
+                cargarDoc(currentTab);
+            });
+        });
+        cargarDoc(currentTab);
+    }
+
+    async function cargarDoc(doc) {
+        const loading = $('docsLoading');
+        const content = $('docsContent');
+        const error   = $('docsError');
+
+        loading.style.display = 'flex';
+        content.classList.add('d-none');
+        error.classList.add('d-none');
+
+        if (doc === 'topologia') {
+            content.innerHTML = '<img src="docs/img/topologia.png" alt="Topología de sistema PEL Digital" style="max-width:100%;height:auto;display:block;border-radius:6px">';
+            loading.style.display = 'none';
+            content.classList.remove('d-none');
+            return;
+        }
+
+        try {
+            const d = await api(`api/admin/docs.php?doc=${encodeURIComponent(doc)}`);
+            content.innerHTML = d.html;
+            loading.style.display = 'none';
+            content.classList.remove('d-none');
+        } catch (e) {
+            loading.style.display = 'none';
+            $('docsErrorMsg').textContent = e.message;
+            error.classList.remove('d-none');
+        }
+    }
 
 })();

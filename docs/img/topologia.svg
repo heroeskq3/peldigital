@@ -1,0 +1,185 @@
+<svg width="1260" height="490" viewBox="0 0 1260 490" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Arquitectura de Sistema — PEL Digital</title>
+  <desc>Flujo de datos: TSE (fuentes externas) → Archivos raw → ETL Scripts → peldigital_data (DW) + pel_electoral (App) → PHP APIs → PEL Digital UI → Usuario</desc>
+
+  <!-- Background -->
+  <rect width="1260" height="490" fill="#F1F5F9"/>
+
+  <!-- Header strip -->
+  <rect x="0" y="0" width="1260" height="64" fill="#0F172A"/>
+  <text x="630" y="28" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-0.2">Arquitectura de Sistema — PEL Digital</text>
+  <text x="630" y="48" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">TSE (fuentes externas) · Ingesta ETL · Data Warehouse · APIs PHP · Interfaz de usuario</text>
+
+  <!-- ── ARROWHEAD MARKER ────────────────────────────────────────────── -->
+  <defs>
+    <marker id="ah" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <!-- ── COLUMN LABELS ───────────────────────────────────────────────── -->
+  <text x="95"   y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#92400E" text-anchor="middle" letter-spacing="0.8">FUENTES EXTERNAS</text>
+  <text x="255"  y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#475569" text-anchor="middle" letter-spacing="0.8">ARCHIVOS RAW</text>
+  <text x="415"  y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#1E40AF" text-anchor="middle" letter-spacing="0.8">INGESTA ETL</text>
+  <text x="602"  y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#5B21B6" text-anchor="middle" letter-spacing="0.8">DATA STORES</text>
+  <text x="794"  y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#065F46" text-anchor="middle" letter-spacing="0.8">APIS PHP</text>
+  <text x="965"  y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#9F1239" text-anchor="middle" letter-spacing="0.8">INTERFAZ WEB</text>
+  <text x="1148" y="82" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#1E293B" text-anchor="middle" letter-spacing="0.8">USUARIO</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 1 · FUENTES EXTERNAS  x=20 w=150 y=91 h=235 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="20" y="91" width="150" height="235" rx="6" fill="#D97706"/>
+  <text x="95" y="110" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">TSE Costa Rica</text>
+  <line x1="30" y1="118" x2="160" y2="118" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <circle cx="35" cy="135" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="139" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">Padrón Electoral 2026</text>
+  <circle cx="35" cy="156" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="160" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">DISTELEC (geografía)</text>
+  <circle cx="35" cy="177" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="181" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">Centros Votación .xlsx</text>
+  <circle cx="35" cy="198" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="202" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">AVR Resultados 2026</text>
+  <circle cx="35" cy="219" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="223" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">AVR Resultados 2024</text>
+  <circle cx="35" cy="240" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="43" y="244" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">AVR Resultados 2022</text>
+  <rect x="30" y="293" width="130" height="18" rx="3" fill="rgba(0,0,0,0.18)"/>
+  <text x="95" y="305" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.82)" text-anchor="middle">descarga manual · WAF TSE</text>
+
+  <!-- ARROW 1→2 -->
+  <line x1="171" y1="213" x2="189" y2="213" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 2 · ARCHIVOS RAW  x=192 w=125 y=108 h=195 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="192" y="108" width="125" height="195" rx="6" fill="white" stroke="#CBD5E1" stroke-width="1.5"/>
+  <text x="255" y="127" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="#334155" text-anchor="middle">raw/</text>
+  <line x1="202" y1="135" x2="307" y2="135" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="202" y="151" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">PADRON_COMPLETO.txt</text>
+  <text x="202" y="167" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">distelec.txt</text>
+  <text x="202" y="183" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">centros_votacion.xlsx</text>
+  <text x="202" y="199" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">avr2026.json</text>
+  <text x="202" y="215" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">avr2024.json</text>
+  <text x="202" y="231" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">avr2022.json</text>
+  <text x="202" y="247" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="#475569">avr2022_ii.json</text>
+  <rect x="202" y="277" width="105" height="16" rx="3" fill="#F1F5F9"/>
+  <text x="255" y="288" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="7.5" fill="#64748B" text-anchor="middle">excluidos de git</text>
+
+  <!-- ARROW 2→3 -->
+  <line x1="318" y1="213" x2="336" y2="213" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 3 · ETL SCRIPTS  x=339 w=155 y=91 h=235 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="339" y="91" width="155" height="235" rx="6" fill="#3B82F6"/>
+  <text x="417" y="110" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">ETL Scripts PHP</text>
+  <line x1="349" y1="118" x2="484" y2="118" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <circle cx="354" cy="135" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="139" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">import_distelec.php</text>
+  <circle cx="354" cy="155" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="159" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">import_padron.php</text>
+  <circle cx="354" cy="175" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="179" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">import_polling_places.php</text>
+  <circle cx="354" cy="195" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="199" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">link_voters_polling.php</text>
+  <circle cx="354" cy="215" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="219" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">enrich_sexo.php</text>
+  <circle cx="354" cy="235" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="239" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">import_resultados.php</text>
+  <circle cx="354" cy="255" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="362" y="259" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="rgba(255,255,255,0.93)">refresh_summaries.php</text>
+  <rect x="349" y="298" width="135" height="18" rx="3" fill="rgba(0,0,0,0.18)"/>
+  <text x="417" y="310" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.82)" text-anchor="middle">php CLI · scripts/</text>
+
+  <!-- ARROW 3→DW -->
+  <line x1="495" y1="208" x2="513" y2="208" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 4a · peldigital_data (DW)  x=516 w=172 y=91 h=198 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="516" y="91" width="172" height="198" rx="6" fill="#7C3AED"/>
+  <text x="602" y="109" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">peldigital_data</text>
+  <text x="602" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.65)" text-anchor="middle">Data Warehouse · MySQL · ~2.3 GB</text>
+  <line x1="526" y1="130" x2="678" y2="130" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="526" y="144" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="7.5" font-weight="700" fill="rgba(255,255,255,0.55)" letter-spacing="0.5">BRONZE · HECHOS</text>
+  <text x="526" y="158" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">voters  3.7 M · 2.1 GB</text>
+  <text x="526" y="172" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">election_results  29,909</text>
+  <text x="526" y="186" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">polling_places  2,191</text>
+  <line x1="526" y1="194" x2="678" y2="194" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="526" y="208" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="7.5" font-weight="700" fill="rgba(255,255,255,0.55)" letter-spacing="0.5">GOLD · RESÚMENES</text>
+  <text x="526" y="222" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">summary_jrv  7,063</text>
+  <text x="526" y="236" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">summary_inscritos_*</text>
+  <text x="526" y="250" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">provinces · cantons ···</text>
+  <text x="526" y="264" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">parties · voter_enrichments</text>
+
+  <!-- BOX 4b · pel_electoral (App DB)  x=516 w=172 y=302 h=100 -->
+  <rect x="516" y="302" width="172" height="100" rx="6" fill="#4F46E5"/>
+  <text x="602" y="320" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">pel_electoral</text>
+  <text x="602" y="334" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.65)" text-anchor="middle">App DB · MySQL</text>
+  <line x1="526" y1="341" x2="678" y2="341" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="526" y="356" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">users · roles · sessions</text>
+  <text x="526" y="370" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">reports catalog · audit_log</text>
+  <text x="526" y="384" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">schema_migrations</text>
+
+  <!-- ARROWS: DW→APIs and AppDB→APIs -->
+  <polyline points="689,192 703,192 703,263 712,263" stroke="#94A3B8" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+  <polyline points="689,352 703,352 703,310 712,310" stroke="#94A3B8" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 5 · PHP APIs  x=715 w=150 y=215 h=190 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="715" y="215" width="150" height="190" rx="6" fill="#059669"/>
+  <text x="790" y="233" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">PHP APIs</text>
+  <text x="790" y="247" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.65)" text-anchor="middle">Servidor XAMPP · puerto 8099</text>
+  <line x1="725" y1="254" x2="855" y2="254" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="725" y="269" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/poblacion.php</text>
+  <text x="725" y="283" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/jrv.php</text>
+  <text x="725" y="297" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/locales.php</text>
+  <text x="725" y="311" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/resultados.php</text>
+  <text x="725" y="325" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/segmentacion.php</text>
+  <text x="725" y="339" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="8" fill="rgba(255,255,255,0.88)">api/participacion.php</text>
+  <rect x="725" y="381" width="130" height="16" rx="3" fill="rgba(0,0,0,0.18)"/>
+  <text x="790" y="392" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="7.5" fill="rgba(255,255,255,0.8)" text-anchor="middle">requerirLoginApi()</text>
+
+  <!-- ARROW APIs→UI -->
+  <line x1="866" y1="310" x2="884" y2="310" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 6 · PEL DIGITAL UI  x=887 w=150 y=240 h=155 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="887" y="240" width="150" height="155" rx="6" fill="#DC2626"/>
+  <text x="962" y="258" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="10.5" font-weight="700" fill="white" text-anchor="middle">PEL Digital</text>
+  <text x="962" y="272" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.65)" text-anchor="middle">peldigital.org</text>
+  <line x1="897" y1="279" x2="1027" y2="279" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <circle cx="902" cy="296" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="910" y="300" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">12 Reportes electorales</text>
+  <circle cx="902" cy="317" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="910" y="321" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">Mapas interactivos</text>
+  <circle cx="902" cy="338" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="910" y="342" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">Panel Admin + DW</text>
+  <circle cx="902" cy="359" r="2.5" fill="rgba(255,255,255,0.65)"/>
+  <text x="910" y="363" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" fill="rgba(255,255,255,0.93)">PHP + JS vanilla</text>
+  <rect x="897" y="372" width="130" height="14" rx="3" fill="rgba(0,0,0,0.18)"/>
+  <text x="962" y="382" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="7.5" fill="rgba(255,255,255,0.8)" text-anchor="middle">sesión autenticada · HTTPS</text>
+
+  <!-- ARROW UI→User -->
+  <line x1="1038" y1="318" x2="1058" y2="318" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- BOX 7 · USUARIO  x=1061 w=150 y=262 h=115 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="1061" y="262" width="150" height="115" rx="6" fill="#0F172A"/>
+  <!-- Person icon (SVG path) -->
+  <circle cx="1136" cy="293" r="16" fill="rgba(255,255,255,0.12)"/>
+  <circle cx="1136" cy="289" r="8" fill="rgba(255,255,255,0.75)"/>
+  <path d="M1113,325 Q1113,308 1136,308 Q1159,308 1159,325" fill="rgba(255,255,255,0.75)"/>
+  <text x="1136" y="351" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="white" text-anchor="middle">Dirigente / Analista</text>
+  <text x="1136" y="365" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.55)" text-anchor="middle">browser · acceso autenticado</text>
+
+  <!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+  <line x1="20" y1="442" x2="1240" y2="442" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="630" y="458" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">Regla de rendimiento: ninguna API accede a voters directamente — los reportes usan tablas Gold (summary_*) regeneradas por refresh_summaries.php</text>
+  <text x="630" y="474" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif" font-size="8.5" fill="#CBD5E1" text-anchor="middle">XAMPP (dev local) · MySQL/InnoDB · peldigital_data ~2.3 GB · pel_electoral (app) · Padrón TSE 2026 — 3,731,788 electores</text>
+
+</svg>

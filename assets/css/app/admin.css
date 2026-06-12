@@ -11,6 +11,12 @@ body.page-admin #btnResetM { display: none; }
 body.page-admin,
 body.page-admin html { background: var(--bg); }
 
+/* app-shell usa height:100vh para el mapa; en admin necesitamos scroll normal */
+body.page-admin .app-shell {
+    height: auto;
+    min-height: 100vh;
+}
+
 .admin-main {
     max-width: 1100px;
     margin: 0 auto;
@@ -598,3 +604,24 @@ body.page-admin html { background: var(--bg); }
     .admin-toolbar .btn-secondary { padding: .4rem .65rem; font-size: .8rem; }
     .admin-table .hide-mobile { display: none; }
 }
+
+/* ── Docs markdown viewer ─────────────────────────────────────────────────── */
+
+.docs-md { line-height: 1.7; color: var(--text-main); font-size: .9rem; }
+.docs-md h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border-color); }
+.docs-md h2 { font-size: 1.1rem; font-weight: 600; margin: 2rem 0 .6rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border-color); }
+.docs-md h3 { font-size: .95rem; font-weight: 600; margin: 1.4rem 0 .4rem; color: var(--text-muted); }
+.docs-md h4 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .3rem; }
+.docs-md p  { margin: 0 0 .85rem; }
+.docs-md a  { color: var(--color-accent, #3b82f6); }
+.docs-md ul, .docs-md ol { margin: 0 0 .85rem 1.4rem; }
+.docs-md li { margin-bottom: .25rem; }
+.docs-md code { font-family: var(--font-mono, monospace); font-size: .82rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; padding: .1em .35em; }
+.docs-md pre  { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1rem; }
+.docs-md pre code { background: none; border: none; padding: 0; font-size: .8rem; }
+.docs-md blockquote { border-left: 3px solid var(--border-color); margin: 0 0 .85rem; padding: .4rem .9rem; color: var(--text-muted); font-style: italic; }
+.docs-md table { width: 100%; border-collapse: collapse; margin: 0 0 1.1rem; font-size: .83rem; }
+.docs-md table th { background: var(--bg-card); font-weight: 600; text-align: left; padding: .45rem .75rem; border: 1px solid var(--border-color); white-space: nowrap; }
+.docs-md table td { padding: .4rem .75rem; border: 1px solid var(--border-color); vertical-align: top; }
+.docs-md table tr:nth-child(even) td { background: var(--bg-row-alt, var(--bg-card)); }
+.docs-md hr { border: none; border-top: 1px solid var(--border-color); margin: 1.75rem 0; }

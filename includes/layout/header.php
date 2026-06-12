@@ -139,6 +139,21 @@ foreach ($navByCategory as $cat) {
                                 <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
                             </ul>
                         </li>
+                        <li class="dropdown-submenu">
+                            <button class="dropdown-link submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                                <i class="bi bi-journal-code"></i>
+                                <span>Documentación técnica</span>
+                                <i class="bi bi-chevron-right submenu-caret"></i>
+                            </button>
+                            <ul class="dropdown submenu-list">
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="datawarehouse"  ><i class="bi bi-database"></i> Data Warehouse</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="fuentes-datos"  ><i class="bi bi-cloud-download"></i> Fuentes de datos</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="etl"             ><i class="bi bi-arrow-repeat"></i> ETL &amp; Pipelines</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="reportes"        ><i class="bi bi-bar-chart-line"></i> Análisis de reportes</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="topologia"       ><i class="bi bi-diagram-3"></i> Topología</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#documentacion" data-admin="documentacion" data-docs-tab="changelog"       ><i class="bi bi-clock-history"></i> Changelog</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
                 <?php endif; ?>

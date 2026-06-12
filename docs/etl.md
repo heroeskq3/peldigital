@@ -1,53 +1,57 @@
-# ETL e Ingesta
+# ETL & Pipelines — PEL Digital
 
-Todas las fuentes externas se tratan como archivos descargables. No hay consumo
-en tiempo real contra servicios del TSE durante la operacion normal.
+Pipeline de ingesta del Data Warehouse. Ver `fuentes-datos.md` para el origen
+de cada archivo raw y `datawarehouse.md` para el esquema de tablas resultante.
 
-## Fuentes esperadas
+---
 
-| Archivo local | Fuente | Uso |
-|---|---|---|
-| `raw/padron/PADRON_COMPLETO.txt` | ZIP de padron TSE 2026 | Electores en `voters`. |
-| `raw/padron/distelec.txt` | ZIP de padron TSE 2026 | Catalogo geografico. |
-| `raw/padron/Leame.txt` | ZIP de padron TSE 2026 | Formato fuente. |
-| `raw/avr/avr2026.json` | AVR TSE 2026 | Resultados presidenciales 2026. |
-| `raw/avr/avr2024.json` | AVR TSE 2024 | Resultados municipales 2024. |
-| `raw/avr/avr2022.json` | AVR TSE 2022 | Presidencial 2022 primera ronda. |
-| `raw/avr/avr2022_ii.json` | AVR TSE 2022 II | Presidencial 2022 segunda ronda. |
+## Orden de ejecución
 
-Estos archivos no deben estar en git. La estructura `raw/` se conserva con
-`.gitkeep`.
-
-## Orden de ejecucion
+En un servidor limpio o tras actualización del padrón:
 
 ```bash
-php scripts/migrate.php
+# 0. Migraciones (siempre primero)
+php scripts/migrate.php             # pel_electoral (app)
+php scripts/migrate.php --db=data   # peldigital_data (DW)
+
+# 1. Catálogo geográfico — prerequisito de todo lo demás
 php scripts/import_distelec.php --file=raw/padron/distelec.txt
-php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt
+
+# 2. Centros de votación
+php scripts/import_polling_places.php
+
+# 3. Padrón electoral (~17 min)
+php scripts/import_padron.php --zip=raw/padron/padron_completo.zip
+
+# 4. Vincular electores con su local de votación
+php scripts/link_voters_polling.php
+
+# 5. Enriquecer sexo por nombre (~3-5 min)
 php scripts/enrich_sexo.php --batch=0
-php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="Presidencia 2026"
-php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A --label="Municipal 2024"
-php scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P --label="Presidencial 2022 1ra"
-php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P --label="Presidencial 2022 2da"
+
+# 6. Resultados electorales (independientes entre sí)
+php scripts/import_resultados.php --json=raw/avr/avr2026.json --label="Presidencia 2026" --type=P
+php scripts/import_resultados.php --json=raw/avr/avr2024.json --label="Municipal 2024" --type=A
+php scripts/import_resultados.php --json=raw/avr/avr2022.json --label="Presidencial 2022 1ª" --type=P
+php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --label="Presidencial 2022 2ª" --type=P
+
+# 7. Tablas Gold (~2 min) — siempre al final
 php scripts/refresh_summaries.php
 ```
 
-## Scripts
+---
 
-| Script | Responsabilidad |
-|---|---|
-| `scripts/migrate.php` | Aplica migraciones SQL pendientes. |
-| `scripts/import_distelec.php` | Carga provincias, cantones y distritos desde DISTELEC. |
-| `scripts/import_padron.php` | Carga el padron electoral a `voters`. |
-| `scripts/import_resultados.php` | Carga resultados AVR a `election_results`. |
-| `scripts/enrich_sexo.php` | Enriquece `voters.sexo` usando `name_gender_lookup` y `voter_enrichments`. |
-| `scripts/enrich_fecha_nac.php` | Pendiente de continuar desarrollo; depende de una fuente oficial viable para fecha de nacimiento. |
-| `scripts/refresh_summaries.php` | Reconstruye tablas `summary_*`. |
-| `scripts/dev/test_batch.php` | Script auxiliar de pruebas de desarrollo. No forma parte del pipeline productivo. |
+## Referencia de scripts
 
-## Datos pendientes
-
-- `fecha_nac`: pendiente de fuente oficial o continuidad del desarrollo del
-  enriquecimiento.
-- `polling_places`: debe cargarse desde un catalogo real de locales de votacion.
-- `electoral_district_id`: requiere catalogo real y regla de asignacion.
+| Script | Entrada | Tablas modificadas | Notas |
+|--------|---------|--------------------|-------|
+| `scripts/migrate.php` | `migrations/` | Esquema app/DW | `--db=data` para el DW |
+| `scripts/import_distelec.php` | `distelec.txt` | `provinces`, `cantons`, `districts` | Idempotente (`INSERT IGNORE`) |
+| `scripts/import_polling_places.php` | `centros_votacion_2026.xlsx` | `polling_places` | `--truncate` vacía antes; `--dry-run` previsualiza |
+| `scripts/import_padron.php` | `padron_completo.zip` | `voters`, `padron_sync_runs` | Verifica SHA-256 — no reimporta el mismo archivo |
+| `scripts/link_voters_polling.php` | `voters`, `polling_places` | `voters.polling_place_id` | UPDATE masivo por rango jrv_inicio..jrv_fin |
+| `scripts/enrich_sexo.php` | `voters`, `name_gender_lookup` | `voters.sexo`, `voter_enrichments` | `--batch=0` procesa todo; `--dry-run` disponible |
+| `scripts/import_resultados.php` | `avr*.json` | `election_results`, `parties` | `--label` y `--type` requeridos |
+| `scripts/refresh_summaries.php` | `voters`, `polling_places` | `summary_inscritos_*`, `summary_jrv` | Siempre al final del pipeline; ~2 min |
+| `scripts/enrich_fecha_nac.php` | — | — | En desarrollo — fuente oficial bloqueada por WAF |
+| `scripts/dev/test_batch.php` | — | — | Auxiliar de desarrollo — no es parte del pipeline productivo |
