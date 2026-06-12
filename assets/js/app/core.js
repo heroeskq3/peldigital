@@ -169,6 +169,7 @@
       else if (targetReport === "locales-votacion")    abrirLocalesVotacion();
       else if (targetReport === "densidad-electoral")  abrirDensidadElectoral();
       else if (targetReport === "circunscripciones")   abrirCircunscripciones();
+      else if (targetReport === "bastiones")            abrirBastiones();
       else activarReporte(targetReport);
     }
 

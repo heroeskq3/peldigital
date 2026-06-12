@@ -1190,3 +1190,33 @@
 .part-bar-baja  { background: #dc2626; }
 .part-bar-nd    { background: var(--border-strong); opacity: .4; }
 
+
+/* ── Bastiones: badges de clasificación electoral ───────────────── */
+.b-badge {
+    display: inline-block;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.b-badge--fuerte    { background: #16a34a; color: #fff; }
+.b-badge--moderado  { background: #15803d; color: #d1fae5; }
+.b-badge--competitivo { background: #2563eb; color: #dbeafe; }
+.b-badge--transicion  { background: #d97706; color: #fef3c7; }
+.b-badge--volatil     { background: var(--surface-elevated,#e5e7eb); color: var(--text-muted,#6b7280); }
+
+.b-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem .75rem;
+    align-items: center;
+    font-size: .73rem;
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+}
+.b-badge-lbl { color: var(--text-muted); }
+
+.rep-table--bastiones th,
+.rep-table--bastiones td { font-size: .78rem; }

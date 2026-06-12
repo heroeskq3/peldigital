@@ -1687,4 +1687,10 @@
     cargarCircunscripciones();
   }
 
+  function abrirBastiones() {
+    activarReporte("bastiones");
+    logEvento("reporte_abrir", "Análisis de Bastiones", {});
+    if (typeof window.initBastiones === "function") window.initBastiones();
+  }
+
   document.addEventListener("DOMContentLoaded", init);

@@ -9,6 +9,7 @@ $defaultAppScripts = [
     'assets/js/app/controls.js',
     'assets/js/app/padron-bitacora.js',
     'assets/js/app/reports.js',
+    'assets/js/reports/bastiones.js',
 ];
 ?>
 <?php foreach ($defaultAppScripts as $script): ?>
