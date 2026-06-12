@@ -1,5 +1,5 @@
 <?php
 require __DIR__ . '/auth.php';
 requerirLogin();
-header('Location: reports.php?id=1');
+header('Location: home.php');
 exit;

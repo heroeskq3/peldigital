@@ -102,7 +102,7 @@ if (!$reportPhpFile) {
         </div>
         <?php endif; ?>
 
-        <a href="reports.php?id=1" class="btn-back-report">
+        <a href="home.php" class="btn-back-report">
             <i class="bi bi-arrow-left"></i> Volver al inicio
         </a>
     </div>

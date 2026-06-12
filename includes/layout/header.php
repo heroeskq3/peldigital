@@ -62,7 +62,7 @@ foreach ($navByCategory as $cat) {
                 aria-controls="mainNav" aria-expanded="false">
             <i class="bi bi-list"></i>
         </button>
-        <a class="brand" href="reports.php?id=1" title="Inicio">
+        <a class="brand" href="home.php" title="Inicio">
             <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
             <div class="brand-text">
                 <span class="brand-title">PEL Digital</span>
@@ -77,6 +77,14 @@ foreach ($navByCategory as $cat) {
                 </button>
             </div>
             <ul class="nav-list">
+
+                <!-- ── Inicio ── -->
+                <?php $isHome = (basename($_SERVER['PHP_SELF'] ?? '') === 'home.php'); ?>
+                <li class="nav-item">
+                    <a class="nav-link<?= $isHome ? ' nav-link-active' : '' ?>" href="home.php">
+                        <i class="bi bi-house"></i> <span>Inicio</span>
+                    </a>
+                </li>
 
                 <!-- ── Menú padre: Análisis (todas las categorías como subcategorías) ── -->
                 <li class="nav-item has-dropdown">

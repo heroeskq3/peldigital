@@ -1,0 +1,256 @@
+/* ============================================================
+   Hub / Landing page  —  home.php
+   ============================================================ */
+
+/* app-shell usa height:100vh para el mapa; en el hub necesitamos scroll normal */
+body.page-hub .app-shell {
+    height: auto;
+    min-height: 100vh;
+}
+
+.hub-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: calc(100vh - var(--header-h, 56px));
+}
+
+/* ── Hero ─────────────────────────────────────────────── */
+.hub-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 2rem 2.5rem;
+    border-radius: 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+}
+
+.hub-hero-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.hub-hero-brand > .bi {
+    font-size: 2.5rem;
+    color: var(--brand-navy);
+}
+[data-theme="dark"] .hub-hero-brand > .bi { color: var(--brand-yellow); }
+
+.hub-hero-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.15;
+}
+.hub-hero-sub {
+    font-size: .88rem;
+    color: var(--text-muted);
+    margin: .2rem 0 0;
+}
+.hub-padron-fecha {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    margin-top: .45rem;
+    font-size: .78rem;
+    font-weight: 600;
+    padding: .2rem .65rem;
+    border-radius: 99px;
+    background: rgba(0, 0, 128, .08);
+    color: var(--brand-navy);
+}
+[data-theme="dark"] .hub-padron-fecha {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.hub-hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+}
+.hub-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.hub-stat-num {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.03em;
+    color: var(--brand-navy);
+}
+[data-theme="dark"] .hub-stat-num { color: var(--brand-yellow); }
+.hub-stat-label {
+    font-size: .75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* ── Search bar ───────────────────────────────────────── */
+.hub-search-wrap {
+    position: relative;
+    margin-bottom: 2rem;
+}
+.hub-search-ico {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: .95rem;
+    pointer-events: none;
+}
+.hub-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .75rem 1rem .75rem 2.75rem;
+    border-radius: .6rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: .95rem;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.hub-search-input:focus {
+    border-color: var(--brand-navy);
+    box-shadow: 0 0 0 3px rgba(0, 0, 128, .1);
+}
+[data-theme="dark"] .hub-search-input:focus {
+    border-color: var(--brand-yellow);
+    box-shadow: 0 0 0 3px rgba(255, 238, 0, .1);
+}
+.hub-search-empty {
+    display: block;
+    margin-top: .75rem;
+    color: var(--text-muted);
+    font-size: .88rem;
+}
+
+/* ── Category sections ────────────────────────────────── */
+.hub-category {
+    margin-bottom: 2.5rem;
+}
+.hub-cat-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+    padding-bottom: .65rem;
+    border-bottom: 1px solid var(--border);
+}
+.hub-cat-title .bi { font-size: .9rem; }
+
+/* ── Report card grid ─────────────────────────────────── */
+.hub-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 1rem;
+}
+
+.hub-report-card {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+    padding: 1.25rem 1.25rem 1.5rem;
+    border-radius: .75rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+.hub-report-card:not(.hub-card-pending):hover {
+    border-color: var(--brand-navy);
+    box-shadow: 0 4px 18px rgba(0, 0, 128, .1);
+    transform: translateY(-2px);
+}
+[data-theme="dark"] .hub-report-card:not(.hub-card-pending):hover {
+    border-color: var(--brand-yellow);
+    box-shadow: 0 4px 18px rgba(255, 238, 0, .08);
+}
+.hub-card-pending {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.hub-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.hub-card-icon .bi {
+    font-size: 1.45rem;
+    color: var(--brand-navy);
+}
+[data-theme="dark"] .hub-card-icon .bi { color: var(--brand-yellow); }
+
+.hub-card-name {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+    display: flex;
+    align-items: baseline;
+    gap: .4rem;
+}
+.hub-card-num {
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: .02em;
+    flex-shrink: 0;
+}
+.hub-card-desc {
+    font-size: .82rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.55;
+    flex: 1;
+}
+
+/* ── Status badges ────────────────────────────────────── */
+.hub-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .2rem .65rem;
+    border-radius: 99px;
+    font-size: .71rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.hub-badge-active  { background: #dcfce7; color: #15803d; }
+.hub-badge-partial { background: #fef3c7; color: #92400e; }
+.hub-badge-pending { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+
+[data-theme="dark"] .hub-badge-active  { background: #14532d; color: #86efac; }
+[data-theme="dark"] .hub-badge-partial { background: #451a03; color: #fcd34d; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 768px) {
+    .hub-main          { padding: 1rem 1rem 3rem; }
+    .hub-hero          { padding: 1.5rem; }
+    .hub-hero-stats    { gap: 1.5rem; }
+    .hub-stat          { align-items: flex-start; }
+    .hub-stat-num      { font-size: 1.25rem; }
+    .hub-report-grid   { grid-template-columns: 1fr; }
+}
