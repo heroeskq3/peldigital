@@ -42,12 +42,6 @@
         <div id="bmLeyenda" class="bm-leyenda-mapa"></div>
     </div>
 
-    <!-- Tooltip fijo (panel lateral al hover) -->
-    <div id="bmTooltip" class="bm-tooltip d-none">
-        <div class="bm-tt-nombre" id="bmTtNombre"></div>
-        <div class="bm-tt-body" id="bmTtBody"></div>
-    </div>
-
     <!-- Error -->
     <div id="bmError" class="rp-error d-none">
         <i class="bi bi-exclamation-circle"></i> <span id="bmErrorMsg"></span>

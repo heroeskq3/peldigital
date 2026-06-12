@@ -42,6 +42,7 @@
     // ── Estado ───────────────────────────────────────────────────────────────
     let bmMap       = null;
     let bmGeoLayer  = null;
+    let bmInfoCtrl  = null;   // control Leaflet para el panel de detalle
     let bmData      = {};
     let bmParties   = {};
     let bmNivel     = 'distrito';
@@ -108,6 +109,42 @@
             L.tileLayer(tiles[tema()], { attribution: '© OpenStreetMap · CartoDB', maxZoom: 19 }).addTo(bmMap);
             aplicarColorBM();
         });
+
+        // Control de información (panel de detalle dentro del mapa)
+        bmInfoCtrl = L.control({ position: 'topright' });
+        bmInfoCtrl.onAdd = function () {
+            this._div = L.DomUtil.create('div', 'bm-info-ctrl');
+            this.update(null);
+            return this._div;
+        };
+        bmInfoCtrl.update = function (feature) {
+            if (!feature) {
+                this._div.innerHTML = '<span class="bm-info-hint">Pasa el cursor sobre un territorio</span>';
+                return;
+            }
+            const codigo = feature.properties.codigo;
+            const d = bmData[codigo];
+            const nombre = feature.properties.nombre || codigo;
+            const fmtN = n => n != null ? Number(n).toLocaleString('es-CR') : '—';
+            const fmtP = v => v != null ? parseFloat(v).toFixed(1) + '%' : '—';
+            if (!d) {
+                this._div.innerHTML = `<strong>${nombre}</strong><br><span class="bm-info-nd">Sin datos</span>`;
+                return;
+            }
+            const partido = d.dom_partido_abbrev ? `<strong>${d.dom_partido_abbrev}</strong>` : '—';
+            this._div.innerHTML = `
+                <div class="bm-info-nombre">${nombre}</div>
+                <table class="bm-tt-table">
+                    <tr><td>Clasificación</td><td>${CLASIF_LABELS[d.clasif_predominante] || '—'}</td></tr>
+                    <tr><td>Partido dom.</td><td>${partido}</td></tr>
+                    <tr><td>JRVs</td><td>${fmtN(d.total_jrvs)}</td></tr>
+                    <tr><td>Inscritos</td><td>${fmtN(d.inscritos)}</td></tr>
+                    <tr><td>% bastiones</td><td>${fmtP(d.pct_bastion)}</td></tr>
+                    <tr><td>% dom. prom.</td><td>${fmtP(d.pct_prom)}</td></tr>
+                    <tr><td>Oportunidad</td><td>${d.oportunidad_total ?? '—'}</td></tr>
+                </table>`;
+        };
+        bmInfoCtrl.addTo(bmMap);
     }
 
     // ── Carga de datos y GeoJSON ──────────────────────────────────────────────
@@ -172,11 +209,11 @@
                 layer.on({
                     mouseover: e => {
                         e.target.setStyle({ weight: 2.5, fillOpacity: 0.95 });
-                        mostrarTooltipBM(feature);
+                        if (bmInfoCtrl) bmInfoCtrl.update(feature);
                     },
                     mouseout: e => {
                         bmGeoLayer.resetStyle(e.target);
-                        ocultarTooltipBM();
+                        if (bmInfoCtrl) bmInfoCtrl.update(null);
                     },
                     click: e => {
                         bmMap.fitBounds(e.target.getBounds(), { padding: [30, 30] });
@@ -216,42 +253,7 @@
         bmGeoLayer.setStyle(f => estiloFeatureBM(f));
     }
 
-    // ── Tooltip ───────────────────────────────────────────────────────────────
-    function mostrarTooltipBM(feature) {
-        const codigo = feature.properties.codigo;
-        const d = bmData[codigo];
-        const tt = $bm('bmTooltip');
-        $bm('bmTtNombre').textContent = feature.properties.nombre || codigo;
-
-        if (!d) {
-            $bm('bmTtBody').innerHTML = '<span class="muted small">Sin datos</span>';
-        } else {
-            const fmtN = n => n != null ? Number(n).toLocaleString('es-CR') : '—';
-            const fmtP = v => v != null ? parseFloat(v).toFixed(1) + '%' : '—';
-
-            const partido = d.dom_partido_abbrev
-                ? `<strong>${d.dom_partido_abbrev}</strong>`
-                : '—';
-
-            $bm('bmTtBody').innerHTML = `
-                <table class="bm-tt-table">
-                    <tr><td>Clasificación</td><td>${CLASIF_LABELS[d.clasif_predominante] || '—'}</td></tr>
-                    <tr><td>Partido dom.</td><td>${partido}</td></tr>
-                    <tr><td>JRVs</td><td>${fmtN(d.total_jrvs)}</td></tr>
-                    <tr><td>Inscritos</td><td>${fmtN(d.inscritos)}</td></tr>
-                    <tr><td>% bastiones</td><td>${fmtP(d.pct_bastion)}</td></tr>
-                    <tr><td>% dom. prom.</td><td>${fmtP(d.pct_prom)}</td></tr>
-                    <tr><td>Oportunidad</td><td>${d.oportunidad_total ?? '—'}</td></tr>
-                </table>
-            `;
-        }
-
-        tt.classList.remove('d-none');
-    }
-
-    function ocultarTooltipBM() {
-        $bm('bmTooltip').classList.add('d-none');
-    }
+    // (tooltip reemplazado por bmInfoCtrl — control Leaflet nativo en topright)
 
     // ── Leyenda ───────────────────────────────────────────────────────────────
     function renderLeyendaBM() {

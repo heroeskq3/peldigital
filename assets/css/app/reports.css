@@ -1280,43 +1280,45 @@
     border-radius: 3px;
     flex-shrink: 0;
 }
-.bm-tooltip {
-    position: absolute;
-    top: 0;
-    right: 175px;
-    width: 230px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+/* Control de info Leaflet — vive DENTRO del mapa, topright */
+.bm-info-ctrl {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    padding: .75rem;
-    z-index: 1000;
-    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    padding: .65rem .8rem;
+    min-width: 180px;
+    max-width: 230px;
+    font-size: .75rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
     pointer-events: none;
+    line-height: 1.4;
 }
-.bm-tt-nombre {
+.bm-info-nombre {
     font-weight: 700;
-    font-size: .85rem;
-    margin-bottom: .5rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: .35rem;
+    font-size: .82rem;
+    margin-bottom: .4rem;
+    padding-bottom: .3rem;
+    border-bottom: 1px solid var(--border, #e2e8f0);
 }
+.bm-info-hint {
+    color: #94a3b8;
+    font-size: .72rem;
+    font-style: italic;
+}
+.bm-info-nd { color: #94a3b8; }
 .bm-tt-table {
     width: 100%;
-    font-size: .75rem;
+    font-size: .73rem;
     border-collapse: collapse;
 }
-.bm-tt-table td {
-    padding: .15rem .25rem;
-    vertical-align: top;
-}
+.bm-tt-table td { padding: .12rem .2rem; vertical-align: top; }
 .bm-tt-table td:first-child {
-    color: var(--text-muted);
+    color: #64748b;
     white-space: nowrap;
-    padding-right: .5rem;
+    padding-right: .45rem;
 }
 @media (max-width: 768px) {
     .bm-wrap { flex-direction: column; }
     .bm-map  { height: 50vh; width: 100%; }
     .bm-leyenda-mapa { width: 100%; flex-direction: row; flex-wrap: wrap; }
-    .bm-tooltip { display: none !important; }
 }
