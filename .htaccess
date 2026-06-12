@@ -8,6 +8,21 @@ Options -Indexes
 
     # Bloquear archivos sensibles aunque queden dentro del webroot.
     RewriteRule ^(?:\.env(?:\..*)?|.*\.sql|.*\.log)$ - [F,L]
+
+    # ── URLs amigables ────────────────────────────────────────────
+    # /reportes/{slug} → reports.php?slug={slug}
+    RewriteRule ^reportes/([a-z0-9-]+)/?$ reports.php?slug=$1 [L,QSA]
+
+    # Páginas top-level sin .php
+    RewriteRule ^login/?$   login.php   [L]
+    RewriteRule ^logout/?$  logout.php  [L]
+    RewriteRule ^admin/?$   admin.php   [L]
+    RewriteRule ^home/?$    home.php    [L]
+
+    # Fallback genérico: quitar .php de cualquier otro archivo
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([^/\.]+)/?$ $1.php [NC,L]
 </IfModule>
 
 <FilesMatch "^(?:\.env(?:\..*)?|composer\.(?:json|lock)|.*\.log)$">

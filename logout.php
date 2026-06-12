@@ -2,5 +2,5 @@
 require __DIR__ . '/auth.php';
 registrarBitacora('logout', 'Cierre de sesión');
 cerrarSesion();
-header('Location: login.php');
+header('Location: ' . appUrl('login'));
 exit;

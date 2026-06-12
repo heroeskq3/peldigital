@@ -6,9 +6,18 @@ requerirLogin();
 $rootDir = __DIR__;
 
 // ── Obtener el reporte solicitado ──────────────────────────────────────────────
+$pdo = dbConnect();
+
+// URL amigable: /reportes/{slug}
+if (isset($_GET['slug'])) {
+    $slugStmt = $pdo->prepare("SELECT id FROM reports WHERE slug = ? LIMIT 1");
+    $slugStmt->execute([$_GET['slug']]);
+    $foundId = $slugStmt->fetchColumn();
+    if ($foundId) $_GET['id'] = $foundId;
+}
+
 $reportId = isset($_GET['id']) ? (int)$_GET['id'] : 1;
 
-$pdo = dbConnect();
 $stmt = $pdo->prepare("
     SELECT r.*, c.name AS category_name, c.slug AS category_slug
     FROM reports r
@@ -20,8 +29,7 @@ $stmt->execute([$reportId]);
 $report = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$report) {
-    // Reporte no existe → redirigir al primero
-    header('Location: reports.php?id=1');
+    header('Location: ' . appUrl('home'));
     exit;
 }
 
@@ -102,7 +110,7 @@ if (!$reportPhpFile) {
         </div>
         <?php endif; ?>
 
-        <a href="home.php" class="btn-back-report">
+        <a href="<?= appUrl('home') ?>" class="btn-back-report">
             <i class="bi bi-arrow-left"></i> Volver al inicio
         </a>
     </div>

@@ -6,7 +6,7 @@ $activeRid = $reportId ?? 0;
 try {
     $navPdo = isset($pdo) ? $pdo : dbConnect();
     $navStmt = $navPdo->query("
-        SELECT r.id, r.short_name, r.icon, r.status, r.php_file,
+        SELECT r.id, r.short_name, r.icon, r.status, r.php_file, r.slug,
                c.id AS cat_id, c.name AS cat_name, c.icon AS cat_icon, c.slug AS cat_slug
         FROM reports r
         JOIN report_categories c ON c.id = r.category_id
@@ -45,9 +45,10 @@ function navReportLink(array $nr, int $activeRid): string {
     };
     $name = htmlspecialchars($nr['short_name']);
     $icon = htmlspecialchars($nr['icon']);
-    return '<a class="'.$cls.'" href="reports.php?id='.$nr['id'].'" data-report-id="'.$nr['id'].'" title="'.$name.'">
+    $href = appUrl('reportes/' . ($nr['slug'] ?? $nr['id']));
+    return '<a class="'.$cls.'" href="'.$href.'" data-report-id="'.$nr['id'].'" title="'.$name.'">
         <i class="bi '.$icon.'"></i><span>'.$name.'</span>
-        <span class="report-id-badge">#'.$nr['id'].'</span>'.$si.'</a>';
+        <span class="report-id-badge">'.$nr['id'].'</span>'.$si.'</a>';
 }
 
 // ¿Alguna categoría contiene el reporte activo?
@@ -62,7 +63,7 @@ foreach ($navByCategory as $cat) {
                 aria-controls="mainNav" aria-expanded="false">
             <i class="bi bi-list"></i>
         </button>
-        <a class="brand" href="home.php" title="Inicio">
+        <a class="brand" href="<?= appUrl('home') ?>" title="Inicio">
             <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
             <div class="brand-text">
                 <span class="brand-title">PEL Digital</span>
@@ -81,7 +82,7 @@ foreach ($navByCategory as $cat) {
                 <!-- ── Inicio ── -->
                 <?php $isHome = (basename($_SERVER['PHP_SELF'] ?? '') === 'home.php'); ?>
                 <li class="nav-item">
-                    <a class="nav-link<?= $isHome ? ' nav-link-active' : '' ?>" href="home.php">
+                    <a class="nav-link<?= $isHome ? ' nav-link-active' : '' ?>" href="<?= appUrl('home') ?>">
                         <i class="bi bi-house"></i> <span>Inicio</span>
                     </a>
                 </li>
@@ -113,17 +114,17 @@ foreach ($navByCategory as $cat) {
 
                 <!-- ── Menú padre: Admin ── -->
                 <?php if (function_exists('esAdministrador') && esAdministrador()): ?>
-                <?php $isAdmin = strpos($_SERVER['REQUEST_URI'] ?? '', 'admin.php') !== false; ?>
+                <?php $isAdmin = (basename($_SERVER['PHP_SELF'] ?? '') === 'admin.php'); ?>
                 <li class="nav-item has-dropdown">
                     <button class="nav-link<?= $isAdmin ? ' nav-link-active' : '' ?>" type="button" aria-haspopup="true" aria-expanded="false">
                         <i class="bi bi-shield-lock"></i> <span>Admin</span>
                         <i class="bi bi-chevron-down nav-caret"></i>
                     </button>
                     <ul class="dropdown">
-                        <li><a class="dropdown-link" href="admin.php#usuarios"     data-admin="usuarios"     ><i class="bi bi-people"></i> Usuarios</a></li>
-                        <li><a class="dropdown-link" href="admin.php#roles"         data-admin="roles"        ><i class="bi bi-shield-check"></i> Roles</a></li>
-                        <li><a class="dropdown-link" href="admin.php#reportes"      data-admin="reportes"     ><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
-                        <li><a class="dropdown-link" href="admin.php#bitacora"      data-admin="bitacora"     ><i class="bi bi-journal-text"></i> Bitácora</a></li>
+                        <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#usuarios"     data-admin="usuarios"     ><i class="bi bi-people"></i> Usuarios</a></li>
+                        <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#roles"         data-admin="roles"        ><i class="bi bi-shield-check"></i> Roles</a></li>
+                        <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#reportes"      data-admin="reportes"     ><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
+                        <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#bitacora"      data-admin="bitacora"     ><i class="bi bi-journal-text"></i> Bitácora</a></li>
                         <!-- ── Data Warehouse submenu ── -->
                         <li class="dropdown-submenu">
                             <button class="dropdown-link submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
@@ -132,10 +133,10 @@ foreach ($navByCategory as $cat) {
                                 <i class="bi bi-chevron-right submenu-caret"></i>
                             </button>
                             <ul class="dropdown submenu-list">
-                                <li><a class="dropdown-link" href="admin.php#explorador"    data-admin="explorador"   ><i class="bi bi-table"></i> Explorador DW</a></li>
-                                <li><a class="dropdown-link" href="admin.php#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Fuentes de datos</a></li>
-                                <li><a class="dropdown-link" href="admin.php#etl"           data-admin="etl"          ><i class="bi bi-arrow-repeat"></i> Pipelines ETL</a></li>
-                                <li><a class="dropdown-link" href="admin.php#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#explorador"    data-admin="explorador"   ><i class="bi bi-table"></i> Explorador DW</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Fuentes de datos</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#etl"           data-admin="etl"          ><i class="bi bi-arrow-repeat"></i> Pipelines ETL</a></li>
+                                <li><a class="dropdown-link" href="<?= appUrl('admin') ?>#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -151,7 +152,7 @@ foreach ($navByCategory as $cat) {
                 <button id="btnResetM" class="nav-link" type="button">
                     <i class="bi bi-arrow-counterclockwise"></i> <span>Reiniciar vista</span>
                 </button>
-                <a href="logout.php" class="nav-link nav-link-logout">
+                <a href="<?= appUrl('logout') ?>" class="nav-link nav-link-logout">
                     <i class="bi bi-box-arrow-right"></i> <span>Cerrar sesión</span>
                 </a>
             </div>
@@ -165,7 +166,7 @@ foreach ($navByCategory as $cat) {
             <i class="bi bi-moon"></i>
         </button>
         <span class="header-user" title="Sesión activa"><?= htmlspecialchars(usuarioActual() ?? '') ?></span>
-        <a href="logout.php" class="icon-only" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <a href="<?= appUrl('logout') ?>" class="icon-only" aria-label="Cerrar sesión" title="Cerrar sesión">
             <i class="bi bi-box-arrow-right"></i>
         </a>
     </div>

@@ -15,7 +15,7 @@ $pdoDW = dbData();
 // Categorías y reportes agrupados
 $stmt = $pdo->query("
     SELECT c.id AS cat_id, c.name AS cat_name, c.icon AS cat_icon, c.slug AS cat_slug,
-           r.id, r.name, r.description, r.icon AS rep_icon, r.status
+           r.id, r.name, r.description, r.icon AS rep_icon, r.status, r.slug AS rep_slug
     FROM report_categories c
     JOIN reports r ON r.category_id = c.id
     ORDER BY c.sort_order, r.sort_order
@@ -127,7 +127,7 @@ require $rootDir . '/includes/layout/header.php';
         <div class="hub-report-grid">
             <?php foreach ($cat['reports'] as $r):
                 $pending = ($r['status'] === 'pending');
-                $href    = $pending ? '#' : 'reports.php?id=' . $r['id'];
+                $href    = $pending ? '#' : appUrl('reportes/' . $r['rep_slug']);
             ?>
             <a class="hub-report-card<?= $pending ? ' hub-card-pending' : '' ?>"
                href="<?= $href ?>"

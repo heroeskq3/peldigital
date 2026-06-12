@@ -3,7 +3,7 @@ require __DIR__ . '/auth.php';
 
 // Si ya hay sesion, al tablero.
 if (estaAutenticado()) {
-    header('Location: index.php');
+    header('Location: ' . appUrl('home'));
     exit;
 }
 
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (verificarLogin($usuario, $clave)) {
         iniciarSesion(trim($usuario));
         registrarBitacora('login', 'Ingreso correcto');
-        header('Location: index.php');
+        header('Location: ' . appUrl('home'));
         exit;
     }
     registrarBitacora('login_fallido', 'Credenciales inválidas', [], trim($usuario) ?: 'desconocido');

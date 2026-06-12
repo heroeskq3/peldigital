@@ -143,11 +143,18 @@ function csrfValido(?string $token): bool
         && hash_equals(csrfToken(), $token);
 }
 
+/** Construye una URL raíz-relativa dentro de la app (compatible con subcarpeta y raíz). */
+function appUrl(string $path): string
+{
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
+    return $base . '/' . ltrim($path, '/');
+}
+
 /** Exige login en una página; si no, redirige. */
 function requerirLogin(): void
 {
     if (!estaAutenticado()) {
-        header('Location: login.php');
+        header('Location: ' . appUrl('login'));
         exit;
     }
 }
