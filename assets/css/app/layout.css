@@ -373,13 +373,13 @@ select.field {
     align-items: center;
     gap: 5px;
     text-decoration: none;
-    color: rgba(255,255,255,.45);
+    color: var(--text-muted);
     font-size: .62rem;
-    transition: color .2s;
+    opacity: .65;
+    transition: opacity .2s;
 }
-.login-oval:hover { color: rgba(255,255,255,.85); }
-.login-oval .footer-oval-logo { height: 16px; width: auto; filter: brightness(0) invert(1); opacity: .55; transition: opacity .2s; }
-.login-oval:hover .footer-oval-logo { opacity: .9; }
+.login-oval:hover { opacity: 1; }
+.login-oval .footer-oval-logo { height: 16px; width: auto; filter: var(--oval-logo-filter, none); }
 
 /* ---------- Boton ancho (Mostrar resultados) ---------- */
 .btn-wide {
