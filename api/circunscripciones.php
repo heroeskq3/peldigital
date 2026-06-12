@@ -10,6 +10,7 @@ require_once __DIR__ . '/../lib/api.php';
 apiJsonHeaders();
 $pdo = dbData();
 
+// juntas y locales desde summary_jrv (7K filas) — no desde voters (3.7M)
 $rows = $pdo->query("
     SELECT
         ed.id,
@@ -21,15 +22,18 @@ $rows = $pdo->query("
         s.inscritos_f,
         s.inscritos_n,
         s.pct_nacional,
-        (SELECT COUNT(DISTINCT junta) FROM voters v
-         WHERE v.electoral_district_id = ed.id
-           AND v.province_id BETWEEN 1 AND 7) AS juntas,
-        (SELECT COUNT(DISTINCT polling_place_id) FROM voters v
-         WHERE v.electoral_district_id = ed.id
-           AND v.polling_place_id IS NOT NULL) AS locales
+        COALESCE(sj.juntas,  0) AS juntas,
+        COALESCE(sj.locales, 0) AS locales
     FROM electoral_districts ed
     JOIN provinces p ON p.id = ed.province_id
     JOIN summary_inscritos_provincia s ON s.province_id = p.id
+    LEFT JOIN (
+        SELECT province_id,
+               COUNT(*)                        AS juntas,
+               COUNT(DISTINCT polling_place_id) AS locales
+        FROM   summary_jrv
+        GROUP  BY province_id
+    ) sj ON sj.province_id = p.id
     ORDER BY s.inscritos DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
