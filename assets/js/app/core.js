@@ -170,6 +170,7 @@
       else if (targetReport === "densidad-electoral")  abrirDensidadElectoral();
       else if (targetReport === "circunscripciones")   abrirCircunscripciones();
       else if (targetReport === "bastiones")            abrirBastiones();
+      else if (targetReport === "bastiones-mapa")       abrirBastionesMapa();
       else activarReporte(targetReport);
     }
 

@@ -1220,3 +1220,103 @@
 
 .rep-table--bastiones th,
 .rep-table--bastiones td { font-size: .78rem; }
+
+/* ── Mapa de Bastiones ───────────────────────────────────────────── */
+.bm-controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: .5rem 1rem;
+    margin-bottom: .75rem;
+}
+.bm-loading-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .8rem;
+    color: var(--text-muted);
+    padding: .25rem .6rem;
+    background: var(--surface-elevated);
+    border-radius: 999px;
+}
+.bm-wrap {
+    position: relative;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+.bm-map {
+    flex: 1;
+    height: 62vh;
+    min-height: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    z-index: 0;
+}
+.bm-leyenda-mapa {
+    width: 160px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .75rem;
+    font-size: .75rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.bm-ley-item {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    flex-wrap: wrap;
+    line-height: 1.3;
+}
+.bm-ley-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.bm-tooltip {
+    position: absolute;
+    top: 0;
+    right: 175px;
+    width: 230px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .75rem;
+    z-index: 1000;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    pointer-events: none;
+}
+.bm-tt-nombre {
+    font-weight: 700;
+    font-size: .85rem;
+    margin-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .35rem;
+}
+.bm-tt-table {
+    width: 100%;
+    font-size: .75rem;
+    border-collapse: collapse;
+}
+.bm-tt-table td {
+    padding: .15rem .25rem;
+    vertical-align: top;
+}
+.bm-tt-table td:first-child {
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-right: .5rem;
+}
+@media (max-width: 768px) {
+    .bm-wrap { flex-direction: column; }
+    .bm-map  { height: 50vh; width: 100%; }
+    .bm-leyenda-mapa { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .bm-tooltip { display: none !important; }
+}

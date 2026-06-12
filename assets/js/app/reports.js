@@ -1693,4 +1693,10 @@
     if (typeof window.initBastiones === "function") window.initBastiones();
   }
 
+  function abrirBastionesMapa() {
+    activarReporte("bastiones-mapa");
+    logEvento("reporte_abrir", "Mapa de Bastiones", {});
+    if (typeof window.initBastionesMapa === "function") window.initBastionesMapa();
+  }
+
   document.addEventListener("DOMContentLoaded", init);
