@@ -5,6 +5,10 @@
  * Login: campo "usuario" acepta email O nombre de usuario.
  * Fallback local: usuario `demo` / `demo1234` solo fuera de producción.
  */
+// Extender lifetime si el usuario eligió "recordar sesión"
+if (!empty($_COOKIE['pel_rm'])) {
+    session_set_cookie_params(['lifetime' => 30 * 24 * 3600, 'path' => '/']);
+}
 session_start();
 
 require_once __DIR__ . '/lib/db.php';
@@ -35,14 +39,14 @@ function verificarLoginDB(string $usuario, string $contrasena): array|false
 }
 
 /** Verifica credenciales; devuelve true si son válidas. */
-function verificarLogin(string $usuario, string $contrasena): bool
+function verificarLogin(string $usuario, string $contrasena, bool $recordar = false): bool
 {
     $usuario = trim($usuario);
 
     // 1. Intentar contra la BD
     $dbUser = verificarLoginDB($usuario, $contrasena);
     if ($dbUser) {
-        iniciarSesionConUsuario($dbUser);
+        iniciarSesionConUsuario($dbUser, $recordar);
         return true;
     }
 
@@ -60,21 +64,36 @@ function verificarLogin(string $usuario, string $contrasena): bool
         return false;
     }
     if (!password_verify($contrasena, $FALLBACK[$usuario])) return false;
-    // Iniciar sesión con datos mínimos para el fallback
-    iniciarSesionConUsuario(['id' => 0, 'name' => 'Demo', 'email' => 'demo', 'role_id' => 1]);
+    iniciarSesionConUsuario(['id' => 0, 'name' => 'Demo', 'email' => 'demo', 'role_id' => 1], $recordar);
     return true;
 }
 
 /** Inicia sesión a partir de un array de usuario. */
-function iniciarSesionConUsuario(array $user): void
+function iniciarSesionConUsuario(array $user, bool $recordar = false): void
 {
     session_regenerate_id(true);
-    $_SESSION['auth']     = true;
-    $_SESSION['usuario']  = $user['name'] ?? $user['email'] ?? 'demo';
-    $_SESSION['user_id']  = $user['id']      ?? 0;
-    $_SESSION['role_id']  = $user['role_id'] ?? 1;
-    $_SESSION['email']    = $user['email']   ?? '';
+    $_SESSION['auth']       = true;
+    $_SESSION['usuario']    = $user['name'] ?? $user['email'] ?? 'demo';
+    $_SESSION['user_id']    = $user['id']      ?? 0;
+    $_SESSION['role_id']    = $user['role_id'] ?? 1;
+    $_SESSION['email']      = $user['email']   ?? '';
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+    if ($recordar) {
+        $ttl = 30 * 24 * 3600;
+        setcookie(session_name(), session_id(), [
+            'expires'  => time() + $ttl,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        setcookie('pel_rm', '1', [
+            'expires'  => time() + $ttl,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
 }
 
 /** Inicia sesión (compatibilidad — solo nombre de usuario). */
@@ -99,6 +118,7 @@ function cerrarSesion(): void
         setcookie(session_name(), '', time() - 42000,
             $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
+    setcookie('pel_rm', '', time() - 42000, '/');
     session_destroy();
 }
 

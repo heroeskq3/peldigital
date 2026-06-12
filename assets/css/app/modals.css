@@ -196,6 +196,36 @@
     color: #ffffff;
     margin-bottom: 16px;
 }
+/* Ojito contraseña */
+.field-pw { position: relative; }
+.field-pw .field { padding-right: 38px; }
+.field-pw-toggle {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; padding: 0;
+    color: rgba(255, 255, 255, .45);
+    font-size: 1rem; line-height: 1;
+    cursor: pointer; transition: color .15s;
+}
+.field-pw-toggle:hover { color: #fff; }
+
+/* Checkbox "recordar sesión" */
+.login-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .78rem;
+    color: rgba(255, 255, 255, .65);
+    cursor: pointer;
+    user-select: none;
+}
+.login-remember input[type="checkbox"] {
+    accent-color: #fff;
+    width: 15px; height: 15px;
+    cursor: pointer; flex-shrink: 0;
+}
+
 /* ---------- Loader ---------- */
 .loader-overlay {
     position: fixed;

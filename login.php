@@ -31,11 +31,12 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuario        = $_POST['usuario'] ?? '';
     $clave          = $_POST['clave'] ?? '';
+    $recordar       = !empty($_POST['recordar']);
     $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
 
     if (!verificarRecaptcha($recaptchaToken, $RECAPTCHA_SECRET)) {
         $error = 'Por favor confirma que no eres un robot.';
-    } elseif (verificarLogin($usuario, $clave)) {
+    } elseif (verificarLogin($usuario, $clave, $recordar)) {
         iniciarSesion(trim($usuario));
         registrarBitacora('login', 'Ingreso correcto');
         header('Location: ' . appUrl('home'));
@@ -97,7 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>">
             </label>
             <label class="login-label">Contraseña
-                <input type="password" name="clave" class="field" required>
+                <div class="field-pw">
+                    <input type="password" name="clave" id="campo-clave" class="field" required>
+                    <button type="button" class="field-pw-toggle" aria-label="Mostrar contraseña"
+                            onclick="(function(){var i=document.getElementById('campo-clave'),e=document.getElementById('pw-ico');i.type=i.type==='password'?'text':'password';e.className=i.type==='password'?'bi bi-eye':'bi bi-eye-slash';})()">
+                        <i class="bi bi-eye" id="pw-ico"></i>
+                    </button>
+                </div>
+            </label>
+            <label class="login-remember">
+                <input type="checkbox" name="recordar" value="1" <?= !empty($_POST['recordar']) ? 'checked' : '' ?>>
+                Mantener sesión iniciada
             </label>
             <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>" style="margin-bottom:.75rem;"></div>
             <button type="submit" class="btn-wide"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
