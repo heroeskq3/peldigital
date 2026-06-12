@@ -116,6 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-wide"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
         </form>
     </main>
+    <a class="login-oval" href="https://oval.co.cr" target="_blank" rel="noopener" aria-label="Powered by Oval">
+        <span class="footer-oval-label">Powered by</span>
+        <img src="https://oval.co.cr/assets/logos/logo_oval_4.png" alt="Oval" class="footer-oval-logo">
+    </a>
     <script>
         var _rcKey = '<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>';
         document.querySelector('.login-form').addEventListener('submit', function (e) {

@@ -340,12 +340,46 @@ select.field {
     height: var(--footer-h);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    padding: 0 16px;
     font-size: .68rem;
     color: var(--text-muted);
     background: var(--surface);
     border-top: 1px solid var(--border);
 }
+.footer-data { flex: 1; text-align: center; }
+.footer-oval {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: .65rem;
+    opacity: .7;
+    transition: opacity .2s;
+    white-space: nowrap;
+}
+.footer-oval:hover { opacity: 1; }
+.footer-oval-logo { height: 18px; width: auto; display: block; }
+.footer-oval-label { font-size: .6rem; letter-spacing: .04em; }
+
+/* Login — "Powered by" flotante abajo */
+.login-oval {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    color: rgba(255,255,255,.45);
+    font-size: .62rem;
+    transition: color .2s;
+}
+.login-oval:hover { color: rgba(255,255,255,.85); }
+.login-oval .footer-oval-logo { height: 16px; width: auto; filter: brightness(0) invert(1); opacity: .55; transition: opacity .2s; }
+.login-oval:hover .footer-oval-logo { opacity: .9; }
 
 /* ---------- Boton ancho (Mostrar resultados) ---------- */
 .btn-wide {
