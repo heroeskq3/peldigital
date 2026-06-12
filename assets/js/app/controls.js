@@ -272,7 +272,7 @@
 
     const total = datos.reduce((s, d) => s + d.votantes, 0);
     $("statTotal").textContent  = abreviar(total);
-    $("statRegiones").textContent = datos.length;
+    $("statRegiones").textContent = fmt(datos.length);
     $("statProm").textContent   = abreviar(Math.round(total / datos.length));
 
     const ol = $("topList");
@@ -343,7 +343,7 @@
     const total = datos.reduce((s, d) => s + d.votantes, 0);
     const padronNac = Object.values(POB.provincias).reduce((s, p) => s + (p.poblacion || 0), 0);
     $("diasporaTotal").textContent = abreviar(total);
-    $("diasporaPaises").textContent = datos.length;
+    $("diasporaPaises").textContent = fmt(datos.length);
     $("diasporaPct").textContent = padronNac ? fmtPct(total / padronNac) : "–";
 
     const ol = $("diasporaList");

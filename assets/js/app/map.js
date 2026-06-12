@@ -280,7 +280,7 @@
     const total = valores.reduce((a, b) => a + b, 0);
     const prom = valores.length ? Math.round(total / valores.length) : 0;
     $("statTotal").textContent = abreviarV(total);
-    $("statRegiones").textContent = feats.length;
+    $("statRegiones").textContent = fmt(feats.length);
     $("statProm").textContent = abreviarV(prom);
 
     // Top 5
