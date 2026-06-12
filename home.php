@@ -87,9 +87,8 @@ require $rootDir . '/includes/layout/header.php';
             <i class="bi bi-graph-up-arrow"></i>
             <div>
                 <h1 class="hub-hero-title">Fuente de Datos</h1>
-                <p class="hub-hero-sub">Centro de análisis electoral</p>
                 <?php if ($padronFecha): ?>
-                <p class="hub-padron-fecha"><i class="bi bi-calendar-check"></i> Actualizado al <?= htmlspecialchars($padronFecha) ?></p>
+                <p class="hub-padron-fecha"><i class="bi bi-calendar-check"></i> Actualizado desde TSE al <?= htmlspecialchars($padronFecha) ?></p>
                 <?php endif; ?>
             </div>
         </div>
