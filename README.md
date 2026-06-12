@@ -1,475 +1,310 @@
 # PEL Digital
 
-Plataforma interna de análisis electoral y territorial para el Partido Esperanza y Libertad.
+Plataforma interna de análisis electoral y territorial para el Partido Esperanza y Libertad de Costa Rica.  
 Uso exclusivo interno del partido. No distribuir.
+
+Desarrollado por [Oval](https://oval.co.cr).
+
+---
 
 ## Stack
 
-- PHP 8.1+ (sin framework — funciones globales, includes directos)
-- MySQL / MariaDB — InnoDB, FULLTEXT habilitado
-- Leaflet 1.9.4 (mapas interactivos)
-- Bootstrap Icons 1.11.3
-- HTML / CSS / JavaScript puro — sin bundler, sin npm
+| Capa | Tecnología |
+|---|---|
+| Backend | PHP 8.1+ sin framework — funciones globales, includes directos |
+| Base de datos | MySQL / MariaDB — InnoDB, FULLTEXT habilitado |
+| Mapas | Leaflet 1.9.4 |
+| Íconos | Bootstrap Icons 1.11.3 |
+| Frontend | HTML / CSS / JS puro — sin bundler, sin npm |
+| Servidor local | XAMPP (Apache + MySQL) |
+
+---
 
 ## Arquitectura del layout
 
-Todas las páginas del sistema comparten los **mismos cuatro parciales** de layout,
-sin duplicación. El HTML de cada página se ensambla en esta cadena exacta:
+Todas las páginas autenticadas comparten los mismos **cuatro parciales** en esta cadena:
 
 ```
-head.php  →  header.php  →  [contenido de la página]  →  footer.php  →  scripts.php
+head.php → header.php → [contenido de la página] → footer.php → scripts.php
 ```
 
-### Qué produce cada parcial
+| Archivo | Responsabilidad |
+|---|---|
+| `includes/layout/head.php` | DOCTYPE, meta, anti-flash de tema, CSS, variables `$appBaseUrl` y `APP_BASE` |
+| `includes/layout/header.php` | Barra superior con logo, navegación dinámica desde BD y menú de usuario |
+| `includes/layout/footer.php` | Footer con atribución TSE + badge "Powered by Oval" |
+| `includes/layout/scripts.php` | JS al final del body (nav.js siempre; leaflet+chart+app scripts por defecto o `$pageScripts`) |
 
-| Archivo | Abre | Cierra | Contenido |
-|---|---|---|---|
-| `includes/layout/head.php` | `<html>` `<head>` `<body>` `<div class="app-shell">` | — | DOCTYPE, meta, anti-flash de tema, Bootstrap Icons, Leaflet CSS, `style.css`, CSS extra de la página (`$extraHeadLinks`) |
-| `includes/layout/header.php` | — | — | Barra superior + menú dinámico cargado desde BD (`reports` + `report_categories`) |
-| `includes/layout/footer.php` | — | `</div>` (cierra `app-shell`) | Footer con atribución TSE |
-| `includes/layout/scripts.php` | — | `</body>` `</html>` | JS de la página (`$pageScripts` si se define, o leaflet + chart.js + app.js por defecto) |
-
-El `<div class="app-shell">` lo abre `head.php` y lo cierra `footer.php`.
-El `</body></html>` lo cierra **siempre** `scripts.php`. Ninguna página los escribe
-manualmente.
-
-### Cómo funciona el HTML generado
-
-```
-<!-- head.php -->
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta ...>
-  <link href="bootstrap-icons.css">
-  <link href="leaflet.css">
-  <link href="style.css">
-  <!-- si $extraHeadLinks está definido: -->
-  <link href="assets/css/mi-pagina.css">
-</head>
-<body>
-<div class="app-shell">
-
-<!-- header.php -->
-<header class="app-header"> ... </header>
-
-<!-- contenido específico de la página -->
-<div class="mi-contenido"> ... </div>
-
-<!-- footer.php -->
-<footer class="app-footer"> ... </footer>
-</div>  <!-- cierra app-shell -->
-
-<!-- scripts.php — si NO hay $pageScripts: -->
-<script src="leaflet.js"></script>
-<script src="chart.js"></script>
-<script src="assets/js/app.js"></script>
-<!-- scripts.php — si HAY $pageScripts: -->
-<script src="assets/js/mi-pagina.js"></script>
-
-</body>
-</html>
-```
+El `<div class="app-shell">` lo abre `head.php` y lo cierra `footer.php`.  
+El `</body></html>` los cierra siempre `scripts.php`.
 
 ### Variables de inyección
 
-Para incluir CSS o JS específico de una página sin tocar los parciales compartidos,
-definir antes de hacer el primer `require`:
-
 ```php
-// CSS extra — se inyecta en <head> antes de </head>
-$extraHeadLinks = ['assets/css/admin.css'];
-
-// JS de la página — reemplaza leaflet+chart+app.js
-// Si no se define, scripts.php carga leaflet + chart.js + app.js
-$pageScripts = ['assets/js/admin.js'];
+$extraHeadLinks = ['assets/css/mi-pagina.css']; // CSS extra inyectado en <head>
+$pageScripts    = ['assets/js/mi-pagina.js'];   // reemplaza los scripts por defecto
 ```
 
-### Páginas actuales y sus cadenas de layout
+---
 
-| Página | `$extraHeadLinks` | `$pageScripts` | Incluye además |
-|---|---|---|---|
-| `reports.php` | — | — (leaflet + chart + app.js) | modals/padron.php, modals/bitacora.php, loader.php |
-| `admin.php` | — | `admin.js` | includes/admin/*.php |
-| `login.php` | — | — | solo HTML inline |
+## Páginas principales
 
-### Cómo crear una nueva página
-
-1. Crear `mi-pagina.php` en la raíz del proyecto.
-2. Definir `$pageTitle`, `$reportId = 0`, `$pdo`, y las variables opcionales
-   `$extraHeadLinks` / `$pageScripts`.
-3. Incluir la cadena completa:
-
-```php
-<?php
-require __DIR__ . '/auth.php';
-require_once __DIR__ . '/lib/db.php';
-requerirLogin();
-
-$rootDir        = __DIR__;
-$pageTitle      = 'Mi página · PEL Digital';
-$reportId       = 0;
-$extraHeadLinks = ['assets/css/mi-pagina.css']; // opcional
-$pageScripts    = ['assets/js/mi-pagina.js'];   // opcional
-
-$pdo = dbConnect();
-
-require $rootDir . '/includes/layout/head.php';
-require $rootDir . '/includes/layout/header.php';
-?>
-
-<!-- contenido específico aquí -->
-
-<?php
-require $rootDir . '/includes/layout/footer.php';
-require $rootDir . '/includes/layout/scripts.php';
-```
-
-4. Si necesita JS con toggle de tema (sin app.js), implementarlo dentro del IIFE
-   de `mi-pagina.js` usando `btnTheme` / `btnThemeM` — los botones ya están en el
-   header compartido.
-
-## Requisitos del servidor
-
-| Componente | Versión mínima | Notas |
+| Archivo | Ruta amigable | Descripción |
 |---|---|---|
-| PHP | 8.1+ | Extensions: `pdo_mysql`, `mbstring`, `json` |
-| MySQL / MariaDB | 10.6+ / 8.0+ | InnoDB, FULLTEXT habilitado |
-| Apache / Nginx | Cualquiera reciente | mod_rewrite si se usa Apache |
-| Disco disponible | ≥ 10 GB | Padrón 427 MB + BD ~2-3 GB |
-| RAM | ≥ 2 GB | Importación del padrón usa ~512 MB en pico |
+| `login.php` | `/login` | Acceso al sistema — reCAPTCHA v3, recordar sesión, ojito |
+| `index.php` | `/` | Redirige a `/home` |
+| `home.php` | `/home` | Hub de reportes — card con stats del padrón y catálogo de reportes |
+| `reports.php` | `/reportes/{slug}` | Ensamblador de reportes — carga el reporte indicado desde BD |
+| `admin.php` | `/admin` | Panel de administración (requiere rol admin) |
+| `perfil.php` | `/perfil` | Mi perfil — editar nombre/email y cambiar contraseña |
+| `logout.php` | `/logout` | Cierra sesión y limpia cookies de "recordar" |
 
-## Estructura principal
+---
+
+## Seguridad
+
+### Autenticación (`auth.php`)
+- Login contra tabla `users` (email o nombre de usuario, contraseña con `password_hash`)
+- Fallback `demo`/`demo1234` solo si `APP_ENV != production`
+- CSRF token por sesión (`$_SESSION['csrf_token']`)
+- Bitácora de intentos fallidos
+
+### reCAPTCHA v3
+- Invisible — sin checkbox visible, badge flotante en esquina
+- Ejecuta en background al enviar el formulario de login
+- Valida score ≥ 0.5 contra `siteverify` de Google
+- Claves en `.env`: `RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET`
+
+### Recordar sesión ("Mantener sesión iniciada")
+- Checkbox en el login que extiende la cookie de sesión a **30 días**
+- Marca adicional `pel_rm` para restaurar el lifetime en visitas futuras
+- `cerrarSesion()` limpia ambas cookies
+
+---
+
+## Menú de usuario (header)
+
+El ícono `bi-person-circle` en el header despliega un panel con:
+- Avatar (inicial del nombre), nombre completo y email
+- **Editar perfil** → `/perfil`
+- **Cambiar contraseña** → `/perfil#contrasena`
+- **Cerrar sesión**
+
+---
+
+## Perfil de usuario (`perfil.php` + `api/profile.php`)
+
+- Carga datos reales desde BD (`name`, `email`, `role`, `created_at`)
+- **Editar info**: actualiza `name` y `email` en `users`, refresca la sesión
+- **Cambiar contraseña**: verifica contraseña actual, exige mínimo 8 caracteres, hashea con `PASSWORD_DEFAULT`
+- Rol mostrado como campo de solo lectura (no editable por el propio usuario)
+
+---
+
+## Tema (claro/oscuro)
+
+- **Defecto:** light (independiente del OS)
+- El usuario cambia el tema con el toggle en el header; su elección se persiste en `localStorage` (`cr-theme`)
+- El snippet anti-flash en `head.php` aplica el tema antes de renderizar para evitar parpadeo
+
+---
+
+## Estructura de archivos
 
 ```
 pel_02/
-├── index.php                      # Redirige a reports.php?id=1
-├── reports.php                    # Ensamblador principal: valida sesión, carga el
-│                                  # reporte solicitado por ?id= desde la BD
-├── login.php / logout.php         # Pantallas de acceso / cierre de sesión
-├── auth.php                       # Sesión PHP. Login, logout, helpers de auth.
-│                                  # Autentica contra users; fallback demo.
+├── index.php                      # Redirige a /home
+├── login.php                      # Login con reCAPTCHA v3 + recordar sesión
+├── logout.php                     # Cierre de sesión
+├── home.php                       # Hub de reportes
+├── reports.php                    # Ensamblador de reportes
+├── admin.php                      # Panel de administración
+├── perfil.php                     # Perfil de usuario
+├── auth.php                       # Autenticación, sesión, CSRF, helpers
 │
 ├── includes/
 │   ├── layout/
 │   │   ├── head.php               # DOCTYPE, meta, CSS, anti-flash de tema
-│   │   ├── header.php             # Barra superior + menú dinámico desde BD
-│   │   ├── footer.php             # Pie de página con atribución TSE
-│   │   ├── loader.php             # Spinner de carga inicial
-│   │   └── scripts.php           # <script> al final del body
+│   │   ├── header.php             # Barra superior + nav dinámica + user menu
+│   │   ├── footer.php             # Footer TSE + Powered by Oval
+│   │   ├── loader.php             # Spinner de carga
+│   │   └── scripts.php           # JS al final del body
 │   ├── modals/
-│   │   ├── padron.php             # Modal de consulta del padrón (tabla paginada)
-│   │   └── bitacora.php           # Modal de bitácora de actividad
-│   └── reports/
-│       ├── padron-distribucion.php    # Reporte #1 — Distribución Territorial
-│       ├── jrv-inscritos.php          # Reporte #2 — Distribución Padrón / JRV
-│       ├── jrv-analisis.php           # Reporte #3 — Análisis Estratégico JRV
-│       ├── participacion.php          # Reporte #4 — Participación Electoral
-│       ├── segmentacion.php           # Reporte #5 — Segmentación Electoral
-│       ├── analisis-territorial.php   # Reporte #6 — Análisis Territorial
-│       └── (pendiente)                # Reporte #7 — Indicadores Estratégicos
+│   │   ├── padron.php             # Modal de consulta del padrón
+│   │   └── bitacora.php           # Modal de bitácora
+│   ├── reports/
+│   │   ├── padron-distribucion.php    # Reporte 1 — Distribución Territorial
+│   │   ├── jrv-inscritos.php          # Reporte 2 — Distribución Padrón / JRV
+│   │   ├── jrv-analisis.php           # Reporte 3 — Análisis Estratégico JRV
+│   │   ├── participacion.php          # Reporte 4 — Participación Electoral
+│   │   ├── segmentacion.php           # Reporte 5 — Segmentación Electoral
+│   │   └── analisis-territorial.php   # Reporte 6 — Análisis Territorial
+│   └── admin/
+│       ├── usuarios.php           # CRUD de usuarios
+│       ├── roles.php              # CRUD de roles
+│       └── ...                    # Otros módulos admin
 │
 ├── api/
-│   ├── poblacion.php              # Agregados territoriales del padrón (con caché 1h)
-│   ├── padron.php                 # Consulta paginada del padrón real
-│   ├── jrv.php                    # Datos de JRV por territorio
-│   ├── segmentacion.php           # Datos de segmentación por sexo
-│   ├── participacion.php          # Datos de participación electoral
-│   ├── resultados.php             # Resultados electorales por territorio y partido
-│   ├── analisis_territorial.php   # Comparativos territoriales electorales
-│   ├── parties.php                # Catálogo de partidos políticos
-│   ├── bitacora.php               # Lectura de bitácora de actividad
-│   └── log.php                    # Registro de eventos desde el frontend
+│   ├── profile.php                # Actualizar perfil / cambiar contraseña
+│   ├── poblacion.php              # Agregados territoriales del padrón (caché 1h)
+│   ├── padron.php                 # Consulta paginada del padrón
+│   ├── jrv.php                    # Datos JRV por territorio
+│   ├── segmentacion.php           # Segmentación por sexo
+│   ├── participacion.php          # Participación electoral
+│   ├── analisis_territorial.php   # Comparativos territoriales
+│   ├── parties.php                # Catálogo de partidos
+│   ├── bitacora.php               # Lectura de bitácora
+│   ├── log.php                    # Registro de eventos frontend
+│   └── admin/
+│       ├── usuarios.php           # API CRUD usuarios
+│       ├── roles.php              # API CRUD roles
+│       └── ...
 │
 ├── assets/
-│   ├── css/style.css              # CSS global (~2600 líneas). Variables de tema.
-│   ├── js/app.js                  # JS monolítico (~2700 líneas). Todo el frontend.
-│   └── img/                       # Logos del partido
-│
-├── data/
-│   ├── provincias.geojson         # Fronteras de las 7 provincias de CR
-│   ├── cantones.geojson           # Fronteras de los cantones
-│   ├── distritos.geojson          # Fronteras de los distritos
-│   └── poblacion_cache.json       # Caché de api/poblacion.php (TTL 1h, auto-generado)
+│   ├── css/app/
+│   │   ├── tokens.css             # Variables de tema (light/dark) y tipografía
+│   │   ├── nav.css                # Header, navegación y user menu
+│   │   ├── layout.css             # Estructura general, campos, perfil
+│   │   ├── modals.css             # Modales, login card
+│   │   ├── hub.css                # Hub de reportes (home.php)
+│   │   ├── reports.css            # Panel lateral, tablas, paginación
+│   │   ├── admin.css              # Panel de administración
+│   │   └── responsive.css        # Breakpoints ≤820px
+│   ├── js/
+│   │   ├── nav.js                 # Drawer móvil, dropdowns, tema, user menu
+│   │   └── app/
+│   │       ├── core.js            # Estado global, fmt(), fmtPct(), abreviarV()
+│   │       ├── map.js             # Mapa Leaflet, capas GeoJSON
+│   │       ├── controls.js        # Buscador, selects en cascada, diáspora
+│   │       ├── reports.js         # Lógica de reportes JRV / Juntas
+│   │       └── padron-bitacora.js # Modal del padrón y bitácora
+│   └── img/
+│       └── logo02.png             # Logo del partido
 │
 ├── lib/
 │   ├── db.php                     # dbConnect(): PDO singleton
-│   ├── env.php                    # Carga variables de entorno desde .env
-│   ├── bitacora.php               # Funciones de registro de eventos en BD
+│   ├── env.php                    # Carga .env
+│   ├── bitacora.php               # Registro de eventos en BD
 │   └── parsers/
-│       ├── PadronTSEParser.php    # Parser del archivo plano del TSE
-│       └── AvrParser.php          # Parser de archivos AVR de resultados electorales
+│       ├── PadronTSEParser.php    # Parser del padrón plano del TSE
+│       └── AvrParser.php          # Parser de resultados AVR
 │
-├── scripts/
-│   ├── migrate.php                # Runner de migraciones SQL desde migrations/
-│   ├── import_distelec.php        # ETL: catálogo geográfico DISTELEC
-│   ├── import_padron.php          # ETL: padrón electoral TSE
-│   ├── import_resultados.php      # ETL: resultados electorales AVR
-│   ├── enrich_sexo.php            # Enriquecimiento: sexo por lookup de nombres
-│   ├── enrich_fecha_nac.php       # Enriquecimiento: fecha de nacimiento (pendiente)
-│   ├── refresh_summaries.php      # Regenera tablas de resumen summary_*
-│   └── dev/test_batch.php         # Pruebas de importación por lotes (desarrollo)
+├── data/
+│   ├── provincias.geojson
+│   ├── cantones.geojson
+│   ├── distritos.geojson
+│   └── poblacion_cache.json       # Caché auto-generado por api/poblacion.php (TTL 1h)
 │
-├── migrations/                    # Migraciones SQL versionadas (runner: migrate.php)
-│   ├── 20260601_000001_base_schema.sql
-│   ├── 20260601_000002_padron_bronze.sql
-│   ├── 20260601_000003_diaspora_index.sql
-│   ├── 20260606_000004_reports_catalog.sql
-│   ├── 20260609_000005_segmentacion_report.sql
-│   ├── 20260609_000006_election_results.sql
-│   ├── 20260610_000007_summary_tables.sql
-│   ├── 20260610_000008_parties_catalog.sql
-│   ├── 20260610_000009_voters_fecha_nac.sql
-│   ├── 20260610_000010_name_gender_lookup.sql
-│   ├── 20260610_000011_voter_enrichments.sql
-│   ├── 20260610_000012_summary_sexo.sql
-│   ├── 20260610_000013_padron_tse_menu.sql
-│   ├── 20260610_000014_reports_distritos_juntas.sql
-│   └── 20260610_000015_analisis_menu_restructure.sql
-│
-├── raw/                           # Archivos crudos del TSE — NO están en git
-│   ├── padron/
-│   │   ├── PADRON_COMPLETO.txt    # 427 MB — padrón plano 2026 (8 campos, ~3.7M filas)
-│   │   ├── distelec.txt           # 172 KB — catálogo geográfico DISTELEC
-│   │   └── Leame.txt             # Descripción de formato del TSE
-│   └── avr/
-│       ├── avr2026.json           # 2.5 MB — resultados presidenciales 2026
-│       ├── avr2024.json           # 1.3 MB — resultados municipales 2024
-│       ├── avr2022.json           # 2.9 MB — resultados presidenciales 2022 1ra ronda
-│       └── avr2022_ii.json        # 514 KB — resultados presidenciales 2022 2da ronda
-│
+├── scripts/                       # ETL y migraciones (CLI, no accesibles por web)
+├── migrations/                    # SQL versionadas
+├── raw/                           # Archivos crudos TSE — NO están en git
 └── docs/
-    └── produccion.md              # Guía de despliegue en producción
+    └── produccion.md              # Guía de despliegue
 ```
 
-## Cómo ejecutar localmente
+---
 
-El proyecto está diseñado para correr sobre Apache + PHP + MySQL. No requiere
-servidor embebido de PHP ni herramientas de build.
+## Formateo de números en UI
 
-**Con XAMPP (recomendado para desarrollo):**
+Funciones centralizadas en `assets/js/app/core.js`:
 
-1. Colocar el proyecto en `/Applications/XAMPP/xamppfiles/htdocs/pel_02` (Mac)
-   o en `C:\xampp\htdocs\pel_02` (Windows).
-2. Iniciar Apache y MySQL desde el panel de XAMPP.
-3. Abrir: `http://localhost/pel_02/`
-
-**Con Apache/Nginx en Linux (staging o producción):**
-
-Ver guía completa en [`docs/produccion.md`](docs/produccion.md).
-
-## Migraciones de base de datos
-
-El runner `scripts/migrate.php` aplica los archivos SQL de `migrations/` en
-orden, registrando cada una en `schema_migrations` para no repetirlas.
-
-```bash
-# Aplicar todas las migraciones pendientes
-php scripts/migrate.php
-
-# Verificar qué migraciones se han aplicado
-php -r "
-  require_once 'lib/db.php';
-  foreach (dbConnect()->query('SELECT migration, executed_at FROM schema_migrations ORDER BY executed_at') as \$r)
-    echo \$r['migration'] . '  →  ' . \$r['executed_at'] . PHP_EOL;
-"
+```js
+const fmt    = (n) => n.toLocaleString("es-CR");        // coma miles, punto decimales
+const fmtPct = (x) => (x*100).toFixed(1).replace(".0","") + "%";
+const abreviarV = (n) => abreviar(n);                   // 1.2k / 3.4M
 ```
 
-## Pipeline ETL de ingesta
+Todos los valores numéricos mostrados en la UI deben pasar por `fmt()` o `abreviarV()`.
 
-Todos los datos externos son **archivos descargables del TSE**. No se usan APIs
-en tiempo real. Los archivos se depositan en `raw/` y los scripts ETL los procesan.
-
-### Archivos crudos necesarios
-
-| Archivo | Tamaño | Fuente (descarga manual) |
-|---|---|---|
-| `raw/padron/PADRON_COMPLETO.txt` | 427 MB | https://www.tse.go.cr/padron.html (ZIP del padrón 2026) |
-| `raw/padron/distelec.txt` | 172 KB | incluido en el mismo ZIP del padrón |
-| `raw/padron/Leame.txt` | — | incluido en el mismo ZIP |
-| `raw/avr/avr2026.json` | 2.5 MB | Presidencia 2026: `tse.go.cr/APISVR2026/cortes/ultimo?corte=0` |
-| `raw/avr/avr2024.json` | 1.3 MB | Municipal 2024 — vía herramienta del TSE |
-| `raw/avr/avr2022.json` | 2.9 MB | Presidencial 2022 1ra ronda — vía herramienta del TSE |
-| `raw/avr/avr2022_ii.json` | 514 KB | Presidencial 2022 2da ronda — vía herramienta del TSE |
-
-> **Nota WAF del TSE**: Las descargas AVR pueden requerir un browser con el
-> Referer correcto del dominio TSE. El WAF Radware bloquea `curl` directo desde
-> servidores externos. En desarrollo local se hicieron desde el browser.
-
-### Comandos ETL
-
-```bash
-# 1. Migraciones de BD (prerequisito de todo)
-php scripts/migrate.php
-
-# 2. Catálogo geográfico (~30 segundos)
-php scripts/import_distelec.php --file=raw/padron/distelec.txt
-
-# 3. Padrón electoral completo (~20 minutos)
-php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt
-#    también acepta ZIP: --zip=raw/padron/padron.zip
-
-# 4. Enriquecer campo sexo (~51 segundos, no requiere red)
-php scripts/enrich_sexo.php --batch=0
-
-# 5. Resultados electorales (en cualquier orden)
-php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="Presidencia 2026"
-php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A --label="Municipal 2024"
-php scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P --label="Presidencial 2022 1ra"
-php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P --label="Presidencial 2022 2da"
-
-# 6. Regenerar tablas de resumen (si se modifican datos manualmente)
-php scripts/refresh_summaries.php
-```
-
-**Tiempo estimado en servidor nuevo:** ~30 minutos desde cero.
-
-### Tablas destino
-
-| Script | Tablas pobladas |
-|---|---|
-| `import_distelec.php` | `provinces`, `cantons`, `districts` |
-| `import_padron.php` | `voters`, `padron_sync_runs` |
-| `enrich_sexo.php` | `voters.sexo` (via `name_gender_lookup`) |
-| `import_resultados.php` | `election_results`, `parties`, `election_sync_runs` |
-| `refresh_summaries.php` | `summary_inscritos_provincia`, `summary_inscritos_canton`, `summary_inscritos_distrito`, `summary_jrv` |
-
-## Base de datos
-
-### Tablas principales
-
-| Tabla | Propósito | Registros (10-jun-2026) |
-|---|---|---|
-| `voters` | Padrón electoral completo TSE 2026 | 3,731,788 |
-| `provinces` | Catálogo de 7 provincias + exterior (id=8) | 8 |
-| `cantons` | Catálogo de cantones + países de diáspora | ~90 |
-| `districts` | Catálogo de distritos con `codelec` (TSE) | ~500 |
-| `election_results` | Resultados electorales por partido y territorio | variable |
-| `parties` | Catálogo de partidos políticos | variable |
-| `summary_inscritos_provincia` | Resumen de inscritos por provincia | 8 |
-| `summary_inscritos_canton` | Resumen de inscritos por cantón | ~90 |
-| `summary_inscritos_distrito` | Resumen de inscritos por distrito | ~500 |
-| `summary_jrv` | Resumen de inscritos por JRV | 7,154 |
-| `name_gender_lookup` | Lookup nombre → sexo (321 nombres frecuentes) | 321 |
-| `users` | Usuarios con roles | 3 |
-| `roles` | Roles: administrador, analista, consulta | 3 |
-| `reports` | Catálogo de reportes (nombre, estado, archivo) | 7 |
-| `report_categories` | Categorías del menú de análisis | 5 |
-| `audit_logs` | Bitácora de actividad | variable |
-| `polling_places` | Locales de votación reales | Pendiente de carga oficial |
-| `electoral_districts` | Distritos electorales reales | Pendiente de carga oficial |
-
-### Campos en `voters`
-
-**Poblados:** `cedula`, `nombre`, `apellido1`, `apellido2`, `fecha_caduc`,
-`junta`, `province_id`, `canton_id`, `district_id`.
-
-**Enriquecidos vía ETL:**
-- `sexo` (M/F/N): poblado con `enrich_sexo.php`. Distribución actual:
-  M = 1,428,900 (38.3%), F = 1,246,161 (33.4%), N = 1,056,727 (28.3% sin match).
-
-**Vacíos (NULL en todos los registros):**
-- `fecha_nac`: el archivo TSE incluye el campo pero el parser aún no lo extrae.
-  Bloquea segmentación por edad.
-- `electoral_district_id`, `polling_place_id`: tablas de catálogo con datos
-  de prueba, no reales. Bloquean asignación de locales de votación.
+---
 
 ## Inventario de reportes
 
-Los reportes se administran desde la tabla `reports` en BD. El estado determina
-si aparecen activos, con advertencia o bloqueados en el menú.
+| # | Nombre | Estado | Fuente |
+|---|---|---|---|
+| 1 | Distribución Territorial | Activo | Padrón TSE 2026 |
+| 2 | Distribución Padrón / JRV | Activo | Padrón TSE 2026 |
+| 3 | Análisis Estratégico · JRV | Activo | Padrón TSE 2026 |
+| 4 | Participación Electoral | Activo | AVR TSE 2026/2022 |
+| 5 | Segmentación Electoral | Parcial | Padrón TSE 2026 (sexo enriquecido, fecha_nac pendiente) |
+| 6 | Análisis Territorial | Activo | AVR 2026/2024/2022 |
+| 7 | Indicadores Estratégicos | Pendiente | Requiere definir KPIs |
 
-| # | Nombre | Estado | Fuente de datos | Tablas utilizadas |
-|---|---|---|---|---|
-| 1 | Distribución Territorial | Activo | Padrón TSE 2026 | `voters`, `provinces`, `cantons`, `districts`, GeoJSON |
-| 2 | Distribución Padrón / JRV | Activo | Padrón TSE 2026 | `summary_jrv`, `voters`, `districts` |
-| 3 | Análisis Estratégico · JRV | Activo | Padrón TSE 2026 | `summary_jrv`, `districts`, `cantons`, `provinces` |
-| 4 | Participación Electoral | Activo | AVR TSE 2026/2022 | `election_results`, `parties`, `provinces`, `cantons` |
-| 5 | Segmentación Electoral | Parcial | Padrón TSE 2026 (sexo enriquecido) | `summary_inscritos_*`, `voters.sexo` — fecha_nac pendiente |
-| 6 | Análisis Territorial | Activo | AVR 2026/2024/2022 | `election_results`, `parties`, `provinces`, `cantons` |
-| 7 | Indicadores Estratégicos | Pendiente | Depende de reportes 1–6 | — |
+---
 
-**Estados:**
-- **Activo**: completamente funcional.
-- **Parcial** (`partial`): funciona con datos disponibles pero tiene limitaciones
-  (ícono de reloj en el menú).
-- **Pendiente** (`pending`): bloqueado hasta tener datos adicionales del TSE
-  (ícono de candado en el menú).
+## Base de datos
 
-## Módulo de Gestión y Administración
+Dos bases de datos:
 
-El menú Admin incluye módulos operativos para administrar usuarios/roles/reportes
-y consultar estado del sistema, datos y migraciones.
-
-| Módulo | Acceso | Estado |
+| Variable `.env` | Base | Propósito |
 |---|---|---|
-| Bitácora | `data-admin="bitacora"` | Funcional — muestra `audit_logs` |
-| Configuración | `data-admin="configuracion"` | Funcional — muestra entorno y metadatos |
-| Usuarios | `data-admin="usuarios"` | Funcional — CRUD contra tabla `users` |
-| Roles de usuario | `data-admin="roles"` | Funcional — CRUD contra tabla `roles` |
-| Cargar Datos | `data-admin="cargar-datos"` | Funcional — estado de tablas y comandos de ingesta |
-| Pipelines | `data-admin="pipelines"` | Funcional — estado de migraciones |
+| `DB_*` | `pel_electoral` | Sistema: users, roles, reports, audit_logs |
+| `DW_*` | `peldigital_data` | Datos: voters, provinces, election_results, summaries |
 
-## Despliegue en producción
+### Tablas clave
 
-Ver guía detallada en [`docs/produccion.md`](docs/produccion.md). Pasos
-resumidos:
+| Tabla | Registros (12-jun-2026) |
+|---|---|
+| `voters` | 3,731,788 |
+| `summary_jrv` | 7,154 |
+| `users` | 3 |
+| `roles` | 3 |
+| `reports` | 7 |
 
-1. Clonar repositorio en el servidor.
-2. Crear BD `pel_electoral` y usuario dedicado.
-3. Copiar `.env.example` a `.env` y configurar credenciales.
-4. Ejecutar `php scripts/migrate.php`.
-5. Descargar archivos crudos del TSE (ver sección Pipeline ETL).
-6. Ejecutar el pipeline ETL completo (~30 min).
-7. Configurar Apache para bloquear acceso web a `raw/`, `migrations/`,
-   `scripts/`, `lib/`. Ver directivas en `docs/produccion.md`.
-8. Habilitar HTTPS.
-9. Crear usuarios reales en la tabla `users`; el fallback `demo` queda disponible
-   solo fuera de producción (`APP_ENV!=production`).
+### Campos en `voters` — estado actual
 
-**Carpetas que no deben ser accesibles desde el browser:**
-`raw/`, `migrations/`, `scripts/`, `lib/`
+**Poblados:** `cedula`, `nombre`, `apellido1`, `apellido2`, `fecha_caduc`, `junta`, `province_id`, `canton_id`, `district_id`, `sexo` (M/F/N via ETL)
+
+**Vacíos (NULL):** `fecha_nac` (bloquea segmentación por edad), `electoral_district_id`, `polling_place_id`
+
+---
+
+## Correr localmente
+
+```bash
+# Requisito: XAMPP con Apache y MySQL corriendo
+# Proyecto en: /Applications/XAMPP/xamppfiles/htdocs/pel_02
+# Acceso:      http://localhost/pel_02/
+```
+
+Copiar `.env.example` a `.env` y configurar las credenciales de BD.
+
+---
+
+## Pipeline ETL
+
+```bash
+php scripts/migrate.php                                          # 1. Migraciones
+php scripts/import_distelec.php --file=raw/padron/distelec.txt  # 2. Catálogo geográfico
+php scripts/import_padron.php --file=raw/padron/PADRON_COMPLETO.txt  # 3. Padrón (~20 min)
+php scripts/enrich_sexo.php --batch=0                           # 4. Sexo (~51 seg)
+php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="Presidencia 2026"
+php scripts/refresh_summaries.php                                # 5. Resúmenes
+```
+
+---
 
 ## Pendientes técnicos
 
-| Item | Archivo | Impacto |
-|---|---|---|
-| `fecha_nac` NULL en todos los registros | `lib/parsers/PadronTSEParser.php` | Bloquea segmentación por edad |
-| Fallback `demo` solo activo fuera de producción | `auth.php` | Restringido por `APP_ENV=production` |
-| `polling_places` sin catálogo oficial cargado | BD | Reporte de locales de votación no debe publicarse hasta cargar fuente real |
-| `electoral_district_id` y `polling_place_id` NULL en `voters` | BD | Asignación de JRV no está cruzada |
-| Reporte #7 Indicadores Estratégicos no construido | — | Requiere definir KPIs con el cliente |
-| Coordinar con TSE acceso oficial a `fecha_nac` | Externo | Requerido para segmentación por edad |
-| Obtener catálogo real de locales de votación (~7,000 filas) | Externo | Requerido para poblar `polling_places` |
+| Item | Impacto |
+|---|---|
+| `fecha_nac` NULL en todos los registros | Bloquea segmentación por edad |
+| `polling_places` sin catálogo oficial | Reporte de locales no publicable |
+| Reporte #7 Indicadores Estratégicos | Requiere KPIs acordados con el cliente |
+| Coordinar acceso oficial a `fecha_nac` con TSE | Requerido para segmentación por edad |
 
-## Cumplimiento normativo y límites de responsabilidad
+---
 
-Los datos del padrón electoral y resultados electorales utilizados en esta
-plataforma son **fuentes públicas oficiales** del Tribunal Supremo de Elecciones
-(TSE) de Costa Rica.
+## Cumplimiento normativo
 
-**Fuentes:**
-- Padrón electoral 2026: descargado desde https://www.tse.go.cr/padron.html
-- Resultados electorales (AVR): publicados por el TSE en sus sistemas de
-  divulgación de resultados.
-- Catálogo geográfico (DISTELEC): incluido en el ZIP del padrón oficial del TSE.
-- Fronteras GeoJSON: basadas en datos del repositorio `schweini/CR_distritos_geojson`.
+Los datos del padrón y resultados electorales son **fuentes públicas oficiales del TSE de Costa Rica**.  
+Esta plataforma los reproduce para uso interno del partido — no modifica ni certifica datos electorales.  
+El TSE es la única fuente autorizada de resultados (Art. 102 de la Constitución Política).
 
-**Límites de responsabilidad:**
-- Esta plataforma **reproduce** datos públicos del TSE. No produce, modifica ni
-  certifica datos electorales.
-- Los análisis, segmentaciones y rankings generados son herramientas internas
-  de trabajo del partido y **no constituyen resultados electorales oficiales**.
-- El TSE es la única fuente autorizada de resultados electorales en Costa Rica
-  (Artículo 102 de la Constitución Política).
-- La plataforma no almacena datos sensibles adicionales sobre los electores
-  más allá de lo publicado en el padrón oficial.
-- El acceso a la plataforma está restringido a usuarios internos autorizados
-  del partido.
-- Para uso, distribución o publicación de cualquier dato derivado, verificar
-  los términos de uso del TSE en https://www.tse.go.cr
+---
 
-## Créditos de datos
+## Créditos
 
-- Padrón y catálogo geográfico: Tribunal Supremo de Elecciones de Costa Rica (TSE)
+- Padrón y catálogo geográfico: [TSE Costa Rica](https://www.tse.go.cr)
 - Fronteras distritales GeoJSON: `schweini/CR_distritos_geojson`
+- Desarrollo: [Oval](https://oval.co.cr)
