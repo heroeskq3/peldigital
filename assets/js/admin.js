@@ -77,6 +77,7 @@
         'cargar-datos':{ init: initDatos,        loaded: false },
         pipelines:    { init: initPipelines,     loaded: false },
         etl:          { init: initETL,           loaded: false },
+        explorador:   { init: initExplorador,    loaded: false },
     };
 
     function activarSeccion(slug) {
@@ -744,6 +745,220 @@
         if (s < 3600) return (s/60).toFixed(1) + 'min';
         return (s/3600).toFixed(1) + 'h';
     }
+
+    // ── EXPLORADOR DW ────────────────────────────────────────────────────────
+
+    const exp = {
+        tabla: null, columnas: [], page: 1, pages: 1,
+        size: 50, orderCol: null, orderDir: 'asc',
+        distintos: {}, tablasMeta: {},
+    };
+
+    // Tipos de columna que no tienen sentido como filtro de texto
+    const EXP_SKIP_FILTER = ['longtext','mediumtext','tinytext','blob','mediumblob','longblob','json'];
+
+    function initExplorador() {
+        cargarTablasExp();
+        $('expBtnRefresh').addEventListener('click', cargarTablasExp);
+        $('expTablaSelect').addEventListener('change', () => {
+            const t = $('expTablaSelect').value;
+            if (t) seleccionarTablaExp(t);
+        });
+        $('expBtnAplicar').addEventListener('click', () => { exp.page = 1; cargarDatosExp(); });
+        $('expBtnLimpiar').addEventListener('click', limpiarFiltrosExp);
+        $('expSize').addEventListener('change', () => {
+            exp.size = parseInt($('expSize').value);
+            exp.page = 1;
+            cargarDatosExp();
+        });
+        ['expFirst','expFirst2'].forEach(id => $(id).addEventListener('click', () => { exp.page = 1;         cargarDatosExp(); }));
+        ['expPrev','expPrev2'].forEach(id   => $(id).addEventListener('click', () => { exp.page--;            cargarDatosExp(); }));
+        ['expNext','expNext2'].forEach(id   => $(id).addEventListener('click', () => { exp.page++;            cargarDatosExp(); }));
+        ['expLast','expLast2'].forEach(id   => $(id).addEventListener('click', () => { exp.page = exp.pages; cargarDatosExp(); }));
+    }
+
+    async function cargarTablasExp() {
+        try {
+            const d = await api('api/admin/explorador.php?modo=tablas');
+            exp.tablasMeta = {};
+            d.tablas.forEach(t => { exp.tablasMeta[t.nombre] = t; });
+
+            const sel = $('expTablaSelect');
+            const prev = sel.value;
+            sel.innerHTML = '<option value="">— Seleccionar tabla —</option>';
+            d.tablas.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t.nombre;
+                const filas = t.filas_aprox > 0 ? ` (≈ ${fmt(t.filas_aprox)})` : '';
+                o.textContent = t.nombre + filas;
+                sel.appendChild(o);
+            });
+            if (prev) sel.value = prev;
+        } catch (e) {
+            console.error('[explorador] cargarTablas', e.message);
+        }
+    }
+
+    async function seleccionarTablaExp(nombre) {
+        exp.tabla    = nombre;
+        exp.page     = 1;
+        exp.orderCol = null;
+        exp.orderDir = 'asc';
+
+        const meta = exp.tablasMeta[nombre];
+        $('expTablaInfo').textContent = meta
+            ? `≈ ${fmt(meta.filas_aprox)} filas · ${meta.mb ?? '?'} MB · ${meta.motor ?? ''}`
+            : '';
+
+        $('expTbody').innerHTML = `<tr><td class="admin-empty"><i class="bi bi-hourglass-split"></i> Cargando columnas…</td></tr>`;
+
+        try {
+            const d = await api(`api/admin/explorador.php?modo=meta&tabla=${encodeURIComponent(nombre)}`);
+            exp.columnas  = d.columnas;
+            exp.distintos = d.distintos || {};
+            exp.orderCol  = d.columnas[0]?.Field || 'id';
+            renderFiltrosExp();
+            await cargarDatosExp();
+        } catch (e) {
+            $('expTbody').innerHTML = `<tr><td class="admin-empty">${esc(e.message)}</td></tr>`;
+        }
+    }
+
+    function renderFiltrosExp() {
+        const inputs = exp.columnas
+            .filter(col => !EXP_SKIP_FILTER.some(t => col.Type.toLowerCase().startsWith(t)))
+            .map(col => {
+                const tipo = col.Type.toLowerCase();
+                const dist = exp.distintos[col.Field];
+                let control;
+
+                if (dist) {
+                    const esAssoc = !Array.isArray(dist);
+                    const opts = esAssoc
+                        ? Object.entries(dist).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')
+                        : dist.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+                    control = `<select id="expF_${col.Field}" class="admin-select" style="width:100%;font-size:.78rem">
+                        <option value="">Todos</option>${opts}</select>`;
+                } else if (tipo.startsWith('date') || tipo.startsWith('timestamp')) {
+                    control = `<input id="expF_${col.Field}" type="date" class="admin-select" style="width:100%;font-size:.78rem">`;
+                } else if (/^(tiny|small|medium|big)?int|decimal|float|double/.test(tipo)) {
+                    control = `<input id="expF_${col.Field}" type="number" class="admin-select" placeholder="= valor" style="width:100%;font-size:.78rem">`;
+                } else {
+                    control = `<input id="expF_${col.Field}" type="text" class="admin-select" placeholder="buscar…" style="width:100%;font-size:.78rem">`;
+                }
+
+                return `<div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.25rem;
+                                  font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                           title="${esc(col.Field)} (${esc(col.Type)})">${esc(col.Field)}</label>
+                    ${control}
+                </div>`;
+            }).join('');
+
+        $('expFiltrosGrid').innerHTML = inputs || '<p style="color:var(--text-muted);font-size:.82rem;margin:0">Sin columnas filtrables.</p>';
+        $('expFiltrosWrap').classList.remove('d-none');
+    }
+
+    function getFiltrosExp() {
+        const f = {};
+        exp.columnas.forEach(col => {
+            const el = document.getElementById(`expF_${col.Field}`);
+            if (el && el.value !== '') f[col.Field] = el.value;
+        });
+        return f;
+    }
+
+    function limpiarFiltrosExp() {
+        exp.columnas.forEach(col => {
+            const el = document.getElementById(`expF_${col.Field}`);
+            if (el) el.value = '';
+        });
+        exp.page = 1;
+        cargarDatosExp();
+    }
+
+    async function cargarDatosExp() {
+        if (!exp.tabla) return;
+        const ncols = exp.columnas.length || 5;
+        $('expTbody').innerHTML = `<tr><td colspan="${ncols}" class="admin-empty"><i class="bi bi-hourglass-split"></i> Cargando…</td></tr>`;
+
+        const filtros  = getFiltrosExp();
+        const fParams  = Object.entries(filtros)
+            .map(([k, v]) => `f[${encodeURIComponent(k)}]=${encodeURIComponent(v)}`)
+            .join('&');
+        const url = `api/admin/explorador.php?modo=datos`
+            + `&tabla=${encodeURIComponent(exp.tabla)}`
+            + `&page=${exp.page}&size=${exp.size}`
+            + `&order_col=${encodeURIComponent(exp.orderCol || '')}`
+            + `&order_dir=${exp.orderDir}`
+            + (fParams ? '&' + fParams : '');
+
+        try {
+            const d = await api(url);
+            exp.pages    = d.pages;
+            exp.columnas = d.columnas;
+            exp.orderCol = d.order_col;
+            exp.orderDir = d.order_dir;
+            renderDatosExp(d);
+        } catch (e) {
+            $('expTbody').innerHTML = `<tr><td colspan="${ncols}" class="admin-empty">${esc(e.message)}</td></tr>`;
+        }
+    }
+
+    function renderDatosExp(d) {
+        // Mostrar controles
+        $('expResultsBar').classList.remove('d-none');
+        $('expResultsBar2').classList.remove('d-none');
+        $('expResultsWrap').classList.remove('d-none');
+
+        const pageText = `Pág. ${d.page} / ${d.pages}`;
+        $('expPages').textContent  = pageText;
+        $('expPages2').textContent = pageText;
+        $('expTotal').textContent  = `${fmt(d.total)} registro(s)`;
+
+        const atFirst = d.page <= 1;
+        const atLast  = d.page >= d.pages;
+        ['expFirst','expFirst2'].forEach(id => $(id).disabled = atFirst);
+        ['expPrev','expPrev2'].forEach(id   => $(id).disabled = atFirst);
+        ['expNext','expNext2'].forEach(id   => $(id).disabled = atLast);
+        ['expLast','expLast2'].forEach(id   => $(id).disabled = atLast);
+
+        // Encabezados con orden clicable
+        $('expThead').innerHTML = '<tr>' + d.columnas.map(col => {
+            const active  = exp.orderCol === col.Field;
+            const nextDir = active && exp.orderDir === 'asc' ? 'desc' : 'asc';
+            const arrow   = active ? (exp.orderDir === 'asc' ? ' ↑' : ' ↓') : '';
+            const style   = active ? 'background:var(--surface-raised)' : '';
+            return `<th style="cursor:pointer;white-space:nowrap;font-size:.75rem;${style}"
+                        title="${esc(col.Type)}"
+                        onclick="expSortBy('${esc(col.Field)}','${nextDir}')">${esc(col.Field)}${arrow}</th>`;
+        }).join('') + '</tr>';
+
+        if (!d.rows.length) {
+            $('expTbody').innerHTML = `<tr><td colspan="${d.columnas.length}" class="admin-empty">Sin resultados con los filtros aplicados.</td></tr>`;
+            return;
+        }
+
+        $('expTbody').innerHTML = d.rows.map(row => {
+            const cells = d.columnas.map(col => {
+                const val = row[col.Field];
+                if (val === null || val === undefined)
+                    return '<td style="color:var(--text-muted);font-size:.72rem;font-style:italic">NULL</td>';
+                const str  = String(val);
+                const trunc = str.length > 70 ? str.slice(0, 70) + '…' : str;
+                return `<td style="font-size:.78rem;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis"
+                             title="${esc(str)}">${esc(trunc)}</td>`;
+            }).join('');
+            return `<tr>${cells}</tr>`;
+        }).join('');
+    }
+
+    window.expSortBy = function (col, dir) {
+        exp.orderCol = col;
+        exp.orderDir = dir;
+        exp.page = 1;
+        cargarDatosExp();
+    };
 
     // ── Escape HTML ──────────────────────────────────────────────────────────
 

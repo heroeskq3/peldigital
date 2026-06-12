@@ -116,10 +116,20 @@ foreach ($navByCategory as $cat) {
                         <li><a class="dropdown-link" href="admin.php#roles"         data-admin="roles"        ><i class="bi bi-shield-check"></i> Roles</a></li>
                         <li><a class="dropdown-link" href="admin.php#reportes"      data-admin="reportes"     ><i class="bi bi-layout-text-sidebar"></i> Reportes</a></li>
                         <li><a class="dropdown-link" href="admin.php#bitacora"      data-admin="bitacora"     ><i class="bi bi-journal-text"></i> Bitácora</a></li>
-                        <li><a class="dropdown-link" href="admin.php#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
-                        <li><a class="dropdown-link" href="admin.php#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Cargar Datos</a></li>
-                        <li><a class="dropdown-link" href="admin.php#pipelines"     data-admin="pipelines"    ><i class="bi bi-diagram-3"></i> Pipelines</a></li>
-                        <li><a class="dropdown-link" href="admin.php#etl"          data-admin="etl"          ><i class="bi bi-arrow-repeat"></i> Pipelines ETL</a></li>
+                        <!-- ── Data Warehouse submenu ── -->
+                        <li class="dropdown-submenu">
+                            <button class="dropdown-link submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                                <i class="bi bi-database"></i>
+                                <span>Data Warehouse</span>
+                                <i class="bi bi-chevron-right submenu-caret"></i>
+                            </button>
+                            <ul class="dropdown submenu-list">
+                                <li><a class="dropdown-link" href="admin.php#explorador"    data-admin="explorador"   ><i class="bi bi-table"></i> Explorador DW</a></li>
+                                <li><a class="dropdown-link" href="admin.php#cargar-datos"  data-admin="cargar-datos" ><i class="bi bi-cloud-upload"></i> Fuentes de datos</a></li>
+                                <li><a class="dropdown-link" href="admin.php#etl"           data-admin="etl"          ><i class="bi bi-arrow-repeat"></i> Pipelines ETL</a></li>
+                                <li><a class="dropdown-link" href="admin.php#configuracion" data-admin="configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
                 <?php endif; ?>
