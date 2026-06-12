@@ -2,6 +2,28 @@
 $rootDir = __DIR__;
 require $rootDir . '/auth.php';
 requerirLogin();
+require_once $rootDir . '/lib/db.php';
+
+// Cargar datos reales del usuario desde la BD
+try {
+    $pdo     = dbConnect();
+    $stmt    = $pdo->prepare(
+        'SELECT u.name, u.email, u.active, u.created_at, r.name AS role_name
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = ? LIMIT 1'
+    );
+    $stmt->execute([$_SESSION['user_id']]);
+    $usuarioDB = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (Throwable) {
+    $usuarioDB = null;
+}
+
+// Usar datos de BD; si falla, caer en sesión como respaldo
+$uName  = $usuarioDB['name']      ?? $_SESSION['usuario'] ?? '';
+$uEmail = $usuarioDB['email']     ?? $_SESSION['email']   ?? '';
+$uRole  = $usuarioDB['role_name'] ?? '';
+$uSince = $usuarioDB['created_at'] ?? '';
 
 $pageTitle = 'Mi perfil · PEL Digital';
 $bodyClass = 'page-perfil';
@@ -13,10 +35,13 @@ require $rootDir . '/includes/layout/header.php';
     <div class="perfil-wrap">
 
         <header class="perfil-page-header">
-            <i class="bi bi-person-circle perfil-page-icon"></i>
+            <div class="perfil-avatar-lg"><?= htmlspecialchars(mb_strtoupper(mb_substr($uName, 0, 1))) ?></div>
             <div>
-                <h1 class="perfil-page-title">Mi perfil</h1>
-                <p class="perfil-page-sub">Gestiona tu información y acceso</p>
+                <h1 class="perfil-page-title"><?= htmlspecialchars($uName) ?></h1>
+                <p class="perfil-page-sub">
+                    <?php if ($uRole): ?><span class="perfil-role-badge"><?= htmlspecialchars($uRole) ?></span><?php endif; ?>
+                    <?php if ($uSince): ?>· Miembro desde <?= date('d/m/Y', strtotime($uSince)) ?><?php endif; ?>
+                </p>
             </div>
         </header>
 
@@ -24,14 +49,19 @@ require $rootDir . '/includes/layout/header.php';
         <section class="perfil-card">
             <h2 class="perfil-card-title"><i class="bi bi-person"></i> Información personal</h2>
             <form id="formInfo" class="perfil-form" novalidate>
-                <label class="perfil-label">Nombre
+                <label class="perfil-label">Nombre completo
                     <input type="text" name="name" id="fieldName" class="field"
-                           value="<?= htmlspecialchars($_SESSION['usuario'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($uName) ?>" required>
                 </label>
                 <label class="perfil-label">Correo electrónico
                     <input type="email" name="email" id="fieldEmail" class="field"
-                           value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>" required>
+                           value="<?= htmlspecialchars($uEmail) ?>" required>
                 </label>
+                <?php if ($uRole): ?>
+                <label class="perfil-label">Rol
+                    <input type="text" class="field" value="<?= htmlspecialchars($uRole) ?>" disabled>
+                </label>
+                <?php endif; ?>
                 <div id="infoMsg" class="perfil-msg" hidden></div>
                 <button type="submit" class="perfil-btn">
                     <i class="bi bi-check-lg"></i> Guardar cambios
