@@ -18,6 +18,7 @@ Options -Indexes
     RewriteRule ^logout/?$  logout.php  [L]
     RewriteRule ^admin/?$   admin.php   [L]
     RewriteRule ^home/?$    home.php    [L]
+    RewriteRule ^perfil/?$  perfil.php  [L]
 
     # Fallback genérico: quitar .php de cualquier otro archivo
     RewriteCond %{REQUEST_FILENAME} !-f

@@ -129,12 +129,39 @@
     });
   }
 
+  // ── User menu ─────────────────────────────────────────────────────────────
+
+  function setupUserMenu() {
+    const wrap = document.querySelector('.user-menu');
+    const btn  = document.getElementById('btnUserMenu');
+    if (!wrap || !btn) return;
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = wrap.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', e => {
+      if (!wrap.contains(e.target)) {
+        wrap.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        wrap.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
   // Sincronizar icono al cargar (el tema ya fue aplicado por head.php inline)
   actualizarIconoTema();
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupNav);
+    document.addEventListener('DOMContentLoaded', () => { setupNav(); setupUserMenu(); });
   } else {
     setupNav();
+    setupUserMenu();
   }
 })();

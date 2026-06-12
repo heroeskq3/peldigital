@@ -165,10 +165,32 @@ foreach ($navByCategory as $cat) {
         <button id="btnTheme" class="icon-only" aria-label="Cambiar tema" title="Cambiar tema">
             <i class="bi bi-moon"></i>
         </button>
-        <span class="header-user" title="Sesión activa"><?= htmlspecialchars(usuarioActual() ?? '') ?></span>
-        <a href="<?= appUrl('logout') ?>" class="icon-only" aria-label="Cerrar sesión" title="Cerrar sesión">
-            <i class="bi bi-box-arrow-right"></i>
-        </a>
+        <div class="user-menu">
+            <button class="icon-only user-menu-btn" id="btnUserMenu"
+                    aria-label="Mi perfil" aria-expanded="false" title="Mi perfil">
+                <i class="bi bi-person-circle"></i>
+            </button>
+            <div class="user-menu-panel" id="userMenuPanel">
+                <div class="user-menu-header">
+                    <div class="user-menu-avatar"><?= htmlspecialchars(mb_substr(usuarioActual() ?? 'U', 0, 1)) ?></div>
+                    <div class="user-menu-meta">
+                        <span class="user-menu-name"><?= htmlspecialchars(usuarioActual() ?? '') ?></span>
+                        <span class="user-menu-email"><?= htmlspecialchars($_SESSION['email'] ?? '') ?></span>
+                    </div>
+                </div>
+                <hr class="user-menu-sep">
+                <a class="user-menu-item" href="<?= appUrl('perfil') ?>">
+                    <i class="bi bi-person"></i> Editar perfil
+                </a>
+                <a class="user-menu-item" href="<?= appUrl('perfil') ?>#contrasena">
+                    <i class="bi bi-key"></i> Cambiar contraseña
+                </a>
+                <hr class="user-menu-sep">
+                <a class="user-menu-item user-menu-item-danger" href="<?= appUrl('logout') ?>">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                </a>
+            </div>
+        </div>
     </div>
 </header>
 
