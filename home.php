@@ -146,7 +146,7 @@ require $rootDir . '/includes/layout/header.php';
 
 </main>
 <?php require $rootDir . '/includes/layout/footer.php'; ?>
-<script src="assets/js/nav.js?v=<?= filemtime($rootDir . '/assets/js/nav.js') ?>"></script>
+<script src="<?= $appBaseUrl ?>assets/js/nav.js?v=<?= filemtime($rootDir . '/assets/js/nav.js') ?>"></script>
 <script>
 (function () {
     const input  = document.getElementById('hubSearch');

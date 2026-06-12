@@ -64,7 +64,7 @@ foreach ($navByCategory as $cat) {
             <i class="bi bi-list"></i>
         </button>
         <a class="brand" href="<?= appUrl('home') ?>" title="Inicio">
-            <img src="assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
+            <img src="<?= $appBaseUrl ?>assets/img/logo02.png" class="brand-logo" alt="Esperanza y Libertad">
             <div class="brand-text">
                 <span class="brand-title">PEL Digital</span>
             </div>

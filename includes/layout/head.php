@@ -7,6 +7,10 @@
     <?php if (function_exists('csrfToken') && estaAutenticado()): ?>
     <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
+    <?php
+    // Base URL root-relativa: garantiza que assets carguen bien desde /reportes/slug, /admin, etc.
+    $appBaseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\') . '/';
+    ?>
     <title><?= htmlspecialchars($pageTitle ?? 'PEL Digital') ?></title>
 
     <!-- Evita el parpadeo de tema: aplica el tema guardado antes de pintar. -->
@@ -32,10 +36,10 @@
     ];
     ?>
     <?php foreach ($defaultCss as $css): ?>
-    <link href="<?= htmlspecialchars($css) ?>?v=<?= filemtime($rootDir . '/' . $css) ?>" rel="stylesheet">
+    <link href="<?= $appBaseUrl . htmlspecialchars($css) ?>?v=<?= filemtime($rootDir . '/' . $css) ?>" rel="stylesheet">
     <?php endforeach; ?>
     <?php foreach ($extraHeadLinks ?? [] as $link): ?>
-    <link href="<?= htmlspecialchars($link) ?>?v=<?= filemtime($rootDir . '/' . $link) ?>" rel="stylesheet">
+    <link href="<?= $appBaseUrl . htmlspecialchars($link) ?>?v=<?= filemtime($rootDir . '/' . $link) ?>" rel="stylesheet">
     <?php endforeach; ?>
 </head>
 <body<?= isset($bodyClass) ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
