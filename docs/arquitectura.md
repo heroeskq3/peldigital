@@ -217,11 +217,14 @@ SESSION_NAME=PEL_SESSION
 ## Setup desde cero
 
 ```bash
-# 1. Migraciones del sistema
-php scripts/migrate.php
+# 1. Migraciones del sistema (pel_electoral)
+php scripts/migrate.php                     # sistema: pel_electoral
 
 # 2. Crear peldigital_data y mover tablas de datos
 php scripts/setup_databases.php
+
+# 2b. Migraciones del DW (peldigital_data) — cuando existan archivos en migrations/data/
+php scripts/migrate.php --db=data
 
 # 3-9. ETL completo (ver docs/produccion.md para detalle completo)
 php scripts/import_distelec.php --file=raw/padron/distelec.txt

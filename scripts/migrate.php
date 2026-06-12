@@ -5,12 +5,15 @@ declare(strict_types=1);
 /**
  * scripts/migrate.php — Runner de migraciones SQL.
  *
- * Lee todos los archivos *.sql de migrations/ en orden alfabético,
- * omite los ya registrados en schema_migrations y aplica los pendientes.
+ * Lee todos los archivos *.sql del directorio de migraciones en orden
+ * alfabético, omite los ya registrados en schema_migrations y aplica los
+ * pendientes.
  *
  * Uso:
- *   php scripts/migrate.php            # aplica migraciones pendientes
- *   php scripts/migrate.php --dry-run  # muestra pendientes sin ejecutar
+ *   php scripts/migrate.php                  # pel_electoral  ← migrations/
+ *   php scripts/migrate.php --db=data        # peldigital_data ← migrations/data/
+ *   php scripts/migrate.php --dry-run        # muestra pendientes sin ejecutar
+ *   php scripts/migrate.php --db=data --dry-run
  */
 
 require_once __DIR__ . '/../lib/db.php';
@@ -18,20 +21,39 @@ require_once __DIR__ . '/../lib/db.php';
 function out(string $m): void { fwrite(STDOUT, '[' . date('H:i:s') . "] {$m}\n"); }
 function err(string $m): void { fwrite(STDERR, '[ERROR] ' . $m . "\n"); }
 
-$opts   = getopt('', ['dry-run']);
+$opts   = getopt('', ['dry-run', 'db:']);
 $dryRun = isset($opts['dry-run']);
+$dbFlag = $opts['db'] ?? 'system';   // 'system' | 'data'
 
-$migrationsDir = __DIR__ . '/../migrations';
+if (!in_array($dbFlag, ['system', 'data'], true)) {
+    err("--db debe ser 'system' o 'data'. Recibido: '{$dbFlag}'");
+    exit(1);
+}
+
+$isData = ($dbFlag === 'data');
+
+$migrationsDir = $isData
+    ? __DIR__ . '/../migrations/data'
+    : __DIR__ . '/../migrations';
 
 // Recopilar archivos .sql ordenados
 $archivos = glob($migrationsDir . '/*.sql');
 if ($archivos === false || count($archivos) === 0) {
-    out('No hay archivos de migración en migrations/.');
+    out("No hay archivos de migración en {$migrationsDir}.");
     exit(0);
 }
 sort($archivos);
 
-$pdo = dbConnect();
+$pdo = $isData ? dbData() : dbConnect();
+
+out('Base de datos: ' . $pdo->query('SELECT DATABASE()')->fetchColumn());
+
+// Asegurar que schema_migrations exista en la BD objetivo (necesario en peldigital_data)
+$pdo->exec("CREATE TABLE IF NOT EXISTS schema_migrations (
+    id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    migration     VARCHAR(255) NOT NULL UNIQUE,
+    executed_at   DATETIME     NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 // Cargar migraciones ya aplicadas
 $stmtAplicadas = $pdo->query('SELECT migration FROM schema_migrations');
