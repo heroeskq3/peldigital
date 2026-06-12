@@ -1,2 +1,10 @@
 /* PEL Digital styles split into assets/css/app/*.css.
    Loaded in order from includes/layout/head.php. */
+
+/* ── Densidad electoral: clasificación por promedio inscritos/JRV ── */
+.clasificacion-alta  { color: var(--color-text-danger);  font-weight: 500; }
+.clasificacion-media { color: var(--color-text-warning); font-weight: 500; }
+.clasificacion-baja  { color: var(--color-text-secondary); }
+.badge-alta  { font-size: .7rem; padding: 1px 6px; border-radius: 4px; background: var(--color-background-danger);  color: var(--color-text-danger);  }
+.badge-media { font-size: .7rem; padding: 1px 6px; border-radius: 4px; background: var(--color-background-warning); color: var(--color-text-warning); }
+.badge-baja  { font-size: .7rem; padding: 1px 6px; border-radius: 4px; background: var(--color-background-secondary); color: var(--color-text-secondary); }

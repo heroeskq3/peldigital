@@ -186,7 +186,7 @@
     if (jrv.loading) return;
     jrv.loading = true;
     jrvStatLoading(true);
-    $("jrvBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="7"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
+    $("jrvBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="8"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
     try {
       const r = await fetchJSON("api/jrv.php?" + jrvParams());
       jrv.total  = r.total;
@@ -223,6 +223,7 @@
         `<td>${esc(r.provincia)}</td>` +
         `<td>${esc(r.canton)}</td>` +
         `<td>${esc(r.distrito)}</td>` +
+        `<td class="muted" style="font-size:.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.local_nombre||'')}">${esc(r.local_nombre || '—')}</td>` +
         `<td class="col-num"><strong>${fmt(r.inscritos)}</strong></td>` +
         `<td class="col-bar"><div class="jrv-bar" style="width:${pct}%"></div></td>`;
       frag.appendChild(tr);
@@ -1418,6 +1419,272 @@
     $("juntasLast").disabled  = juntas.page >= juntas.pages;
     $("juntasPages").textContent = "Pág. " + juntas.page + " / " + juntas.pages;
     $("juntasTotal").textContent = fmt(juntas.total) + " registros";
+  }
+
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LOCALES DE VOTACIÓN
+  // ─────────────────────────────────────────────────────────────────────────────
+  const lv = {
+    page: 1, size: 50, order: "desc",
+    province_id: "", canton_id: "", buscar: "",
+    total: 0, pages: 1, maxInscritos: 1, loading: false,
+  };
+
+  function lvParams() {
+    const p = new URLSearchParams({ page: lv.page, size: lv.size, order: lv.order });
+    if (lv.province_id) p.set("province_id", lv.province_id);
+    if (lv.canton_id)   p.set("canton_id",   lv.canton_id);
+    if (lv.buscar)      p.set("buscar",       lv.buscar);
+    return p;
+  }
+
+  async function cargarLocales() {
+    if (lv.loading) return;
+    lv.loading = true;
+    $("lvBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="7"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
+    try {
+      const r = await fetchJSON("api/locales.php?" + lvParams());
+      lv.total = r.total; lv.pages = r.pages; lv.page = r.page;
+      lv.maxInscritos = r.stats.max_inscritos || 1;
+      $("lvStatLocales").textContent = fmt(r.stats.total);
+      $("lvStatTotal").textContent   = fmt(r.stats.total_inscritos);
+      $("lvStatProm").textContent    = fmt(r.stats.promedio);
+      $("lvStatMax").textContent     = fmt(r.stats.max_inscritos);
+      renderLocales(r.rows, r.page, r.size);
+      $("lvInfo").textContent = fmt(r.total) + " local" + (r.total !== 1 ? "es" : "");
+      $("lvPage").textContent = r.page + " / " + r.pages;
+      $("lvFirst").disabled = $("lvPrev").disabled = r.page <= 1;
+      $("lvNext").disabled  = $("lvLast").disabled = r.page >= r.pages;
+    } catch(e) {
+      $("lvBody").innerHTML = `<tr><td colspan="7" class="bita-empty">Error al cargar datos.</td></tr>`;
+    }
+    lv.loading = false;
+  }
+
+  function renderLocales(rows, page, size) {
+    const base = (page - 1) * size;
+    $("lvBody").innerHTML = rows.map((r, i) => {
+      const pct = Math.round((r.inscritos / lv.maxInscritos) * 100);
+      return `<tr>
+        <td class="mono rk-pos">${base + i + 1}</td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.local)}">${esc(r.local)}</td>
+        <td>${esc(r.provincia)}</td>
+        <td>${esc(r.canton || "—")}</td>
+        <td class="col-num">${r.juntas_con_datos > 0 ? fmt(r.juntas_con_datos) : (r.total_jrv ? fmt(r.total_jrv) : "—")}</td>
+        <td class="col-num"><strong>${fmt(r.inscritos)}</strong></td>
+        <td class="col-bar"><div class="jrv-bar" style="width:${pct}%"></div></td>
+      </tr>`;
+    }).join("");
+  }
+
+  let _lvBuscarTimer = null;
+  function setupLocalesFiltros() {
+    const selProv = $("lvProvincia");
+    const selCant = $("lvCanton");
+    Object.entries(POB.provincias || {}).forEach(([id, p]) => {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = p.nombre; selProv.appendChild(o);
+    });
+    selProv.addEventListener("change", () => {
+      lv.province_id = selProv.value; lv.canton_id = ""; lv.page = 1;
+      selCant.innerHTML = '<option value="">Todos los cantones</option>';
+      selCant.disabled = !selProv.value;
+      if (selProv.value) {
+        Object.entries(POB.cantones || {}).filter(([,c]) => c.cod_provincia === selProv.value)
+          .sort((a,b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([id, c]) => { const o = document.createElement("option"); o.value = id; o.textContent = c.nombre; selCant.appendChild(o); });
+      }
+      cargarLocales();
+    });
+    selCant.addEventListener("change", () => { lv.canton_id = selCant.value; lv.page = 1; cargarLocales(); });
+    $("lvBuscar").addEventListener("input", () => {
+      clearTimeout(_lvBuscarTimer);
+      _lvBuscarTimer = setTimeout(() => { lv.buscar = $("lvBuscar").value.trim(); lv.page = 1; cargarLocales(); }, 350);
+    });
+    $("lvBtnDesc").addEventListener("click", () => { lv.order = "desc"; $("lvBtnDesc").classList.add("active"); $("lvBtnAsc").classList.remove("active"); lv.page = 1; cargarLocales(); });
+    $("lvBtnAsc").addEventListener("click",  () => { lv.order = "asc";  $("lvBtnAsc").classList.add("active"); $("lvBtnDesc").classList.remove("active"); lv.page = 1; cargarLocales(); });
+    $("lvPageSize").addEventListener("change", () => { lv.size = parseInt($("lvPageSize").value, 10); lv.page = 1; cargarLocales(); });
+    $("lvFirst").addEventListener("click", () => { lv.page = 1; cargarLocales(); });
+    $("lvPrev").addEventListener("click",  () => { lv.page--; cargarLocales(); });
+    $("lvNext").addEventListener("click",  () => { lv.page++; cargarLocales(); });
+    $("lvLast").addEventListener("click",  () => { lv.page = lv.pages; cargarLocales(); });
+    $("lvExportar").addEventListener("click", () => { window.open("api/locales.php?" + lvParams() + "&format=csv"); });
+  }
+
+  function abrirLocalesVotacion() {
+    activarReporte("locales-votacion");
+    logEvento("reporte_abrir", "Locales de Votación", {});
+    if (!lv._init) { setupLocalesFiltros(); lv._init = true; }
+    cargarLocales();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DENSIDAD ELECTORAL POR LOCAL
+  // ─────────────────────────────────────────────────────────────────────────────
+  const de = {
+    page: 1, size: 50, order: "desc",
+    province_id: "", canton_id: "",
+    total: 0, pages: 1, maxInscritos: 1, loading: false,
+  };
+
+  function deParams() {
+    const p = new URLSearchParams({ page: de.page, size: de.size, order: de.order });
+    if (de.province_id) p.set("province_id", de.province_id);
+    if (de.canton_id)   p.set("canton_id",   de.canton_id);
+    return p;
+  }
+
+  async function cargarDensidad() {
+    if (de.loading) return;
+    de.loading = true;
+    $("deBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="8"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
+    try {
+      const r = await fetchJSON("api/locales.php?" + deParams());
+      de.total = r.total; de.pages = r.pages; de.page = r.page;
+      de.maxInscritos = r.stats.max_inscritos || 1;
+      // contar densidades aproximadas
+      const top10count = Math.ceil(r.stats.total * 0.1);
+      $("deStatTop10").textContent = fmt(top10count);
+      renderDensidad(r.rows, r.page, r.size, r.stats);
+      $("deInfo").textContent = fmt(r.total) + " locales";
+      $("dePage").textContent = r.page + " / " + r.pages;
+      $("deFirst").disabled = $("dePrev").disabled = r.page <= 1;
+      $("deNext").disabled  = $("deLast").disabled = r.page >= r.pages;
+    } catch(e) {
+      $("deBody").innerHTML = `<tr><td colspan="8" class="bita-empty">Error al cargar datos.</td></tr>`;
+    }
+    de.loading = false;
+  }
+
+  function renderDensidad(rows, page, size, stats) {
+    const base = (page - 1) * size;
+    // contar clasificaciones en la página visible (aproximación)
+    let alta = 0, media = 0, baja = 0;
+    $("deBody").innerHTML = rows.map((r, i) => {
+      const pct = Math.round((r.inscritos / de.maxInscritos) * 100);
+      const jrvs = r.juntas_con_datos || r.total_jrv || 1;
+      const prom = jrvs > 0 ? Math.round(r.inscritos / jrvs) : 0;
+      let cls = "baja";
+      if (prom >= 600) { cls = "alta"; alta++; }
+      else if (prom >= 300) { cls = "media"; media++; }
+      else baja++;
+      return `<tr>
+        <td class="mono rk-pos">${base + i + 1}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.local)}">${esc(r.local)}</td>
+        <td>${esc(r.provincia)}</td>
+        <td>${esc(r.canton || "—")}</td>
+        <td class="col-num">${fmt(jrvs)}</td>
+        <td class="col-num"><strong>${fmt(r.inscritos)}</strong></td>
+        <td class="col-num"><span class="clasificacion-${cls}">${fmt(prom)}</span></td>
+        <td class="col-bar"><div class="jrv-bar" style="width:${pct}%"></div></td>
+      </tr>`;
+    }).join("");
+    $("deStatAlta").textContent  = fmt(alta);
+    $("deStatMedia").textContent = fmt(media);
+    $("deStatBaja").textContent  = fmt(baja);
+  }
+
+  function setupDensidadFiltros() {
+    const selProv = $("deProvincia");
+    const selCant = $("deCanton");
+    Object.entries(POB.provincias || {}).forEach(([id, p]) => {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = p.nombre; selProv.appendChild(o);
+    });
+    selProv.addEventListener("change", () => {
+      de.province_id = selProv.value; de.canton_id = ""; de.page = 1;
+      selCant.innerHTML = '<option value="">Todos los cantones</option>';
+      selCant.disabled = !selProv.value;
+      if (selProv.value) {
+        Object.entries(POB.cantones || {}).filter(([,c]) => c.cod_provincia === selProv.value)
+          .sort((a,b) => a[1].nombre.localeCompare(b[1].nombre))
+          .forEach(([id, c]) => { const o = document.createElement("option"); o.value = id; o.textContent = c.nombre; selCant.appendChild(o); });
+      }
+      cargarDensidad();
+    });
+    selCant.addEventListener("change", () => { de.canton_id = selCant.value; de.page = 1; cargarDensidad(); });
+    $("deBtnDesc").addEventListener("click", () => { de.order = "desc"; $("deBtnDesc").classList.add("active"); $("deBtnAsc").classList.remove("active"); de.page = 1; cargarDensidad(); });
+    $("deBtnAsc").addEventListener("click",  () => { de.order = "asc";  $("deBtnAsc").classList.add("active"); $("deBtnDesc").classList.remove("active"); de.page = 1; cargarDensidad(); });
+    $("dePageSize").addEventListener("change", () => { de.size = parseInt($("dePageSize").value, 10); de.page = 1; cargarDensidad(); });
+    $("deFirst").addEventListener("click", () => { de.page = 1; cargarDensidad(); });
+    $("dePrev").addEventListener("click",  () => { de.page--; cargarDensidad(); });
+    $("deNext").addEventListener("click",  () => { de.page++; cargarDensidad(); });
+    $("deLast").addEventListener("click",  () => { de.page = de.pages; cargarDensidad(); });
+    $("deExportar").addEventListener("click", () => { window.open("api/locales.php?" + deParams() + "&format=csv"); });
+  }
+
+  function abrirDensidadElectoral() {
+    activarReporte("densidad-electoral");
+    logEvento("reporte_abrir", "Densidad Electoral", {});
+    if (!de._init) { setupDensidadFiltros(); de._init = true; }
+    cargarDensidad();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CIRCUNSCRIPCIONES LEGISLATIVAS
+  // ─────────────────────────────────────────────────────────────────────────────
+  let cirLoaded = false;
+
+  async function cargarCircunscripciones() {
+    if (cirLoaded) return;
+    $("cirBody").innerHTML = `<tr class="tbl-spinner-row"><td colspan="10"><span class="tbl-spinner"></span>Consultando base de datos…</td></tr>`;
+    try {
+      const r = await fetchJSON("api/circunscripciones.php");
+      cirLoaded = true;
+      $("cirStatTotal").textContent   = fmt(r.totales.inscritos);
+      $("cirStatH").textContent       = fmt(r.totales.inscritos_m);
+      $("cirStatM").textContent       = fmt(r.totales.inscritos_f);
+      const totalLocales = r.rows.reduce((s, x) => s + (parseInt(x.locales) || 0), 0);
+      $("cirStatLocales").textContent = fmt(totalLocales);
+      renderCircunscripciones(r.rows, r.totales);
+    } catch(e) {
+      $("cirBody").innerHTML = `<tr><td colspan="10" class="bita-empty">Error al cargar datos.</td></tr>`;
+    }
+  }
+
+  function renderCircunscripciones(rows, totales) {
+    const maxIns = Math.max(...rows.map(r => parseInt(r.inscritos)));
+    // Tarjetas
+    $("cirCards").innerHTML = rows.map(r => {
+      const pctH = r.inscritos > 0 ? Math.round(r.inscritos_m / r.inscritos * 100) : 0;
+      const pctF = r.inscritos > 0 ? Math.round(r.inscritos_f / r.inscritos * 100) : 0;
+      return `<div class="rp-stat-card" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-weight:500;font-size:1rem">${esc(r.circunscripcion)}</div>
+        <div class="muted" style="font-size:.8rem">${esc(r.provincia)}</div>
+        <div style="font-size:1.4rem;font-weight:500">${fmt(r.inscritos)}</div>
+        <div style="display:flex;gap:4px;align-items:center;font-size:.78rem">
+          <span style="color:var(--color-text-info)">♂ ${pctH}%</span>
+          <span style="color:var(--color-text-warning)">♀ ${pctF}%</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--color-border-tertiary);overflow:hidden">
+          <div style="height:100%;width:${Math.round(r.inscritos/maxIns*100)}%;background:var(--color-border-info);border-radius:3px"></div>
+        </div>
+        <div class="muted" style="font-size:.75rem">${fmt(r.locales)} locales · ${fmt(r.juntas)} JRVs</div>
+      </div>`;
+    }).join("");
+    // Tabla
+    $("cirBody").innerHTML = rows.map((r, i) => {
+      const pct = Math.round(r.inscritos / maxIns * 100);
+      return `<tr>
+        <td class="col-num muted">${i + 1}</td>
+        <td><strong>${esc(r.circunscripcion)}</strong></td>
+        <td>${esc(r.provincia)}</td>
+        <td class="col-num">${fmt(r.locales)}</td>
+        <td class="col-num">${fmt(r.juntas)}</td>
+        <td class="col-num">${fmt(r.inscritos_m)}</td>
+        <td class="col-num">${fmt(r.inscritos_f)}</td>
+        <td class="col-num"><strong>${fmt(r.inscritos)}</strong></td>
+        <td class="col-num">${parseFloat(r.pct_nacional).toFixed(1)}%</td>
+        <td class="col-bar"><div class="jrv-bar" style="width:${pct}%"></div></td>
+      </tr>`;
+    }).join("");
+  }
+
+  function abrirCircunscripciones() {
+    activarReporte("circunscripciones");
+    logEvento("reporte_abrir", "Circunscripciones Legislativas", {});
+    cargarCircunscripciones();
   }
 
   document.addEventListener("DOMContentLoaded", init);

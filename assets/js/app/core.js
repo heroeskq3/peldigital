@@ -165,7 +165,10 @@
       else if (targetReport === "participacion")       abrirReporteParticipacion();
       else if (targetReport === "analisis-territorial") abrirAnalisisTerritorial();
       else if (targetReport === "distritos-electorales") abrirDistritosElectorales();
-      else if (targetReport === "juntas-padronal")    abrirJuntasPadronal();
+      else if (targetReport === "juntas-padronal")      abrirJuntasPadronal();
+      else if (targetReport === "locales-votacion")    abrirLocalesVotacion();
+      else if (targetReport === "densidad-electoral")  abrirDensidadElectoral();
+      else if (targetReport === "circunscripciones")   abrirCircunscripciones();
       else activarReporte(targetReport);
     }
 

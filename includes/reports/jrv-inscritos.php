@@ -68,6 +68,7 @@
                     <th>Provincia</th>
                     <th>Cantón</th>
                     <th>Distrito</th>
+                    <th>Local de Votación</th>
                     <th class="col-num">Inscritos</th>
                     <th class="col-bar"></th>
                 </tr>

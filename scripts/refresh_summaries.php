@@ -53,7 +53,10 @@ foreach ($pdo->query("SELECT id, name, codelec, canton_id FROM districts WHERE c
 // ─── Paso 1: conteos base por district/province/canton ────────────────────────
 log_msg('Contando inscritos por distrito (GROUP BY sobre voters)…', $quiet);
 $rawRows = $pdo->query("
-    SELECT district_id, province_id, canton_id, COUNT(*) AS cnt
+    SELECT district_id, province_id, canton_id, COUNT(*) AS cnt,
+           SUM(sexo = 'M') AS cnt_m,
+           SUM(sexo = 'F') AS cnt_f,
+           SUM(sexo = 'N') AS cnt_n
     FROM   voters
     WHERE  province_id BETWEEN 1 AND 7
       AND  district_id IS NOT NULL
@@ -74,8 +77,17 @@ foreach ($rawRows as $r) {
     $cId = (int)$r['canton_id'];
     $cnt = (int)$r['cnt'];
 
-    $byProv[$pId] = ($byProv[$pId] ?? 0) + $cnt;
-    $byCant[$cId] = ($byCant[$cId] ?? 0) + $cnt;
+    if (!isset($byProv[$pId])) $byProv[$pId] = ['cnt'=>0,'m'=>0,'f'=>0,'n'=>0];
+    $byProv[$pId]['cnt'] += $cnt;
+    $byProv[$pId]['m']   += (int)$r['cnt_m'];
+    $byProv[$pId]['f']   += (int)$r['cnt_f'];
+    $byProv[$pId]['n']   += (int)$r['cnt_n'];
+
+    if (!isset($byCant[$cId])) $byCant[$cId] = ['cnt'=>0,'m'=>0,'f'=>0,'n'=>0];
+    $byCant[$cId]['cnt'] += $cnt;
+    $byCant[$cId]['m']   += (int)$r['cnt_m'];
+    $byCant[$cId]['f']   += (int)$r['cnt_f'];
+    $byCant[$cId]['n']   += (int)$r['cnt_n'];
 
     if (!isset($byDist[$dId])) {
         $dd = $distData[$dId] ?? null;
@@ -95,24 +107,45 @@ foreach ($rawRows as $r) {
 log_msg('Actualizando summary_inscritos_provincia…', $quiet);
 $stProv = $pdo->prepare("
     REPLACE INTO summary_inscritos_provincia
-        (province_id, nombre, inscritos, pct_nacional)
-    VALUES (?, ?, ?, ?)
+        (province_id, nombre, inscritos, pct_nacional, inscritos_m, inscritos_f, inscritos_n)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
 ");
-foreach ($byProv as $pId => $cnt) {
-    $stProv->execute([$pId, $provNames[$pId] ?? 'N/D', $cnt, round($cnt / $grandTotal * 100, 3)]);
+foreach ($byProv as $pId => $data) {
+    $cnt = $data['cnt'];
+    $stProv->execute([$pId, $provNames[$pId] ?? 'N/D', $cnt, round($cnt / $grandTotal * 100, 3),
+        $data['m'], $data['f'], $data['n']]);
 }
 
 // ─── REPLACE INTO summary_inscritos_canton ───────────────────────────────────
 log_msg('Actualizando summary_inscritos_canton…', $quiet);
-$stCant = $pdo->prepare("
-    REPLACE INTO summary_inscritos_canton
-        (canton_id, nombre, province_id, provincia, inscritos, pct_nacional)
-    VALUES (?, ?, ?, ?, ?, ?)
-");
-foreach ($byCant as $cId => $cnt) {
-    $cd   = $cantData[$cId] ?? null;
-    $pId2 = $cd ? $cd['province_id'] : 0;
-    $stCant->execute([$cId, $cd['name'] ?? 'N/D', $pId2, $provNames[$pId2] ?? 'N/D', $cnt, round($cnt / $grandTotal * 100, 3)]);
+// Check if summary_inscritos_canton has sex columns; add if needed (added in later migration)
+$cantCols = $pdo->query("SHOW COLUMNS FROM summary_inscritos_canton LIKE 'inscritos_m'")->fetchColumn();
+if ($cantCols) {
+    $stCant = $pdo->prepare("
+        REPLACE INTO summary_inscritos_canton
+            (canton_id, nombre, province_id, provincia, inscritos, pct_nacional, inscritos_m, inscritos_f, inscritos_n)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    foreach ($byCant as $cId => $data) {
+        $cnt  = $data['cnt'];
+        $cd   = $cantData[$cId] ?? null;
+        $pId2 = $cd ? $cd['province_id'] : 0;
+        $stCant->execute([$cId, $cd['name'] ?? 'N/D', $pId2, $provNames[$pId2] ?? 'N/D',
+            $cnt, round($cnt / $grandTotal * 100, 3), $data['m'], $data['f'], $data['n']]);
+    }
+} else {
+    $stCant = $pdo->prepare("
+        REPLACE INTO summary_inscritos_canton
+            (canton_id, nombre, province_id, provincia, inscritos, pct_nacional)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    foreach ($byCant as $cId => $data) {
+        $cnt  = $data['cnt'];
+        $cd   = $cantData[$cId] ?? null;
+        $pId2 = $cd ? $cd['province_id'] : 0;
+        $stCant->execute([$cId, $cd['name'] ?? 'N/D', $pId2, $provNames[$pId2] ?? 'N/D',
+            $cnt, round($cnt / $grandTotal * 100, 3)]);
+    }
 }
 
 // ─── REPLACE INTO summary_inscritos_distrito ─────────────────────────────────
@@ -135,6 +168,19 @@ foreach ($byDist as $d) {
     ]);
 }
 
+// ─── Cargar mapa junta → polling_place ───────────────────────────────────────
+log_msg('Cargando mapa junta → local de votación…', $quiet);
+$ppMap = [];  // junta_num (int) => [id, name]
+$ppRows = $pdo->query(
+    'SELECT id, name, jrv_inicio, jrv_fin FROM polling_places WHERE jrv_inicio IS NOT NULL ORDER BY jrv_inicio'
+)->fetchAll(PDO::FETCH_ASSOC);
+foreach ($ppRows as $pp) {
+    for ($j = (int)$pp['jrv_inicio']; $j <= (int)$pp['jrv_fin']; $j++) {
+        $ppMap[$j] = [(int)$pp['id'], $pp['name']];
+    }
+}
+log_msg('  ' . count($ppMap) . ' juntas mapeadas a ' . count($ppRows) . ' locales.', $quiet);
+
 // ─── JRV ─────────────────────────────────────────────────────────────────────
 log_msg('Contando inscritos por JRV…', $quiet);
 $jrvRows = $pdo->query("
@@ -148,8 +194,9 @@ $jrvRows = $pdo->query("
 log_msg('Actualizando summary_jrv…', $quiet);
 $stJrv = $pdo->prepare("
     REPLACE INTO summary_jrv
-        (junta, district_id, canton_id, province_id, distrito, canton, provincia, inscritos, clasificacion)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (junta, district_id, canton_id, province_id, distrito, canton, provincia,
+         inscritos, clasificacion, polling_place_id, local_nombre)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 foreach ($jrvRows as $r) {
     $cnt  = (int)$r['cnt'];
@@ -159,12 +206,16 @@ foreach ($jrvRows as $r) {
     $dd   = $distData[$dId] ?? null;
     $cd   = $cantData[$cId] ?? null;
     $clsf = $cnt >= 600 ? 'alta' : ($cnt >= 300 ? 'media' : 'baja');
+    $jNum = (int)$r['junta'];
+    $pp   = $ppMap[$jNum] ?? null;
     $stJrv->execute([
         $r['junta'], $dId, $cId, $pId,
         $dd['name']  ?? 'N/D',
         $cd['name']  ?? 'N/D',
         $provNames[$pId] ?? 'N/D',
         $cnt, $clsf,
+        $pp ? $pp[0] : null,
+        $pp ? $pp[1] : null,
     ]);
 }
 

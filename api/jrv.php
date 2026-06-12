@@ -76,7 +76,7 @@ $offset = $pageInfo['offset'];
 // ─── CSV ──────────────────────────────────────────────────────────────────────
 if ($format === 'csv') {
     $csvStmt = $pdo->prepare(
-        "SELECT junta, provincia, canton, distrito, inscritos, clasificacion
+        "SELECT junta, local_nombre, provincia, canton, distrito, inscritos, clasificacion
          FROM summary_jrv {$whereSql} {$orderSql} LIMIT 10000"
     );
     $csvStmt->execute($params);
@@ -85,10 +85,11 @@ if ($format === 'csv') {
     header('Content-Type: text/csv; charset=UTF-8');
     header("Content-Disposition: attachment; filename=\"{$filename}\"");
     echo "\xEF\xBB\xBF";
-    echo "Junta,Provincia,Cantón,Distrito,Inscritos,Clasificación\n";
+    echo "Junta,Local de Votación,Provincia,Cantón,Distrito,Inscritos,Clasificación\n";
     while ($r = $csvStmt->fetch(PDO::FETCH_ASSOC)) {
         echo implode(',', [
             $r['junta'],
+            '"' . str_replace('"', '""', $r['local_nombre'] ?? '')  . '"',
             '"' . str_replace('"', '""', $r['provincia'])  . '"',
             '"' . str_replace('"', '""', $r['canton'])     . '"',
             '"' . str_replace('"', '""', $r['distrito'])   . '"',
@@ -101,7 +102,7 @@ if ($format === 'csv') {
 
 // ─── Paginación SQL ───────────────────────────────────────────────────────────
 $pageStmt = $pdo->prepare("
-    SELECT junta, provincia, canton, distrito, inscritos, clasificacion,
+    SELECT junta, local_nombre, polling_place_id, provincia, canton, distrito, inscritos, clasificacion,
            NULL AS votaron, NULL AS pct_part, NULL AS pct_abs, NULL AS oportunidad
     FROM summary_jrv {$whereSql} {$orderSql}
     LIMIT {$size} OFFSET {$offset}
