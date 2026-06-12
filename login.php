@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/auth.php';
+require_once __DIR__ . '/lib/env.php';
 
 // Si ya hay sesion, al tablero.
 if (estaAutenticado()) {
@@ -7,18 +8,42 @@ if (estaAutenticado()) {
     exit;
 }
 
+$RECAPTCHA_SITE_KEY = env('RECAPTCHA_SITE_KEY');
+$RECAPTCHA_SECRET   = env('RECAPTCHA_SECRET');
+
+/** Verifica el token reCAPTCHA con la API de Google. */
+function verificarRecaptcha(string $token, string $secret): bool
+{
+    if ($token === '') return false;
+    $ctx = stream_context_create(['http' => [
+        'method'  => 'POST',
+        'header'  => 'Content-Type: application/x-www-form-urlencoded',
+        'content' => http_build_query(['secret' => $secret, 'response' => $token]),
+        'timeout' => 5,
+    ]]);
+    $raw = @file_get_contents('https://www.google.com/recaptcha/api/siteverify', false, $ctx);
+    if (!$raw) return false;
+    $data = json_decode($raw, true);
+    return !empty($data['success']);
+}
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $usuario = $_POST['usuario'] ?? '';
-    $clave   = $_POST['clave'] ?? '';
-    if (verificarLogin($usuario, $clave)) {
+    $usuario        = $_POST['usuario'] ?? '';
+    $clave          = $_POST['clave'] ?? '';
+    $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
+
+    if (!verificarRecaptcha($recaptchaToken, $RECAPTCHA_SECRET)) {
+        $error = 'Por favor confirma que no eres un robot.';
+    } elseif (verificarLogin($usuario, $clave)) {
         iniciarSesion(trim($usuario));
         registrarBitacora('login', 'Ingreso correcto');
         header('Location: ' . appUrl('home'));
         exit;
+    } else {
+        registrarBitacora('login_fallido', 'Credenciales inválidas', [], trim($usuario) ?: 'desconocido');
+        $error = 'Usuario o contraseña incorrectos.';
     }
-    registrarBitacora('login_fallido', 'Credenciales inválidas', [], trim($usuario) ?: 'desconocido');
-    $error = 'Usuario o contraseña incorrectos.';
 }
 ?>
 <!DOCTYPE html>
@@ -37,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })();
     </script>
 
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php
     $loginCss = [
@@ -73,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label class="login-label">Contraseña
                 <input type="password" name="clave" class="field" required>
             </label>
+            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($RECAPTCHA_SITE_KEY) ?>" style="margin-bottom:.75rem;"></div>
             <button type="submit" class="btn-wide"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
         </form>
     </main>
