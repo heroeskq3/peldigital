@@ -20,6 +20,7 @@
             if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
             document.documentElement.setAttribute("data-theme", t);
         })();
+        window.APP_BASE = <?= json_encode($appBaseUrl) ?>;
     </script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">

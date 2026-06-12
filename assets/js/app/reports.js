@@ -322,7 +322,7 @@
     const jrvExp = $("jrvExportar");
     if (jrvExp) {
       jrvExp.addEventListener("click", () => {
-        window.open("api/jrv.php?" + jrvParams() + "&format=csv");
+        window.open((window.APP_BASE||"")+"api/jrv.php?" + jrvParams() + "&format=csv");
         logEvento("reporte_exportar", "JRV CSV", { filtros: jrvParams() });
       });
     }
@@ -370,7 +370,7 @@
       if (seg.provinceId)   p.set("province_id",  String(seg.provinceId));
       if (seg.cantonId)     p.set("canton_id",     String(seg.cantonId));
       if (seg.districtGeo5) p.set("district_geo5", seg.districtGeo5);
-      window.open("api/segmentacion.php?" + p.toString());
+      window.open((window.APP_BASE||"")+"api/segmentacion.php?" + p.toString());
       logEvento("reporte_exportar", "Segmentación CSV", {});
     });
   }
@@ -622,7 +622,7 @@
     });
     $("partExportar").addEventListener("click", () => {
       const p = partParams(); p.set("format","csv");
-      window.open("api/participacion.php?" + p.toString());
+      window.open((window.APP_BASE||"")+"api/participacion.php?" + p.toString());
       logEvento("reporte_exportar", "Participación CSV", { nivel: part.nivel });
     });
     $("partFiltEleccion").addEventListener("change", () => {
@@ -915,7 +915,7 @@
     });
     $("atExportar").addEventListener("click", () => {
       const p = atParams(); p.set("format","csv");
-      window.open("api/analisis_territorial.php?" + p.toString());
+      window.open((window.APP_BASE||"")+"api/analisis_territorial.php?" + p.toString());
       logEvento("reporte_exportar", "Análisis Territorial CSV", { nivel: at.nivel });
     });
     $("atFirst").addEventListener("click", () => { at.page = 1; cargarAnalisisTerritorial(); });
@@ -1114,7 +1114,7 @@
     $("distElLast").addEventListener("click",  () => { distEl.page = distEl.pages; cargarDistritosElectorales(); });
     $("distElExportar").addEventListener("click", () => {
       const p = distElParams(); p.set("format", "csv");
-      window.open("api/distritos_electorales.php?" + p.toString());
+      window.open((window.APP_BASE||"")+"api/distritos_electorales.php?" + p.toString());
       logEvento("reporte_exportar", "Distritos Electorales CSV", {});
     });
   }
@@ -1274,7 +1274,7 @@
     $("juntasLast").addEventListener("click",  () => { juntas.page = juntas.pages; cargarJuntasPadronal(); });
     $("juntasExportar").addEventListener("click", () => {
       const p = juntasParams(); p.set("format", "csv");
-      window.open("api/juntas_padronal.php?" + p.toString());
+      window.open((window.APP_BASE||"")+"api/juntas_padronal.php?" + p.toString());
       logEvento("reporte_exportar", "Juntas CSV", { nivel: juntas.nivel });
     });
     $("jpBorrarFiltros").addEventListener("click", () => {
@@ -1509,7 +1509,7 @@
     $("lvPrev").addEventListener("click",  () => { lv.page--; cargarLocales(); });
     $("lvNext").addEventListener("click",  () => { lv.page++; cargarLocales(); });
     $("lvLast").addEventListener("click",  () => { lv.page = lv.pages; cargarLocales(); });
-    $("lvExportar").addEventListener("click", () => { window.open("api/locales.php?" + lvParams() + "&format=csv"); });
+    $("lvExportar").addEventListener("click", () => { window.open((window.APP_BASE||"")+"api/locales.php?" + lvParams() + "&format=csv"); });
   }
 
   function abrirLocalesVotacion() {
@@ -1611,7 +1611,7 @@
     $("dePrev").addEventListener("click",  () => { de.page--; cargarDensidad(); });
     $("deNext").addEventListener("click",  () => { de.page++; cargarDensidad(); });
     $("deLast").addEventListener("click",  () => { de.page = de.pages; cargarDensidad(); });
-    $("deExportar").addEventListener("click", () => { window.open("api/locales.php?" + deParams() + "&format=csv"); });
+    $("deExportar").addEventListener("click", () => { window.open((window.APP_BASE||"")+"api/locales.php?" + deParams() + "&format=csv"); });
   }
 
   function abrirDensidadElectoral() {

@@ -183,6 +183,7 @@
   }
 
   async function fetchJSON(url) {
+    if (window.APP_BASE && !url.startsWith('http') && !url.startsWith('/')) url = window.APP_BASE + url;
     const r = await fetch(url);
     if (!r.ok) throw new Error(url + " -> " + r.status);
     return r.json();
@@ -224,9 +225,9 @@
     try {
       const payload = JSON.stringify({ tipo, detalle: detalle || "", meta: meta || {} });
       if (navigator.sendBeacon) {
-        navigator.sendBeacon("api/log.php", new Blob([payload], { type: "application/json" }));
+        navigator.sendBeacon((window.APP_BASE||"")+"api/log.php", new Blob([payload], { type: "application/json" }));
       } else {
-        fetch("api/log.php", {
+        fetch((window.APP_BASE||"")+"api/log.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: payload,
