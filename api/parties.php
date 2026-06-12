@@ -15,7 +15,7 @@ require_once __DIR__ . '/../lib/db.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=3600');
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $codesParam = trim($_GET['codes'] ?? '');
 $where = '';

@@ -32,7 +32,7 @@ if ($zipPath === false || !is_file($zipPath)) {
 }
 
 $runId = 0;
-$pdo = dbConnect();
+$pdo = dbData();
 
 try {
     out('Iniciando carga local desde ZIP...');

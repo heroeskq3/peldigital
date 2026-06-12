@@ -21,7 +21,7 @@ function log_msg(string $msg, bool $quiet = false): void {
 $rootDir = dirname(__DIR__);
 require_once $rootDir . '/lib/db.php';
 
-$pdo = dbConnect();
+$pdo = dbData();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // ─── Cargar tablas de geografía en memoria ────────────────────────────────────

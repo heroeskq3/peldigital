@@ -24,7 +24,7 @@ if ($format === 'json') {
     apiJsonHeaders();
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $province_id = isset($_GET['province_id']) && $_GET['province_id'] !== '' ? (int)$_GET['province_id'] : null;
 $canton_id   = isset($_GET['canton_id'])   && $_GET['canton_id']   !== '' ? (int)$_GET['canton_id']   : null;

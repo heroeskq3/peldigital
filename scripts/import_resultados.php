@@ -45,7 +45,7 @@ if ($jsonPath === false || !is_file($jsonPath)) {
 }
 
 $runId = 0;
-$pdo   = dbConnect();
+$pdo   = dbData();
 
 try {
     out('Iniciando importación de resultados electorales...');

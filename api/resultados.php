@@ -16,7 +16,7 @@ require_once __DIR__ . '/../lib/db.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // Obtener último run completado si no se especifica
 $runId = isset($_GET['run_id']) ? (int)$_GET['run_id'] : null;

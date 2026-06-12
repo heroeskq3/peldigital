@@ -25,7 +25,7 @@ if ($format === 'json') {
     apiJsonHeaders();
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $nivel       = in_array($_GET['nivel'] ?? '', ['province','canton','district']) ? $_GET['nivel'] : 'province';
 $provinceId  = isset($_GET['province_id'])   && $_GET['province_id']   !== '' ? (int)$_GET['province_id']  : null;

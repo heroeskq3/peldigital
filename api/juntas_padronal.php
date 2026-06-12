@@ -26,7 +26,7 @@ if ($format === 'json') {
     header('Cache-Control: no-store');
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $nivel      = in_array($_GET['nivel'] ?? '', ['province','canton','district','junta'])
                 ? $_GET['nivel'] : 'province';

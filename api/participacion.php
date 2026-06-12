@@ -27,7 +27,7 @@ if ($format === 'json') {
     header('Cache-Control: no-store');
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // Lista completa de elecciones disponibles (para el selector del frontend)
 $allRuns = $pdo->query(

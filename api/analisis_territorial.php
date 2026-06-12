@@ -28,7 +28,7 @@ if ($format === 'json') {
     header('Cache-Control: no-store');
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // Obtener todas las elecciones completadas
 $allRuns = $pdo->query(

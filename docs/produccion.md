@@ -118,9 +118,46 @@ php scripts/import_resultados.php --json=raw/avr/avr2026.json --type=P --label="
 php scripts/import_resultados.php --json=raw/avr/avr2024.json --type=A --label="Municipal 2024"
 php scripts/import_resultados.php --json=raw/avr/avr2022.json --type=P --label="Presidencial 2022 1ra"
 php scripts/import_resultados.php --json=raw/avr/avr2022_ii.json --type=P --label="Presidencial 2022 2da"
+
+# Paso 5: Centros de votación (requiere descarga previa del TSE)
+# Descargar: https://www.tse.go.cr/2026/docus/CENTROS_DE%20VOTACION_%20RATIFICADOS-A-28-01-26.xlsx
+# Guardar en: raw/padron/centros_votacion_2026.xlsx
+php scripts/import_electoral_districts.php                          # 7 circunscripciones (~1 segundo)
+php scripts/import_polling_places.php                               # ~7,000 locales (~10 segundos)
+php scripts/link_voters_polling.php                                 # vincula 3.7M voters (~5-10 min)
 ```
 
-### 6. Verificar que las tablas de resumen tienen datos
+### 6. Configurar actualización automática de tablas de resumen
+
+Las tablas `summary_*` deben regenerarse cada vez que se reimporte el padrón.
+Hay dos opciones — usar la que corresponda al entorno:
+
+**Opción A — MySQL/MariaDB EVENT (recomendado si `event_scheduler=ON`):**
+
+```bash
+# Crear el evento que corre diariamente a las 03:00
+php scripts/setup_event.php
+
+# Verificar estado
+php scripts/setup_event.php --status
+
+# Activar event_scheduler si no está activo (requiere acceso root a MySQL)
+mysql -u root -e "SET GLOBAL event_scheduler = ON;"
+# Para persistir en reinicios, agregar en [mysqld] de my.cnf:
+#   event_scheduler=ON
+```
+
+**Opción B — Cron del sistema operativo:**
+
+```bash
+# Agregar al crontab del usuario del servidor web
+crontab -e
+
+# Agregar esta línea (corre a las 3am todos los días):
+0 3 * * * php /var/www/pel_02/scripts/refresh_summaries.php --quiet >> /var/log/pel_summaries.log 2>&1
+```
+
+### 7. Verificar que las tablas de resumen tienen datos
 
 ```sql
 SELECT 'provincias' AS tabla, COUNT(*), SUM(inscritos) FROM summary_inscritos_provincia
@@ -139,7 +176,7 @@ php scripts/refresh_summaries.php
 curl http://localhost/pel_02/api/poblacion.php?refresh=1
 ```
 
-### 7. Configurar el servidor web (Apache)
+### 8. Configurar el servidor web (Apache)
 
 ```apache
 <VirtualHost *:80>
@@ -163,7 +200,7 @@ El repositorio incluye un `.htaccess` base que bloquea estas rutas cuando Apache
 permite `AllowOverride All`; mantener también la regla del VirtualHost en
 producción porque es más difícil de omitir accidentalmente.
 
-### 8. Seguridad en producción
+### 9. Seguridad en producción
 
 - [ ] Configurar credenciales reales en `.env`
 - [ ] Crear usuarios reales en tabla `users`
@@ -174,7 +211,7 @@ producción porque es más difícil de omitir accidentalmente.
 - [ ] Habilitar HTTPS (Let's Encrypt o certificado corporativo)
 - [ ] Revisar permisos de archivos: el webserver debe ser propietario de `data/` (caché)
 
-### 9. Usuarios del sistema
+### 10. Usuarios del sistema
 
 El login principal usa la tabla `users`; `auth.php` conserva un fallback `demo`
 solo fuera de producción. Con `APP_ENV=production`, el fallback queda bloqueado.
@@ -188,7 +225,7 @@ echo password_hash('nueva_clave_segura', PASSWORD_BCRYPT);
 Insertar o actualizar esos hashes en la tabla `users`. Verificar que `.env`
 tenga `APP_ENV=production` antes de publicar el sistema.
 
-### 10. Monitoreo post-despliegue
+### 11. Monitoreo post-despliegue
 
 Verificar en el browser:
 1. Login en `/login.php` con usuario `demo` (o el nuevo usuario de producción)

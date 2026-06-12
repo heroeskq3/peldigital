@@ -129,7 +129,7 @@ fclose($handle);
 out("Líneas procesadas: {$lineNum}  |  Errores parse: {$parseErrors}");
 out('Cantones únicos: ' . count($cantons) . '  |  Distritos: ' . count($districts));
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // ---- Upsert provinces (por si falta alguna) ----
 out('Actualizando provinces...');

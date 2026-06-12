@@ -33,7 +33,7 @@ $opts    = getopt('', ['dry-run', 'batch:']);
 $dryRun  = isset($opts['dry-run']);
 $batchSz = isset($opts['batch']) ? (int)$opts['batch'] : 50000;
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $total   = (int)$pdo->query("SELECT COUNT(*) FROM voters")->fetchColumn();
 $pending = (int)$pdo->query("SELECT COUNT(*) FROM voters WHERE sexo IS NULL")->fetchColumn();

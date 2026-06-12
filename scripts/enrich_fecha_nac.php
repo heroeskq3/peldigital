@@ -36,7 +36,7 @@ $batchSize  = max(1, (int)($opts['batch'] ?? 500));
 $delayMs    = max(400, (int)($opts['delay'] ?? 800));
 $dryRun     = isset($opts['dry-run']);
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // --- Contar pendientes ---
 $whereParts = ['chc_consultado_at IS NULL'];

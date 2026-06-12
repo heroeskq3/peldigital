@@ -7,7 +7,7 @@ require __DIR__ . '/../auth.php';
 requerirLoginApi();
 require_once __DIR__ . '/../lib/db.php';
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $nivel = (string)($_GET['nivel'] ?? '');
 $codigo = trim((string)($_GET['codigo'] ?? ''));

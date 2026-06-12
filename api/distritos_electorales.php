@@ -24,7 +24,7 @@ if ($format === 'json') {
     header('Cache-Control: no-store');
 }
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 $provinceId = isset($_GET['province_id']) && $_GET['province_id'] !== '' ? (int)$_GET['province_id'] : null;
 $cantonId   = isset($_GET['canton_id'])   && $_GET['canton_id']   !== '' ? (int)$_GET['canton_id']   : null;

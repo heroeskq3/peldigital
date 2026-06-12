@@ -38,7 +38,7 @@ require_once __DIR__ . '/../lib/db.php';
 //  2. Cargar nombres desde las tablas de geografía (pequeñas, en memoria).
 // Esto es ~18x más rápido que el JOIN directo sobre 3.7M filas.
 
-$pdo = dbConnect();
+$pdo = dbData();
 
 // Paso 1: conteos puros (cubiertos por idx_voters_geo_agg)
 $counts = $pdo->query("
